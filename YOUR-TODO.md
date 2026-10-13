@@ -4,10 +4,12 @@ Claude does everything else: scripts, voices, videos, checks, captions, weekly a
 Tick a box by changing `[ ]` to `[x]`.
 
 ## Now (about 20 minutes)
-- [ ] **Pexels key** (free stock clips). Sign up at https://www.pexels.com/api/ and request a key
-      ("personal short-video project"). Then run `nano ~/shorts-studio/MoneyPrinterTurbo/config.toml`,
-      go to line 85 and write `pexels_api_keys = ["YOUR-KEY"]`. Save with Ctrl+O, Enter, then Ctrl+X.
+- [ ] **Pixabay key** (free stock clips; Pexels has paused new keys). Create a free account at https://pixabay.com,
+      then open https://pixabay.com/api/docs/ while logged in. Your key is shown in green under "Parameters".
+      Run `nano ~/shorts-studio/MoneyPrinterTurbo/config.toml`, go to line 88 and write
+      `pixabay_api_keys = ["YOUR-KEY"]`. Save with Ctrl+O, Enter, then Ctrl+X.
       Don't use TextEdit: it can turn `"` into curly quotes and break the file.
+      (If Pexels reopens later, a Pexels key on line 85 is used first.)
 - [ ] **Listen to the voice samples** in `studio/voice-tests/`. Which English voice do you prefer (Aiden or Ryan)?
       Ask a native German speaker whether `de-Aiden.wav` / `de-Ryan.wav` sound natural or clearly foreign.
 

@@ -627,9 +627,19 @@ def caption_word_problem(caption: dict) -> str | None:
     )
 
 
+def pick_footage_source(app_cfg: dict) -> str | None:
+    """Stock-footage provider to download from: Pexels when its key is set, otherwise Pixabay, otherwise None.
+    (Pexels paused new API keys in October 2026, so Pixabay is the usual fallback.)"""
+    for name in ("pexels", "pixabay"):
+        if any(str(key).strip() for key in app_cfg.get(f"{name}_api_keys") or []):
+            return name
+    return None
+
+
 def build_mpt_command(uv: str, script_text: str, terms: list[str], narration: Path, task_id: str,
                       local_files: list[Path] | None = None, font_size: int = CAPTION_FONT_MAX,
-                      stroke_width: int | None = None, position_percent: float | None = None) -> list[str]:
+                      stroke_width: int | None = None, position_percent: float | None = None,
+                      source: str | None = None) -> list[str]:
     """The `uv run python cli.py ...` command (run it with cwd = MoneyPrinterTurbo)."""
     if stroke_width is None:
         stroke_width = caption_stroke_width(font_size)
@@ -657,6 +667,8 @@ def build_mpt_command(uv: str, script_text: str, terms: list[str], narration: Pa
     ]
     if local_files:
         cmd += ["--video-source", "local", "--video-materials", ",".join(str(p) for p in local_files)]
+    elif source:
+        cmd += ["--video-source", source]
     return cmd
 
 
@@ -1102,7 +1114,7 @@ def parse_args(argv=None) -> argparse.Namespace:
         description="Turn content/<id>/script.json into a review-ready Short (voice, MoneyPrinterTurbo video, checks, caption).",
     )
     p.add_argument("script", help="path to content/<id>/script.json")
-    p.add_argument("--local-materials", metavar="DIR", help="use the video/image files in DIR instead of downloading Pexels footage")
+    p.add_argument("--local-materials", metavar="DIR", help="use the video/image files in DIR instead of downloading stock footage (Pexels or Pixabay)")
     p.add_argument("--min-seconds", type=float, default=61.0, help="shortest allowed narration (default 61); 0 also skips the final minimum-duration check")
     p.add_argument("--max-seconds", type=float, default=75.0, help="longest allowed narration (default 75)")
     p.add_argument("--keep-work", action="store_true", help="keep work/<id> and MoneyPrinterTurbo's task folder for debugging")
@@ -1202,6 +1214,7 @@ def step_preflight(ctx: Ctx) -> dict:
     if not font_path.is_file():
         raise GateError(f"The caption font {SUBTITLE_FONT} is missing: expected {font_path}.")
     local_files: list[Path] = []
+    source: str | None = None  # stock-footage provider; stays None when --local-materials is used
     if args.local_materials:
         folder = Path(args.local_materials).expanduser().resolve()
         if not folder.is_dir():
@@ -1213,13 +1226,15 @@ def step_preflight(ctx: Ctx) -> dict:
             raise GateError("A local material file name contains a comma, which MPT cannot take. Rename it.")
         ctx.say(f"  local materials: {len(local_files)} files from {folder}")
     else:
-        if not app_cfg.get("pexels_api_keys"):
+        source = pick_footage_source(app_cfg)
+        if source is None:
             raise GateError(
-                "No Pexels API key is set in MoneyPrinterTurbo/config.toml (under [app], pexels_api_keys = [\"...\"]). "
-                "Only you can add it: get a free key at pexels.com/api, paste it in, then run this again. "
-                "(To test without Pexels use --local-materials DIR.)"
+                "No stock-footage API key is set in MoneyPrinterTurbo/config.toml (under [app]). Only you can add one: "
+                "pixabay_api_keys = [\"...\"] (free; the key is shown on pixabay.com/api/docs once you are logged in) "
+                "or pexels_api_keys = [\"...\"] (pexels.com/api). Paste it in, then run this again. "
+                "(To test without footage use --local-materials DIR.)"
             )
-        ctx.say("  Pexels API key: set (value not shown)")
+        ctx.say(f"  footage source: {PROVIDER_LABELS[source][0]} (API key set, value not shown)")
 
     needs_visuals = [k for k, line in enumerate(script["lines"]) if line.get("visual")]
     if needs_visuals and not args.no_visuals:
@@ -1239,8 +1254,9 @@ def step_preflight(ctx: Ctx) -> dict:
         "engine": tts.get("active"), "model": tts.get("active_model"), "voice": voice_cfg["voice"],
         "instructions": voice_cfg["instructions"], "transcription_engine": asr_model,
     }
+    ctx.report["inputs"]["footage_source"] = "local" if local_files else source
     return {"voice_cfg": voice_cfg, "asr_model": asr_model, "tts_model": str(tts.get("active_model")),
-            "local_files": local_files, "caption": caption}
+            "local_files": local_files, "caption": caption, "source": source}
 
 
 def speak_once(ctx: Ctx, text: str, out_wav: Path, voice_cfg: dict) -> None:
@@ -1423,7 +1439,7 @@ def step_mpt(ctx: Ctx, narration: Path, setup: dict) -> dict:
     caption = setup["caption"]
     cmd = build_mpt_command(find_tool("uv"), script_text, ctx.script["video_terms"], narration.resolve(), task_id, setup["local_files"],
                             font_size=caption["font_size"], stroke_width=caption["stroke_width"],
-                            position_percent=caption["position_percent"])
+                            position_percent=caption["position_percent"], source=setup.get("source"))
     log_path = ctx.work / "mpt.log"
     task_dir = MPT_DIR / "storage" / "tasks" / task_id
     ctx.say(f"  task id {task_id}; log: {log_path}")

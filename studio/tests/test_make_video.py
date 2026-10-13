@@ -418,6 +418,24 @@ class MptHelperTests(unittest.TestCase):
         self.assertEqual(pairs["--video-source"], "local")
         self.assertEqual(pairs["--video-materials"], "/m/a.mp4,/m/b.mp4")
 
+    def test_command_passes_the_footage_source(self):
+        cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", source="pixabay")
+        pairs = dict(zip(cmd[4:], cmd[5:]))
+        self.assertEqual(pairs["--video-source"], "pixabay")
+        self.assertNotIn("--video-materials", cmd)
+
+    def test_local_materials_win_over_a_footage_source(self):
+        cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", [Path("/m/a.mp4")], source="pexels")
+        self.assertEqual(dict(zip(cmd[4:], cmd[5:]))["--video-source"], "local")
+        self.assertEqual(cmd.count("--video-source"), 1)
+
+    def test_pick_footage_source(self):
+        self.assertEqual(mv.pick_footage_source({"pexels_api_keys": ["p"], "pixabay_api_keys": ["x"]}), "pexels")
+        self.assertEqual(mv.pick_footage_source({"pexels_api_keys": [], "pixabay_api_keys": ["x"]}), "pixabay")
+        self.assertEqual(mv.pick_footage_source({"pexels_api_keys": ["  "], "pixabay_api_keys": ["x"]}), "pixabay")  # blank key ignored
+        self.assertIsNone(mv.pick_footage_source({"pexels_api_keys": [""], "pixabay_api_keys": []}))
+        self.assertIsNone(mv.pick_footage_source({}))
+
     def test_command_takes_the_given_caption_size(self):
         cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", font_size=90, stroke_width=7)
         pairs = dict(zip(cmd[4:], cmd[5:]))
