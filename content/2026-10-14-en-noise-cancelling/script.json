@@ -27,7 +27,7 @@
     {
       "text": "On the outside of each ear cup, a tiny microphone listens to the world around you.",
       "visual": null,
-      "broll": "headphones closeup"
+      "broll": "microphone"
     },
     {
       "text": "A chip reads that noise and creates its exact mirror image, a wave flipped upside down.",
@@ -47,7 +47,7 @@
           "Waves cancel out"
         ]
       },
-      "broll": "audio waveform"
+      "broll": "speaker"
     },
     {
       "text": "A second microphone inside the cup checks what still gets through, and the chip keeps correcting itself.",
@@ -73,7 +73,7 @@
           "text": "Engine drone, rumble, hum"
         }
       },
-      "broll": "airplane cabin"
+      "broll": "airplane"
     },
     {
       "text": "Low sounds are long, slow waves, so the anti-noise has time to line up perfectly.",
@@ -83,12 +83,12 @@
     {
       "text": "High, sudden sounds change too fast. By the time the chip reacts, the wave has already moved on.",
       "visual": null,
-      "broll": "busy street"
+      "broll": "traffic"
     },
     {
       "text": "That's why the ear cushions still matter. They block much of the high-pitched noise the electronics miss.",
       "visual": null,
-      "broll": "headphones"
+      "broll": "cushion"
     },
     {
       "text": "Fun fact: the idea is old. A German inventor patented it in the nineteen thirties, decades before it fit inside headphones.",
@@ -103,7 +103,7 @@
     {
       "text": "Follow for more everyday things, explained in about a minute.",
       "visual": null,
-      "broll": "headphones"
+      "broll": "night city"
     }
   ],
   "sources": [

@@ -27,7 +27,7 @@
     {
       "text": "Außen an jeder Ohrmuschel hört ein winziges Mikrofon die Umgebung ab.",
       "visual": null,
-      "broll": "headphones closeup"
+      "broll": "microphone"
     },
     {
       "text": "Ein Chip erzeugt daraus ein exaktes Spiegelbild, eine auf den Kopf gestellte Welle.",
@@ -47,17 +47,12 @@
           "Wellen löschen sich"
         ]
       },
-      "broll": "audio waveform"
+      "broll": "speaker"
     },
     {
       "text": "Ein zweites Mikrofon in der Muschel prüft, was noch durchkommt, und der Chip korrigiert ständig nach.",
       "visual": null,
       "broll": "person wearing headphones"
-    },
-    {
-      "text": "Das Ganze läuft ununterbrochen und passt sich schneller an, als du es je merken würdest.",
-      "visual": null,
-      "broll": "circuit board"
     },
     {
       "text": "Am besten klappt das bei gleichmäßigen, tiefen Geräuschen wie Flugzeugtriebwerken, Zugrattern oder dem Brummen einer Klimaanlage.",
@@ -73,7 +68,7 @@
           "text": "Triebwerke, Rattern, Brummen"
         }
       },
-      "broll": "airplane cabin"
+      "broll": "airplane"
     },
     {
       "text": "Tiefe Töne sind lange, langsame Wellen. Der Gegenschall hat genug Zeit, sich genau anzupassen.",
@@ -83,12 +78,12 @@
     {
       "text": "Hohe, plötzliche Geräusche ändern sich zu schnell. Bis der Chip reagiert, ist die Welle schon weiter.",
       "visual": null,
-      "broll": "busy street"
+      "broll": "traffic"
     },
     {
       "text": "Darum zählen die Polster trotzdem. Sie dämpfen viel von dem hohen Lärm, den die Elektronik verpasst.",
       "visual": null,
-      "broll": "headphones"
+      "broll": "cushion"
     },
     {
       "text": "Übrigens: Die Idee ist alt. Ein deutscher Erfinder hat sie schon in den Dreißigerjahren patentiert.",
@@ -103,7 +98,7 @@
     {
       "text": "Folge für mehr Alltagstechnik, erklärt in einer Minute.",
       "visual": null,
-      "broll": "headphones"
+      "broll": "night city"
     }
   ],
   "sources": [
