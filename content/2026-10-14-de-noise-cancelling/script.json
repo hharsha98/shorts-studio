@@ -21,15 +21,18 @@
   "lines": [
     {
       "text": "Kopfhörer mit aktiver Geräuschunterdrückung bekämpfen Lärm mit noch mehr Schall.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones"
     },
     {
       "text": "Außen an jeder Ohrmuschel hört ein winziges Mikrofon die Umgebung ab.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones closeup"
     },
     {
       "text": "Ein Chip erzeugt daraus ein exaktes Spiegelbild, eine auf den Kopf gestellte Welle.",
-      "visual": null
+      "visual": null,
+      "broll": "sound wave"
     },
     {
       "text": "Trifft ein Wellenberg des Lärms auf ein Wellental des Gegenschalls, löschen sie sich aus. Das heißt destruktive Interferenz.",
@@ -43,15 +46,18 @@
           "Lautsprecher",
           "Wellen löschen sich"
         ]
-      }
+      },
+      "broll": "audio waveform"
     },
     {
       "text": "Ein zweites Mikrofon in der Muschel prüft, was noch durchkommt, und der Chip korrigiert ständig nach.",
-      "visual": null
+      "visual": null,
+      "broll": "person wearing headphones"
     },
     {
       "text": "Das Ganze läuft ununterbrochen und passt sich schneller an, als du es je merken würdest.",
-      "visual": null
+      "visual": null,
+      "broll": "circuit board"
     },
     {
       "text": "Am besten klappt das bei gleichmäßigen, tiefen Geräuschen wie Flugzeugtriebwerken, Zugrattern oder dem Brummen einer Klimaanlage.",
@@ -66,31 +72,38 @@
           "heading": "Leicht",
           "text": "Triebwerke, Rattern, Brummen"
         }
-      }
+      },
+      "broll": "airplane cabin"
     },
     {
       "text": "Tiefe Töne sind lange, langsame Wellen. Der Gegenschall hat genug Zeit, sich genau anzupassen.",
-      "visual": null
+      "visual": null,
+      "broll": "ocean waves"
     },
     {
       "text": "Hohe, plötzliche Geräusche ändern sich zu schnell. Bis der Chip reagiert, ist die Welle schon weiter.",
-      "visual": null
+      "visual": null,
+      "broll": "busy street"
     },
     {
       "text": "Darum zählen die Polster trotzdem. Sie dämpfen viel von dem hohen Lärm, den die Elektronik verpasst.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones"
     },
     {
       "text": "Übrigens: Die Idee ist alt. Ein deutscher Erfinder hat sie schon in den Dreißigerjahren patentiert.",
-      "visual": null
+      "visual": null,
+      "broll": "vintage radio"
     },
     {
       "text": "Und der Transparenzmodus? Gleiche Mikrofone, aber statt den Schall umzudrehen, leiten sie ihn einfach weiter.",
-      "visual": null
+      "visual": null,
+      "broll": "walking in city"
     },
     {
       "text": "Folge für mehr Alltagstechnik, erklärt in einer Minute.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones"
     }
   ],
   "sources": [

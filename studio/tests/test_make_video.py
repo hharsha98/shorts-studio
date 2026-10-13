@@ -1208,5 +1208,215 @@ class SpellingTolerantLineCheckTests(unittest.TestCase):
                                      "Kopfhörer mit Neuskänzeling bekämpfen Lärm mit noch mehr Schall."))
 
 
+class BrollValidationTests(unittest.TestCase):
+    """script.json lines[].broll: optional English search phrase for the stock footage."""
+
+    def check(self, value):
+        s = good_script()
+        s["lines"][1]["broll"] = value
+        return mv.validate_script(s)
+
+    def test_good_phrases_pass(self):
+        for phrase in ("refrigerator interior", "ice cubes", "close-up", "ab", "x" * 40, "Copper Pipes"):
+            errors, warnings = self.check(phrase)
+            self.assertEqual((errors, warnings), ([], []), phrase)
+
+    def test_broll_is_optional(self):
+        self.assertEqual(mv.validate_script(good_script()), ([], []))
+        self.assertEqual(self.check(None)[0], [])  # null = not set
+
+    def test_bad_phrases_are_errors_naming_the_line(self):
+        for bad in ("a", "", "   ", "x" * 41, "kühlschrank", "fridge 2", "fridge!", "fridge\n", 5, ["ice"], {"a": 1}, True):
+            errors, _ = self.check(bad)
+            self.assertEqual(len(errors), 1, repr(bad))
+            self.assertIn("lines[1].broll", errors[0])
+
+    def test_more_than_four_words_is_only_a_warning(self):
+        errors, warnings = self.check("old white fridge door open")
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("lines[1].broll", warnings[0])
+
+
+class FootageModeTests(unittest.TestCase):
+    def test_auto_uses_own_footage_when_a_pixabay_key_is_set(self):
+        self.assertEqual(mv.resolve_footage_mode("auto", False, True, "pixabay"), ("own", None))
+        self.assertEqual(mv.resolve_footage_mode("auto", False, True, "pexels"), ("own", None))  # a Pexels key does not change that (yet)
+
+    def test_auto_without_a_pixabay_key_keeps_the_old_behaviour(self):
+        self.assertEqual(mv.resolve_footage_mode("auto", False, False, "pexels"), ("mpt", "pexels"))
+
+    def test_mpt_is_the_old_behaviour_even_with_a_pixabay_key(self):
+        self.assertEqual(mv.resolve_footage_mode("mpt", False, True, "pixabay"), ("mpt", "pixabay"))
+
+    def test_local_materials_win_over_auto_and_mpt(self):
+        self.assertEqual(mv.resolve_footage_mode("auto", True, True, "pixabay"), ("local", None))
+        self.assertEqual(mv.resolve_footage_mode("mpt", True, True, "pixabay"), ("local", None))
+
+    def test_own_with_local_materials_is_refused(self):
+        with self.assertRaises(mv.GateError) as ctx:
+            mv.resolve_footage_mode("own", True, True, "pixabay")
+        self.assertIn("--local-materials", str(ctx.exception))
+
+    def test_own_without_a_pixabay_key_says_what_to_do(self):
+        with self.assertRaises(mv.GateError) as ctx:
+            mv.resolve_footage_mode("own", False, False, "pexels")
+        self.assertIn("pixabay_api_keys", str(ctx.exception))
+
+    def test_no_key_at_all_is_the_old_plain_message(self):
+        for requested in ("auto", "mpt"):
+            with self.assertRaises(mv.GateError) as ctx:
+                mv.resolve_footage_mode(requested, False, False, None)
+            self.assertIn("No stock-footage API key", str(ctx.exception))
+
+    def test_footage_flag(self):
+        self.assertEqual(mv.parse_args(["s.json"]).footage, "auto")
+        for mode in ("auto", "own", "mpt"):
+            self.assertEqual(mv.parse_args(["s.json", "--footage", mode]).footage, mode)
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            mv.parse_args(["s.json", "--footage", "pexels"])
+
+    def test_mpt_command_keeps_our_order_for_own_footage(self):
+        cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", [Path("/w/broll.mp4")], fixed_order_seconds=72)
+        pairs = dict(zip(cmd[4:], cmd[5:]))
+        self.assertEqual(pairs["--video-source"], "local")
+        self.assertEqual(pairs["--video-materials"], "/w/broll.mp4")
+        self.assertEqual(pairs["--video-concat-mode"], "sequential")
+        self.assertEqual(pairs["--video-transition-mode"], "none")
+        self.assertEqual(pairs["--video-clip-duration"], "72")  # longer than the file, or MPT would keep only its first 5 s
+        self.assertEqual(pairs["--video-clip-speed"], "1.0")
+
+    def test_other_commands_do_not_get_the_fixed_order_flags(self):
+        for cmd in (mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", [Path("/m/a.mp4")]),
+                    mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", source="pixabay")):
+            for flag in ("--video-concat-mode", "--video-transition-mode", "--video-clip-duration", "--video-clip-speed"):
+                self.assertNotIn(flag, cmd)
+
+    def test_fixed_order_flags_are_ignored_without_local_files(self):
+        cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", source="pexels", fixed_order_seconds=72)
+        self.assertNotIn("--video-clip-duration", cmd)
+
+
+class OwnFootageStepTests(unittest.TestCase):
+    KEY = "SECRETKEY-1234567890-abcdef"
+
+    def make_ctx(self):
+        ctx = mv.Ctx(mv.parse_args(["content/x/script.json"]))
+        ctx.script = good_script()
+        ctx.work = Path("/nonexistent/work")
+        return ctx
+
+    def fake_result(self):
+        return {
+            "path": Path("/nonexistent/work/broll.mp4"), "segments": [{"start": 0.0, "end": 4.0, "phrase": "refrigerator", "line_indexes": [0]}],
+            "credits": [{"provider": "pixabay", "id": 5, "user": "Ann", "page_url": "https://pixabay.com/videos/a-5/"}],
+            "credit_lines": ["Video by Ann on Pixabay: https://pixabay.com/videos/a-5/"],
+            "report": {"provider": "pixabay", "clips_used": 1, "downloads": 1, "clip_cache_hits": 0, "search_requests": 2, "search_cache_hits": 1,
+                       "broll_seconds": 4.0, "credits": [],
+                       "segments": [{"start": 0.0, "end": 4.0, "phrase": "refrigerator", "fallback": False, "searched_phrase": "refrigerator", "clip_id": 5}]},
+        }
+
+    def run_step(self, ctx, **patches):
+        with mock.patch.object(mv, "find_tool", side_effect=lambda name: f"/bin/{name}"), \
+                mock.patch.object(mv.footage, "load_pixabay_key", return_value=patches.get("key", self.KEY)), \
+                mock.patch.object(mv.footage, "build_broll", **({"side_effect": patches["error"]} if "error" in patches else {"return_value": self.fake_result()})), \
+                contextlib.redirect_stdout(io.StringIO()):
+            return mv.step_own_footage(ctx, [{"index": 0, "start": 0.0, "end": 4.0}], 4.0)
+
+    def test_report_gets_a_footage_section_without_the_key(self):
+        ctx = self.make_ctx()
+        result = self.run_step(ctx)
+        self.assertEqual(result["credit_lines"], ["Video by Ann on Pixabay: https://pixabay.com/videos/a-5/"])
+        self.assertEqual(ctx.report["footage"]["mode"], "own")
+        self.assertEqual(ctx.report["footage"]["clips_used"], 1)
+        self.assertNotIn(self.KEY, json.dumps(ctx.report))
+        self.assertNotIn(self.KEY, json.dumps(ctx.checks))
+
+    def test_a_fallback_search_is_a_warning(self):
+        ctx = self.make_ctx()
+        result = self.fake_result()
+        result["report"]["segments"][0].update(fallback=True, searched_phrase="kitchen")
+        with mock.patch.object(mv, "find_tool", side_effect=lambda name: f"/bin/{name}"), \
+                mock.patch.object(mv.footage, "load_pixabay_key", return_value=self.KEY), \
+                mock.patch.object(mv.footage, "build_broll", return_value=result), \
+                contextlib.redirect_stdout(io.StringIO()):
+            mv.step_own_footage(ctx, [], 4.0)
+        self.assertTrue(any("refrigerator" in w and "kitchen" in w for w in ctx.warnings))
+
+    def test_an_unrelated_stand_in_is_named_as_such_in_the_warning(self):
+        for related, expect in ((True, False), (False, True)):
+            ctx = self.make_ctx()
+            result = self.fake_result()
+            result["report"]["segments"][0].update(fallback=True, searched_phrase="kitchen", fallback_related=related)
+            with mock.patch.object(mv, "find_tool", side_effect=lambda name: f"/bin/{name}"), \
+                    mock.patch.object(mv.footage, "load_pixabay_key", return_value=self.KEY), \
+                    mock.patch.object(mv.footage, "build_broll", return_value=result), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                mv.step_own_footage(ctx, [], 4.0)
+            self.assertEqual(any("NOT about the phrase" in w for w in ctx.warnings), expect)
+
+    def test_footage_errors_become_plain_gate_errors(self):
+        ctx = self.make_ctx()
+        with self.assertRaises(mv.GateError) as raised:
+            self.run_step(ctx, error=mv.footage.FootageError("No usable stock clip was found for line 3"))
+        self.assertIn("Stock footage:", str(raised.exception))
+        self.assertIn("line 3", str(raised.exception))
+
+    def test_missing_key_is_a_plain_gate_error(self):
+        with self.assertRaises(mv.GateError) as raised:
+            self.run_step(self.make_ctx(), key=None)
+        self.assertIn("pixabay_api_keys", str(raised.exception))
+
+    def test_credits_are_exactly_the_clips_used(self):
+        ctx = self.make_ctx()
+        mpt = {"broll": self.fake_result()}
+        with contextlib.redirect_stdout(io.StringIO()):
+            lines = mv.step_credits(ctx, mpt, local=False)
+        self.assertEqual(lines, ["Video by Ann on Pixabay: https://pixabay.com/videos/a-5/"])
+        self.assertEqual(ctx.report["credits"]["lines"], lines)
+        self.assertFalse(any("credited all" in n for n in ctx.report["credits"]["notes"]))
+        caption = mv.build_caption(good_script(), lines)
+        self.assertIn("Video by Ann on Pixabay: https://pixabay.com/videos/a-5/", caption)
+
+    def test_order_check_passes_when_mpt_kept_our_pictures(self):
+        ctx = self.make_ctx()
+        ctx.report["footage"] = {"mode": "own"}
+        frames = [{"seconds": 2.0, "diff": 3.1, "same": True}, {"seconds": 6.0, "diff": 5.2, "same": True}]
+        with mock.patch.object(mv, "find_tool", return_value="/bin/ffmpeg"), mock.patch.object(mv.footage, "check_order", return_value=frames), \
+                contextlib.redirect_stdout(io.StringIO()):
+            mv.check_footage_order(ctx, Path("/w/mpt.mp4"), self.fake_result())
+        self.assertEqual(ctx.report["footage"]["order_check"]["frames"], frames)
+        self.assertTrue(ctx.checks[-1]["ok"])
+
+    def test_order_check_fails_loudly_when_mpt_shuffled_or_looped(self):
+        ctx = self.make_ctx()
+        ctx.report["footage"] = {"mode": "own"}
+        frames = [{"seconds": 2.0, "diff": 3.1, "same": True}, {"seconds": 6.0, "diff": 88.0, "same": False}]
+        with mock.patch.object(mv, "find_tool", return_value="/bin/ffmpeg"), mock.patch.object(mv.footage, "check_order", return_value=frames), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(mv.GateError) as raised:
+                mv.check_footage_order(ctx, Path("/w/mpt.mp4"), self.fake_result())
+        self.assertIn("footage order kept failed", str(raised.exception))
+        self.assertIn("6 s", str(raised.exception))
+
+    def test_failure_output_never_shows_an_api_key_in_a_url(self):
+        ctx = self.make_ctx()
+        ctx.script = {}  # no id yet: nothing is written
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            mv.fail(ctx, "FAILED", f"Pixabay broke: https://pixabay.com/api/videos/?key={self.KEY}&q=x")
+        self.assertNotIn(self.KEY, err.getvalue())
+        self.assertIn("key=***", err.getvalue())
+
+    def test_failed_report_never_holds_an_api_key_in_a_url(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            ctx = self.make_ctx()
+            ctx.work = tmp
+            with mock.patch.object(mv, "WORK_ROOT", tmp), contextlib.redirect_stderr(io.StringIO()):
+                mv.fail(ctx, "FAILED", f"Pixabay broke: ?key={self.KEY}&q=x", extra={"traceback": f"Traceback ... ?key={self.KEY}&q=x"})
+            self.assertNotIn(self.KEY, (tmp / "failed-report.json").read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()

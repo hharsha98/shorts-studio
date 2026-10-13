@@ -21,15 +21,18 @@
   "lines": [
     {
       "text": "Noise-cancelling headphones fight sound with more sound.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones"
     },
     {
       "text": "On the outside of each ear cup, a tiny microphone listens to the world around you.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones closeup"
     },
     {
       "text": "A chip reads that noise and creates its exact mirror image, a wave flipped upside down.",
-      "visual": null
+      "visual": null,
+      "broll": "sound wave"
     },
     {
       "text": "Where a peak of the noise meets a dip of the anti-noise, they cancel out. Physicists call it destructive interference.",
@@ -43,15 +46,18 @@
           "Speaker plays it",
           "Waves cancel out"
         ]
-      }
+      },
+      "broll": "audio waveform"
     },
     {
       "text": "A second microphone inside the cup checks what still gets through, and the chip keeps correcting itself.",
-      "visual": null
+      "visual": null,
+      "broll": "person wearing headphones"
     },
     {
       "text": "The whole loop runs nonstop, adjusting faster than you could ever notice.",
-      "visual": null
+      "visual": null,
+      "broll": "circuit board"
     },
     {
       "text": "This works best on steady, low sounds, like airplane engines, train rumble, or an air conditioner's hum.",
@@ -66,31 +72,38 @@
           "heading": "Easy",
           "text": "Engine drone, rumble, hum"
         }
-      }
+      },
+      "broll": "airplane cabin"
     },
     {
       "text": "Low sounds are long, slow waves, so the anti-noise has time to line up perfectly.",
-      "visual": null
+      "visual": null,
+      "broll": "ocean waves"
     },
     {
       "text": "High, sudden sounds change too fast. By the time the chip reacts, the wave has already moved on.",
-      "visual": null
+      "visual": null,
+      "broll": "busy street"
     },
     {
       "text": "That's why the ear cushions still matter. They block much of the high-pitched noise the electronics miss.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones"
     },
     {
       "text": "Fun fact: the idea is old. A German inventor patented it in the nineteen thirties, decades before it fit inside headphones.",
-      "visual": null
+      "visual": null,
+      "broll": "vintage radio"
     },
     {
       "text": "And transparency mode? Same microphones, but instead of flipping the sound, they pass it through to your ears.",
-      "visual": null
+      "visual": null,
+      "broll": "walking in city"
     },
     {
       "text": "Follow for more everyday things, explained in about a minute.",
-      "visual": null
+      "visual": null,
+      "broll": "headphones"
     }
   ],
   "sources": [

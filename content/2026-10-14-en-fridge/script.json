@@ -12,11 +12,11 @@
   ],
   "video_terms": [
     "refrigerator",
-    "open fridge",
-    "kitchen",
-    "frozen food",
     "ice cubes",
-    "air conditioner coils"
+    "frost",
+    "icicle",
+    "snow",
+    "water drops"
   ],
   "lines": [
     {
@@ -32,27 +32,33 @@
           "heading": "Fact",
           "text": "It makes the room warmer"
         }
-      }
+      },
+      "broll": "open refrigerator"
     },
     {
       "text": "A fridge doesn't make cold. It moves heat from the inside to the outside.",
-      "visual": null
+      "visual": null,
+      "broll": "ice cubes"
     },
     {
       "text": "The trick is a liquid called refrigerant, flowing around a sealed loop of pipes.",
-      "visual": null
+      "visual": null,
+      "broll": "pipes"
     },
     {
       "text": "Inside, it runs through thin coils called the evaporator and boils into a gas, far below freezing.",
-      "visual": null
+      "visual": null,
+      "broll": "frost ice crystals"
     },
     {
       "text": "Boiling soaks up heat, so the warmth from your food flows into those coils.",
-      "visual": null
+      "visual": null,
+      "broll": "milk"
     },
     {
       "text": "Then a compressor squeezes the gas, which makes it hotter than your kitchen.",
-      "visual": null
+      "visual": null,
+      "broll": "turbine"
     },
     {
       "text": "It flows through the coils on the back, the condenser, and dumps that heat into the room.",
@@ -66,31 +72,38 @@
           "Condenser",
           "Kitchen air"
         ]
-      }
+      },
+      "broll": "fan"
     },
     {
       "text": "That's why the back of your fridge feels warm. It's the heat from your food.",
-      "visual": null
+      "visual": null,
+      "broll": "steam"
     },
     {
       "text": "Cooled down, the gas turns back into a liquid, squeezes through a tiny tube, and gets ice cold again.",
-      "visual": null
+      "visual": null,
+      "broll": "water drops"
     },
     {
       "text": "Then the loop starts over. That hum you hear is the compressor switching on and off.",
-      "visual": null
+      "visual": null,
+      "broll": "fan"
     },
     {
       "text": "So with the door open, it just moves kitchen heat in a circle, and the motor adds extra heat on top.",
-      "visual": null
+      "visual": null,
+      "broll": "desert"
     },
     {
       "text": "Tip: vacuum the dust off those coils now and then, so the heat escapes more easily.",
-      "visual": null
+      "visual": null,
+      "broll": "sweeping"
     },
     {
       "text": "Follow for more everyday things, explained in about a minute.",
-      "visual": null
+      "visual": null,
+      "broll": "city"
     }
   ],
   "sources": [

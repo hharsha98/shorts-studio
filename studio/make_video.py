@@ -4,7 +4,7 @@
 Usage (from /Users/harsha/shorts-studio):
     python3 studio/make_video.py content/<id>/script.json [--local-materials DIR]
         [--min-seconds 61] [--max-seconds 75] [--keep-work] [--no-visuals]
-        [--stage voice|all]
+        [--stage voice|all] [--footage auto|own|mpt]
 
 What it does, in order (every gate fails LOUDLY: non-zero exit + a plain-English message):
      1. validate script.json against the contract
@@ -12,12 +12,15 @@ What it does, in order (every gate fails LOUDLY: non-zero exit + a plain-English
      3. voice every line with VoiceStudio, transcribe it back, check the word error rate
      4. join the lines (0.25 s gaps) into work/<id>/narration.wav + work/<id>/timings.json
      5. length gate (default 61-75 s)           <- --stage voice stops here
-     6. MoneyPrinterTurbo (MPT) builds video + burned-in ONE-WORD-AT-A-TIME captions (pop animation),
+     6. stock footage: studio/footage.py picks one Pixabay clip per script line (lines[].broll), cuts them to
+        1080x1920 and joins them into work/<id>/broll.mp4 (--footage own, the default when a Pixabay key is set;
+        --footage mpt lets MoneyPrinterTurbo search by itself)
+        MoneyPrinterTurbo (MPT) builds video + burned-in ONE-WORD-AT-A-TIME captions (pop animation),
         placed with their top edge at y=1300: below the diagram panels, above the YouTube Shorts
         title/channel overlay. The subtitle file must match the script (word error rate gate)
      7. optional diagram overlays (studio/visuals.py), skipped with --no-visuals
      8. final checks (duration, 1080x1920, audio, subtitle timing) + contact sheet
-     9. credits for the stock footage that was really used
+     9. credits for the stock footage that was really used (own footage: exactly the clips in the video)
     10. review/<date>-<language>-<slug>/ : final.mp4, subtitles.srt, sheet.png, caption.txt, report.json
     11. cleanup of the big temporary files (skipped with --keep-work); report.json records what was deleted
 
@@ -54,6 +57,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 STUDIO_DIR = ROOT / "studio"
+if str(STUDIO_DIR) not in sys.path:  # `import footage` must work however this file is started or imported
+    sys.path.insert(0, str(STUDIO_DIR))
+import footage  # noqa: E402  (studio/footage.py: our own stock-footage choice)
 MPT_DIR = ROOT / "MoneyPrinterTurbo"
 VOICES_FILE = STUDIO_DIR / "voices.json"
 WORK_ROOT = ROOT / "work"
@@ -93,6 +99,11 @@ DISCLOSURE = {
 }
 SOURCES_LABEL = {"en": "Sources:", "de": "Quellen:"}
 LANGUAGES = ("en", "de")
+
+FOOTAGE_MODES = ("auto", "own", "mpt")
+BROLL_MIN_CHARS, BROLL_MAX_CHARS, BROLL_MAX_WORDS = 2, 40, 4
+OWN_FOOTAGE_EXTRA_SECONDS = 5  # --video-clip-duration = narration + this: MPT must take our whole B-roll file as ONE clip
+ORDER_CHECK_LIMIT = 12.0  # mean grey difference (0-255) between MPT's picture and our B-roll at the same second
 
 LOCAL_MATERIAL_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".jpg", ".jpeg", ".png", ".bmp"}
 
@@ -161,6 +172,17 @@ def validate_visual(visual, where: str, errors: list[str]) -> None:
         errors.append(f"{where}.type must be \"flow\", \"stat\" or \"compare\" (got {kind!r})")
 
 
+def validate_broll(value, where: str, errors: list[str], warnings: list[str]) -> None:
+    """The optional stock-footage search phrase of a line: English, 2-40 characters, letters/spaces/hyphens only."""
+    if not _is_str(value) or not BROLL_MIN_CHARS <= len(value) <= BROLL_MAX_CHARS or not TERM_RE.fullmatch(value):
+        errors.append(
+            f"{where} must be a short English search phrase of {BROLL_MIN_CHARS} to {BROLL_MAX_CHARS} characters "
+            f"using only letters, spaces and hyphens, for example \"refrigerator interior\" (got {value!r})"
+        )
+    elif len(value.split()) > BROLL_MAX_WORDS:
+        warnings.append(f"{where} has {len(value.split())} words; phrases of 1 to {BROLL_MAX_WORDS} words find far more footage")
+
+
 def validate_script(data) -> tuple[list[str], list[str]]:
     """Validate a parsed script.json. Returns (errors, warnings); errors must be empty to go on."""
     errors: list[str] = []
@@ -222,6 +244,8 @@ def validate_script(data) -> tuple[list[str], list[str]]:
                         )
             if line.get("visual") is not None:
                 validate_visual(line.get("visual"), f"{where}.visual", errors)
+            if line.get("broll") is not None:
+                validate_broll(line.get("broll"), f"{where}.broll", errors, warnings)
 
     sources = data.get("sources")
     if not isinstance(sources, list) or len(sources) < 2:
@@ -653,11 +677,45 @@ def pick_footage_source(app_cfg: dict) -> str | None:
     return None
 
 
+NO_FOOTAGE_KEY_MESSAGE = (
+    "No stock-footage API key is set in MoneyPrinterTurbo/config.toml (under [app]). Only you can add one: "
+    "pixabay_api_keys = [\"...\"] (free; the key is shown on pixabay.com/api/docs once you are logged in) "
+    "or pexels_api_keys = [\"...\"] (pexels.com/api). Paste it in, then run this again. "
+    "(To test without footage use --local-materials DIR.)"
+)
+
+
+def resolve_footage_mode(requested: str, has_local_materials: bool, has_pixabay_key: bool, mpt_source: str | None) -> tuple[str, str | None]:
+    """Where the stock footage comes from. Returns (mode, MPT provider).
+
+    local: --local-materials (your own files, nothing is searched)
+    own:   studio/footage.py searches Pixabay and cuts the clips (needs a Pixabay key); this is what auto picks
+    mpt:   MoneyPrinterTurbo searches by itself (the old behaviour; needs a Pexels or Pixabay key)"""
+    if has_local_materials:
+        if requested == "own":
+            raise GateError("--footage own and --local-materials cannot be used together: local materials ARE your own footage. Leave one of them out.")
+        return "local", None
+    if requested == "own":
+        if not has_pixabay_key:
+            raise GateError("--footage own needs a Pixabay key in MoneyPrinterTurbo/config.toml (under [app]: pixabay_api_keys = [\"...\"]). "
+                            "Only you can add one; the key is free on pixabay.com/api/docs once you are logged in.")
+        return "own", None
+    if requested == "auto" and has_pixabay_key:
+        return "own", None
+    if mpt_source is None:
+        raise GateError(NO_FOOTAGE_KEY_MESSAGE)
+    return "mpt", mpt_source
+
+
 def build_mpt_command(uv: str, script_text: str, terms: list[str], narration: Path, task_id: str,
                       local_files: list[Path] | None = None, font_size: int = CAPTION_FONT_MAX,
                       stroke_width: int | None = None, position_percent: float | None = None,
-                      source: str | None = None) -> list[str]:
-    """The `uv run python cli.py ...` command (run it with cwd = MoneyPrinterTurbo)."""
+                      source: str | None = None, fixed_order_seconds: int | None = None) -> list[str]:
+    """The `uv run python cli.py ...` command (run it with cwd = MoneyPrinterTurbo).
+
+    fixed_order_seconds (own footage): the local material is ONE already-cut B-roll file, so MPT must play it once,
+    from start to end, in our order: sequential mode, no transitions, normal speed, and a clip length longer than
+    the file (MPT otherwise cuts every material into 5 s pieces and keeps only the first piece in sequential mode)."""
     if stroke_width is None:
         stroke_width = caption_stroke_width(font_size)
     if position_percent is None:  # safe over-estimate of the line height, like pick_caption_style's fallback
@@ -684,6 +742,9 @@ def build_mpt_command(uv: str, script_text: str, terms: list[str], narration: Pa
     ]
     if local_files:
         cmd += ["--video-source", "local", "--video-materials", ",".join(str(p) for p in local_files)]
+        if fixed_order_seconds:
+            cmd += ["--video-concat-mode", "sequential", "--video-transition-mode", "none",
+                    "--video-clip-duration", str(int(fixed_order_seconds)), "--video-clip-speed", "1.0"]
     elif source:
         cmd += ["--video-source", source]
     return cmd
@@ -1137,6 +1198,10 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--keep-work", action="store_true", help="keep work/<id> and MoneyPrinterTurbo's task folder for debugging")
     p.add_argument("--no-visuals", action="store_true", help="skip the diagram overlays (studio/visuals.py)")
     p.add_argument("--stage", choices=("voice", "all"), default="all", help="'voice' stops after the narration + length gate")
+    p.add_argument("--footage", choices=FOOTAGE_MODES, default="auto",
+                   help="where the stock footage comes from: 'own' = studio/footage.py picks and cuts Pixabay clips per line (needs a Pixabay key), "
+                        "'mpt' = MoneyPrinterTurbo searches by itself (old behaviour), 'auto' (default) = own when a Pixabay key is set "
+                        "and --local-materials is not used")
     args = p.parse_args(argv)
     if args.min_seconds < 0 or args.max_seconds <= 0 or args.min_seconds > args.max_seconds:
         p.error("--min-seconds must be >= 0 and not larger than --max-seconds")
@@ -1231,7 +1296,7 @@ def step_preflight(ctx: Ctx) -> dict:
     if not font_path.is_file():
         raise GateError(f"The caption font {SUBTITLE_FONT} is missing: expected {font_path}.")
     local_files: list[Path] = []
-    source: str | None = None  # stock-footage provider; stays None when --local-materials is used
+    source: str | None = None  # MPT's stock-footage provider; stays None when --local-materials or own footage is used
     if args.local_materials:
         folder = Path(args.local_materials).expanduser().resolve()
         if not folder.is_dir():
@@ -1242,16 +1307,13 @@ def step_preflight(ctx: Ctx) -> dict:
         if any("," in str(f) for f in local_files):
             raise GateError("A local material file name contains a comma, which MPT cannot take. Rename it.")
         ctx.say(f"  local materials: {len(local_files)} files from {folder}")
-    else:
-        source = pick_footage_source(app_cfg)
-        if source is None:
-            raise GateError(
-                "No stock-footage API key is set in MoneyPrinterTurbo/config.toml (under [app]). Only you can add one: "
-                "pixabay_api_keys = [\"...\"] (free; the key is shown on pixabay.com/api/docs once you are logged in) "
-                "or pexels_api_keys = [\"...\"] (pexels.com/api). Paste it in, then run this again. "
-                "(To test without footage use --local-materials DIR.)"
-            )
-        ctx.say(f"  footage source: {PROVIDER_LABELS[source][0]} (API key set, value not shown)")
+    mode, source = resolve_footage_mode(args.footage, bool(args.local_materials),
+                                        footage.pixabay_key_from_config(app_cfg) is not None, pick_footage_source(app_cfg))
+    if mode == "own":
+        ctx.say("  footage: own selection from Pixabay, one clip per script line (API key set, value not shown)")
+    elif mode == "mpt":
+        ctx.say(f"  footage source: {PROVIDER_LABELS[source][0]}, searched by MoneyPrinterTurbo itself (API key set, value not shown)")
+        ctx.warn("MoneyPrinterTurbo picks the footage itself; it finds few portrait clips and often off-topic ones. Prefer --footage own.")
 
     needs_visuals = [k for k, line in enumerate(script["lines"]) if line.get("visual")]
     if needs_visuals and not args.no_visuals:
@@ -1271,9 +1333,11 @@ def step_preflight(ctx: Ctx) -> dict:
         "engine": tts.get("active"), "model": tts.get("active_model"), "voice": voice_cfg["voice"],
         "instructions": voice_cfg["instructions"], "transcription_engine": asr_model,
     }
-    ctx.report["inputs"]["footage_source"] = "local" if local_files else source
+    ctx.report["inputs"]["footage_source"] = {"local": "local", "own": "pixabay (own selection)"}.get(mode, source)
+    ctx.report["inputs"]["footage_mode"] = mode
+    ctx.report["footage"] = {"mode": mode, "provider": {"local": "local files", "own": "pixabay", "mpt": source}[mode]}
     return {"voice_cfg": voice_cfg, "asr_model": asr_model, "tts_model": str(tts.get("active_model")),
-            "local_files": local_files, "caption": caption, "source": source}
+            "local_files": local_files, "caption": caption, "source": source, "footage": mode}
 
 
 def speak_once(ctx: Ctx, text: str, out_wav: Path, voice_cfg: dict) -> None:
@@ -1452,15 +1516,47 @@ def remove_new_local_copies(before: set[str]) -> list[str]:
     return removed
 
 
-def step_mpt(ctx: Ctx, narration: Path, setup: dict) -> dict:
-    ctx.step(6, "MoneyPrinterTurbo: video + subtitles")
+def step_own_footage(ctx: Ctx, timings: list[dict], total: float) -> dict:
+    """Choose, download, cut and join the Pixabay clips (studio/footage.py) into work/<id>/broll.mp4."""
+    ffmpeg, ffprobe = find_tool("ffmpeg"), find_tool("ffprobe")
+    try:
+        key = footage.load_pixabay_key(MPT_DIR / "config.toml")
+        if not key:
+            raise footage.FootageError("No Pixabay API key is set in MoneyPrinterTurbo/config.toml (under [app], pixabay_api_keys).")
+        result = footage.build_broll(ctx.script, timings, total, ctx.work, key, ffmpeg, ffprobe, log=ctx.say)
+    except footage.FootageError as exc:
+        raise GateError(f"Stock footage: {exc}") from None
+    report = result["report"]
+    ctx.report["footage"] = {"mode": "own", **report}
+    for seg in report["segments"]:
+        if seg["fallback"]:
+            related = seg.get("fallback_related", True)
+            ctx.warn(f"footage: the phrase '{seg['phrase']}' ({seg['start']:.1f}-{seg['end']:.1f} s) found no usable clip, so the video term "
+                     f"'{seg['searched_phrase']}' was used instead" + ("" if related else
+                     " (a general picture that is NOT about the phrase: choose a phrase Pixabay covers, see the segment list in report.json)"))
+    ctx.check("own footage", True,
+              f"{len(report['segments'])} picture segments from {report['clips_used']} Pixabay clips ({report['downloads']} downloaded, "
+              f"{report['clip_cache_hits']} reused from disk; {report['search_requests']} searches sent, {report['search_cache_hits']} from the 24 h cache) "
+              f"-> {result['path']} ({report['broll_seconds']:.2f} s)")
+    return result
+
+
+def step_mpt(ctx: Ctx, narration: Path, setup: dict, timings: list[dict] | None = None, total: float | None = None) -> dict:
+    ctx.step(6, "Stock footage + MoneyPrinterTurbo: video + subtitles")
+    broll = None
+    if setup.get("footage") == "own":
+        if timings is None or total is None:
+            raise GateError("Own footage needs the narration timings (internal error: step_mpt was called without them).")
+        broll = step_own_footage(ctx, timings, total)
+    local_files = [broll["path"].resolve()] if broll else setup["local_files"]
     script_texts = [line["text"].strip() for line in ctx.script["lines"]]
     script_text = mpt_script_text(script_texts)
     task_id = str(uuid.uuid4())
     caption = setup["caption"]
-    cmd = build_mpt_command(find_tool("uv"), script_text, ctx.script["video_terms"], narration.resolve(), task_id, setup["local_files"],
+    cmd = build_mpt_command(find_tool("uv"), script_text, ctx.script["video_terms"], narration.resolve(), task_id, local_files,
                             font_size=caption["font_size"], stroke_width=caption["stroke_width"],
-                            position_percent=caption["position_percent"], source=setup.get("source"))
+                            position_percent=caption["position_percent"], source=setup.get("source"),
+                            fixed_order_seconds=math.ceil(total) + OWN_FOOTAGE_EXTRA_SECONDS if broll else None)
     log_path = ctx.work / "mpt.log"
     task_dir = MPT_DIR / "storage" / "tasks" / task_id
     ctx.say(f"  task id {task_id}; log: {log_path}")
@@ -1535,6 +1631,8 @@ def step_mpt(ctx: Ctx, narration: Path, setup: dict) -> dict:
     videos = result.get("videos") or []
     video = Path(videos[0]) if videos else None
     ctx.check("MPT video", bool(video) and video.is_file(), f"{video}" if video else "MPT returned no video file")
+    if broll:
+        check_footage_order(ctx, video, broll)
     detected = detect_whisper_language(log_text) or (None, None)
     ctx.report["mpt"].update(
         notes=notes, subtitle_path=subtitle_path, video=str(video), warnings=mpt_warnings or [],
@@ -1543,7 +1641,25 @@ def step_mpt(ctx: Ctx, narration: Path, setup: dict) -> dict:
     )
     if notes:
         ctx.say(f"  {len(notes)} subtitle alignment note(s) recorded in the report")
-    return {"video": video, "subtitle": Path(subtitle_path), "task_dir": task_dir, "task_id": task_id}
+    return {"video": video, "subtitle": Path(subtitle_path), "task_dir": task_dir, "task_id": task_id, "broll": broll}
+
+
+def check_footage_order(ctx: Ctx, video: Path, broll: dict) -> None:
+    """MPT must play our B-roll once, in our order (no shuffling, no looping): compare MPT's picture with broll.mp4
+    in the middle of every segment. A different picture means MPT did not keep the order, and the video is wrong."""
+    try:
+        results = footage.check_order(find_tool("ffmpeg"), video, broll["path"], footage.middle_times(broll["segments"]), ORDER_CHECK_LIMIT)
+    except footage.FootageError as exc:
+        raise GateError(f"Could not compare MPT's video with the B-roll: {exc}") from None
+    bad = [r for r in results if not r["same"]]
+    ctx.report["footage"]["order_check"] = {"limit": ORDER_CHECK_LIMIT, "frames": results}
+    worst = max(r["diff"] for r in results)
+    detail = (f"MPT's picture matches our B-roll at all {len(results)} checked seconds (largest grey difference {worst:.1f} of {ORDER_CHECK_LIMIT:g})"
+              if not bad else
+              f"MPT's picture differs from our B-roll at {len(bad)} of {len(results)} checked seconds "
+              f"({', '.join(f'{r['seconds']:g} s: {r['diff']:.0f}' for r in bad[:6])}; limit {ORDER_CHECK_LIMIT:g}). "
+              "MoneyPrinterTurbo shuffled, looped or re-timed the footage; see mpt.log")
+    ctx.check("footage order kept", not bad, detail)
 
 
 def step_visuals(ctx: Ctx, mpt: dict, timings: list[dict]) -> Path:
@@ -1601,6 +1717,14 @@ def step_final_checks(ctx: Ctx, final_video: Path, mpt: dict, total: float) -> P
 
 def step_credits(ctx: Ctx, mpt: dict, local: bool) -> list[str]:
     ctx.step(9, "Credits")
+    if mpt.get("broll"):  # own footage: we know exactly which clips are in the video
+        lines = list(mpt["broll"]["credit_lines"])
+        notes = [f"credited exactly the {len(lines)} Pixabay clip(s) cut into the video (chosen by studio/footage.py)"]
+        ctx.check("credits", bool(lines), f"{len(lines)} credit line(s), one per clip used")
+        for n in notes:
+            ctx.say(f"  note: {n}")
+        ctx.report["credits"] = {"lines": lines, "notes": notes}
+        return lines
     if local:
         ctx.check("credits", True, "local materials: no credits needed")
         ctx.report["credits"] = {"lines": [], "notes": ["local materials: no credits"]}
@@ -1629,7 +1753,8 @@ def write_report(ctx: Ctx, path: Path, ok: bool, error: str | None = None) -> No
         "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         "seconds_taken": round(time.time() - ctx.started),
         "settings": {"min_seconds": ctx.args.min_seconds, "max_seconds": ctx.args.max_seconds, "stage": ctx.args.stage,
-                     "no_visuals": ctx.args.no_visuals, "local_materials": bool(ctx.args.local_materials)},
+                     "no_visuals": ctx.args.no_visuals, "local_materials": bool(ctx.args.local_materials),
+                     "footage": ctx.args.footage},
         "checks": ctx.checks,
         "warnings": ctx.warnings,
         **ctx.report,
@@ -1710,11 +1835,12 @@ def step_cleanup(ctx: Ctx, mpt: dict, folder: Path) -> None:
 
 def fail(ctx: Ctx, headline: str, message: str, extra: dict | None = None) -> int:
     """Print the failure in plain English and, once the script id is known, write work/<id>/failed-report.json."""
+    message = footage.mask_secret(message)  # belt and braces: an API key in a URL must never reach the screen or a file
     print(f"\n{headline}: {message}", file=sys.stderr, flush=True)
     if ctx.script.get("id"):
         failed = ctx.work / "failed-report.json"
         try:
-            ctx.report.update(extra or {})
+            ctx.report.update({k: footage.mask_secret(v) if isinstance(v, str) else v for k, v in (extra or {}).items()})
             write_report(ctx, failed, ok=False, error=message)
             print(f"(partial report: {failed}; work files kept in {ctx.work})", file=sys.stderr)
         except OSError:
@@ -1733,7 +1859,7 @@ def run(args: argparse.Namespace) -> int:
         if args.stage == "voice":
             ctx.say(f"\nStage 'voice' done. Narration: {narration} ({total:.1f} s). Timings: {ctx.work / 'timings.json'}")
             return 0
-        mpt = step_mpt(ctx, narration, setup)
+        mpt = step_mpt(ctx, narration, setup, timings, total)
         final_video = step_visuals(ctx, mpt, timings)
         sheet = step_final_checks(ctx, final_video, mpt, total)
         credits = step_credits(ctx, mpt, local=bool(setup["local_files"]))

@@ -32,15 +32,18 @@
           "heading": "Fakt",
           "text": "Erhitzt zuerst die äußere Schicht"
         }
-      }
+      },
+      "broll": "steam"
     },
     {
       "text": "In jedem Gerät steckt ein Magnetron. Es verwandelt Strom in Funkwellen.",
-      "visual": null
+      "visual": null,
+      "broll": "electronics"
     },
     {
       "text": "Darin lenkt ein Magnet einen Strom aus Elektronen zu einer kreisenden Wolke, und die bringt winzige Metallkammern zum Schwingen.",
-      "visual": null
+      "visual": null,
+      "broll": "magnet"
     },
     {
       "text": "Die Wellen prallen im Metallgehäuse hin und her und wechseln etwa zweieinhalb Milliarden Mal pro Sekunde die Richtung.",
@@ -48,15 +51,18 @@
         "type": "stat",
         "value": "2,45 GHz",
         "label": "= 2,45 Milliarden Wechsel pro Sekunde"
-      }
+      },
+      "broll": "abstract waves"
     },
     {
       "text": "Wassermoleküle sind ungleich geladen. Ein Ende ist leicht negativ, das andere leicht positiv.",
-      "visual": null
+      "visual": null,
+      "broll": "water drops"
     },
     {
       "text": "Bei jedem Wechsel drehen sie sich mit, wie winzige Kompassnadeln.",
-      "visual": null
+      "visual": null,
+      "broll": "compass"
     },
     {
       "text": "Dieses Drehen und Anstoßen an Nachbarn wird zu Wärme.",
@@ -70,15 +76,18 @@
           "Wasser dreht sich",
           "Wärme"
         ]
-      }
+      },
+      "broll": "boiling"
     },
     {
       "text": "Aber die Wellen dringen nur wenige Zentimeter ein. Die Mitte wird erst später warm, wenn sich die Wärme ausbreitet.",
-      "visual": null
+      "visual": null,
+      "broll": "cooking food"
     },
     {
       "text": "Deshalb bleiben große Portionen innen kalt, und deshalb dreht sich der Teller. Er gleicht heiße und kalte Stellen aus.",
-      "visual": null
+      "visual": null,
+      "broll": "frozen food"
     },
     {
       "text": "Und das Gitter in der Tür? Seine Löcher sind kleiner als die Wellen. Die bleiben drin, aber Licht kommt durch.",
@@ -86,15 +95,18 @@
         "type": "stat",
         "value": "12 cm",
         "label": "Wellenlänge, viel größer als die Löcher"
-      }
+      },
+      "broll": "fence"
     },
     {
       "text": "Tipp: Nach der Hälfte umrühren und kurz ruhen lassen, damit sich die Wärme gleichmäßig verteilt.",
-      "visual": null
+      "visual": null,
+      "broll": "soup"
     },
     {
       "text": "Folge für mehr Alltagstechnik, erklärt in einer Minute.",
-      "visual": null
+      "visual": null,
+      "broll": "night city"
     }
   ],
   "sources": [

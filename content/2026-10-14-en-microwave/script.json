@@ -32,15 +32,18 @@
           "heading": "Fact",
           "text": "Heats the outer layer first"
         }
-      }
+      },
+      "broll": "steam"
     },
     {
       "text": "Inside every microwave oven is a part called a magnetron. It turns electricity into radio waves.",
-      "visual": null
+      "visual": null,
+      "broll": "electronics"
     },
     {
       "text": "Inside it, a magnet bends a stream of electrons into a spinning cloud, and that spin makes tiny metal chambers ring with waves.",
-      "visual": null
+      "visual": null,
+      "broll": "magnet"
     },
     {
       "text": "Those waves bounce around the metal box, and they flip direction about two and a half billion times every second.",
@@ -48,15 +51,18 @@
         "type": "stat",
         "value": "2.45 GHz",
         "label": "= 2.45 billion flips per second"
-      }
+      },
+      "broll": "abstract waves"
     },
     {
       "text": "Water molecules are lopsided, with a slightly negative end and a slightly positive end.",
-      "visual": null
+      "visual": null,
+      "broll": "water drops"
     },
     {
       "text": "So every time the waves flip, the water molecules twist to follow them, like tiny compass needles.",
-      "visual": null
+      "visual": null,
+      "broll": "compass"
     },
     {
       "text": "All that twisting and bumping into neighbors turns into heat.",
@@ -70,15 +76,18 @@
           "Water twists",
           "Heat"
         ]
-      }
+      },
+      "broll": "boiling"
     },
     {
       "text": "But the waves only reach a couple of centimeters into the food. The center warms up later, as heat spreads inward.",
-      "visual": null
+      "visual": null,
+      "broll": "cooking food"
     },
     {
       "text": "That's why big portions stay cold in the middle, and why the turntable spins: to even out hot and cold spots.",
-      "visual": null
+      "visual": null,
+      "broll": "frozen food"
     },
     {
       "text": "And the metal mesh in the door? Its holes are smaller than the waves, so they can't get out, but light can.",
@@ -86,15 +95,18 @@
         "type": "stat",
         "value": "12 cm",
         "label": "wavelength, far bigger than the holes"
-      }
+      },
+      "broll": "fence"
     },
     {
       "text": "Tip: stir halfway through, and let your food rest for a minute so the heat can spread evenly.",
-      "visual": null
+      "visual": null,
+      "broll": "soup"
     },
     {
       "text": "Follow for more everyday things, explained in about a minute.",
-      "visual": null
+      "visual": null,
+      "broll": "night city"
     }
   ],
   "sources": [

@@ -12,11 +12,11 @@
   ],
   "video_terms": [
     "refrigerator",
-    "open fridge",
-    "kitchen",
-    "frozen food",
     "ice cubes",
-    "air conditioner coils"
+    "frost",
+    "icicle",
+    "snow",
+    "water drops"
   ],
   "lines": [
     {
@@ -32,27 +32,33 @@
           "heading": "Fakt",
           "text": "Der Raum wird wärmer"
         }
-      }
+      },
+      "broll": "open refrigerator"
     },
     {
       "text": "Ein Kühlschrank macht nämlich keine Kälte. Er schafft Wärme von innen nach außen.",
-      "visual": null
+      "visual": null,
+      "broll": "ice cubes"
     },
     {
       "text": "Der Trick ist ein Kältemittel, das in einem geschlossenen Rohrkreislauf fließt.",
-      "visual": null
+      "visual": null,
+      "broll": "pipes"
     },
     {
       "text": "Innen fließt es durch dünne Rohre, den Verdampfer, und verdampft dort weit unter null Grad.",
-      "visual": null
+      "visual": null,
+      "broll": "frost ice crystals"
     },
     {
       "text": "Beim Verdampfen nimmt es Wärme auf, auch die Wärme deiner Lebensmittel.",
-      "visual": null
+      "visual": null,
+      "broll": "milk"
     },
     {
       "text": "Dann presst ein Kompressor das Gas zusammen. Dadurch wird es heißer als deine Küche.",
-      "visual": null
+      "visual": null,
+      "broll": "turbine"
     },
     {
       "text": "Hinten fließt es durch den Verflüssiger und gibt die Wärme an den Raum ab.",
@@ -66,31 +72,38 @@
           "Verflüssiger",
           "Küchenluft"
         ]
-      }
+      },
+      "broll": "fan"
     },
     {
       "text": "Deshalb ist die Rückseite warm. Du spürst die Wärme aus deinen Lebensmitteln.",
-      "visual": null
+      "visual": null,
+      "broll": "steam"
     },
     {
       "text": "Abgekühlt wird das Gas wieder flüssig, zwängt sich durch ein dünnes Röhrchen und wird wieder eiskalt.",
-      "visual": null
+      "visual": null,
+      "broll": "water drops"
     },
     {
       "text": "Dann beginnt alles von vorn. Das Brummen ist der Kompressor, der an- und ausgeht.",
-      "visual": null
+      "visual": null,
+      "broll": "fan"
     },
     {
       "text": "Bei offener Tür schiebt er also nur Küchenwärme im Kreis, und der Motor heizt noch zusätzlich.",
-      "visual": null
+      "visual": null,
+      "broll": "desert"
     },
     {
       "text": "Tipp: Sauge ab und zu den Staub von diesen Kühlschlangen, dann kann die Wärme leichter entweichen.",
-      "visual": null
+      "visual": null,
+      "broll": "sweeping"
     },
     {
       "text": "Folge für mehr Alltagstechnik, erklärt in einer Minute.",
-      "visual": null
+      "visual": null,
+      "broll": "city"
     }
   ],
   "sources": [
