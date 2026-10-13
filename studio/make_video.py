@@ -68,6 +68,7 @@ GAP_SECONDS = 0.25
 MAX_ATTEMPTS = 3
 WER_LIMIT_LONG = 0.15  # lines with >= 5 words
 WER_LIMIT_SHORT = 0.34  # shorter lines (one wrong word is a big share)
+CER_LIMIT = 0.06  # letter error rate (spaces/dashes ignored); a line passes if its WER OR its CER is inside the limit
 MPT_TIMEOUT_SECONDS = 45 * 60
 
 # Caption style: ONE word at a time, big and bold, popping in (MoneyPrinterTurbo options).
@@ -281,6 +282,22 @@ def word_error_rate(reference: str, hypothesis: str) -> float:
 
 def wer_threshold(reference: str) -> float:
     return WER_LIMIT_LONG if len(normalize_words(reference)) >= 5 else WER_LIMIT_SHORT
+
+
+def char_error_rate(reference: str, hypothesis: str) -> float:
+    """Edit distance over the letters only (spaces, dashes and punctuation removed), so spelling variants such as
+    'non-stop'/'nonstop', 'ear cup'/'earcup' or 'zu grattern'/'Zugrattern' count as equal. A real mishearing
+    ('Noise Cancelling' heard as 'Neuskänzeling') still changes letters."""
+    ref = "".join(normalize_words(reference))
+    hyp = "".join(normalize_words(hypothesis))
+    if not ref:
+        return 0.0 if not hyp else 1.0
+    return levenshtein(list(ref), list(hyp)) / len(ref)
+
+
+def line_error_score(wer: float, cer: float, wer_limit: float) -> float:
+    """<= 1.0 means the line passes: either the word check or the letter check is inside its limit."""
+    return min(wer / wer_limit, cer / CER_LIMIT)
 
 
 def word_differences(reference: str, hypothesis: str, limit: int = 30) -> list[str]:
@@ -1281,7 +1298,7 @@ def voice_one_line(ctx: Ctx, index: int, text: str, setup: dict) -> dict:
 
     try:  # reuse a line that already passed with the same text/voice/model (after an earlier failed run)
         cached = json.loads(meta_path.read_text(encoding="utf-8"))
-        if wav.is_file() and all(cached.get(k) == v for k, v in ident.items()) and cached["wer"] <= limit:
+        if wav.is_file() and all(cached.get(k) == v for k, v in ident.items()) and cached.get("ok"):
             cached["reused"] = True
             return cached
     except (OSError, ValueError, KeyError):
@@ -1298,10 +1315,12 @@ def voice_one_line(ctx: Ctx, index: int, text: str, setup: dict) -> dict:
             attempts.append({"attempt": attempt, "error": str(exc)})
             continue
         wer = word_error_rate(text, heard)
-        attempts.append({"attempt": attempt, "wer": round(wer, 4), "heard": heard})
-        if best is None or wer < best["wer"]:
-            best = {"wer": wer, "heard": heard, "path": candidate}
-        if wer <= limit:
+        cer = char_error_rate(text, heard)
+        score = line_error_score(wer, cer, limit)
+        attempts.append({"attempt": attempt, "wer": round(wer, 4), "cer": round(cer, 4), "heard": heard})
+        if best is None or score < best["score"]:
+            best = {"wer": wer, "cer": cer, "score": score, "heard": heard, "path": candidate}
+        if score <= 1.0:
             break
     result = {**ident, "index": index, "threshold": limit, "words": len(text.split()), "attempts": attempts,
               "attempt_count": len(attempts), "reused": False}
@@ -1310,7 +1329,8 @@ def voice_one_line(ctx: Ctx, index: int, text: str, setup: dict) -> dict:
         result.update(ok=False, wer=None, heard="", error=f"speak.mjs made no audio in any of {MAX_ATTEMPTS} attempts: {last_error}")
         return result
     shutil.copyfile(best["path"], wav)
-    result.update(wer=round(best["wer"], 4), heard=best["heard"], ok=best["wer"] <= limit)
+    result.update(wer=round(best["wer"], 4), cer=round(best["cer"], 4), cer_limit=CER_LIMIT, heard=best["heard"],
+                  ok=best["score"] <= 1.0)
     if result["ok"]:
         meta_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     for leftover in lines_dir.glob(f"{index:02d}.try*.wav"):
@@ -1351,9 +1371,10 @@ def step_voice(ctx: Ctx, setup: dict) -> list[dict]:
         res = voice_one_line(ctx, index, text, setup)
         results.append(res)
         shown = "n/a" if res.get("wer") is None else f"{res['wer']:.2f}"
+        letters = "" if res.get("cer") is None else f", letters {res['cer']:.2f} (limit {CER_LIMIT:.2f})"
         tag = "ok" if res.get("ok") else "FAIL"
         extra = " (reused from an earlier run)" if res.get("reused") else f" after {res['attempt_count']} attempt(s)"
-        ctx.say(f"  [{tag}] line {index}: WER {shown} (limit {res['threshold']:.2f}){extra}: {text[:60]}")
+        ctx.say(f"  [{tag}] line {index}: WER {shown} (limit {res['threshold']:.2f}){letters}{extra}: {text[:60]}")
     ctx.report["voice"]["lines"] = results
     bad = [r for r in results if not r.get("ok")]
     if bad:

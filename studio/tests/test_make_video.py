@@ -1183,5 +1183,30 @@ class MainFailsLoudlyTests(unittest.TestCase):
         self.assertIn("not valid JSON", err)
 
 
+class SpellingTolerantLineCheckTests(unittest.TestCase):
+    """Real cases from the 2026-10-14 noise-cancelling runs: spelling variants must pass, a mishearing must fail."""
+
+    def passes(self, ref, heard):
+        wer, cer = mv.word_error_rate(ref, heard), mv.char_error_rate(ref, heard)
+        return mv.line_error_score(wer, cer, mv.wer_threshold(ref)) <= 1.0
+
+    def test_hyphen_and_compound_variants_pass(self):
+        self.assertTrue(self.passes("The whole loop runs nonstop, adjusting faster than you could ever notice.",
+                                    "The whole loop runs non-stop, adjusting faster than you could ever notice."))
+        self.assertTrue(self.passes("On the outside of each ear cup, a tiny microphone listens to the world around you.",
+                                    "On the outside of each earcup, a tiny microphone listens to the world around you."))
+        self.assertTrue(self.passes("Und der Transparenzmodus? Gleiche Mikrofone, aber statt den Schall umzudrehen, leiten sie ihn einfach weiter.",
+                                    "Und der Transparenz-Modus? Gleiche Mikrofone aber statt den Schall umzudrehen, leiten sie ihn einfach weiter."))
+
+    def test_char_error_rate_ignores_spaces_and_dashes(self):
+        self.assertEqual(mv.char_error_rate("Zugrattern", "zu grattern"), 0.0)
+        self.assertEqual(mv.char_error_rate("", ""), 0.0)
+        self.assertEqual(mv.char_error_rate("", "x"), 1.0)
+
+    def test_real_mishearing_still_fails(self):
+        self.assertFalse(self.passes("Kopfhörer mit Noise Cancelling bekämpfen Lärm mit noch mehr Schall.",
+                                     "Kopfhörer mit Neuskänzeling bekämpfen Lärm mit noch mehr Schall."))
+
+
 if __name__ == "__main__":
     unittest.main()
