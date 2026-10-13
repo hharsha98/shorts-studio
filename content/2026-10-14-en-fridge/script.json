@@ -1,0 +1,107 @@
+{
+  "id": "2026-10-14-en-fridge",
+  "language": "en",
+  "title": "Your fridge doesn't make cold. Here's what it really does",
+  "caption": "Leaving the fridge open makes your kitchen warmer, not cooler. The reason is a little loop of refrigerant that moves heat out.",
+  "hashtags": [
+    "#howthingswork",
+    "#science",
+    "#explained",
+    "#everydaytech",
+    "#shorts"
+  ],
+  "video_terms": [
+    "refrigerator",
+    "open fridge",
+    "kitchen",
+    "frozen food",
+    "ice cubes",
+    "air conditioner coils"
+  ],
+  "lines": [
+    {
+      "text": "Leaving your fridge open on a hot day won't cool your kitchen. It makes it warmer.",
+      "visual": {
+        "type": "compare",
+        "title": "Open fridge on a hot day",
+        "left": {
+          "heading": "Myth",
+          "text": "It cools down your kitchen"
+        },
+        "right": {
+          "heading": "Fact",
+          "text": "It makes the room warmer"
+        }
+      }
+    },
+    {
+      "text": "A fridge doesn't make cold. It moves heat from the inside to the outside.",
+      "visual": null
+    },
+    {
+      "text": "The trick is a liquid called refrigerant, flowing around a sealed loop of pipes.",
+      "visual": null
+    },
+    {
+      "text": "Inside, it runs through thin coils called the evaporator and boils into a gas, far below freezing.",
+      "visual": null
+    },
+    {
+      "text": "Boiling soaks up heat, so the warmth from your food flows into those coils.",
+      "visual": null
+    },
+    {
+      "text": "Then a compressor squeezes the gas, which makes it hotter than your kitchen.",
+      "visual": null
+    },
+    {
+      "text": "It flows through the coils on the back, the condenser, and dumps that heat into the room.",
+      "visual": {
+        "type": "flow",
+        "title": "Where the heat goes",
+        "steps": [
+          "Your food",
+          "Evaporator",
+          "Compressor",
+          "Condenser",
+          "Kitchen air"
+        ]
+      }
+    },
+    {
+      "text": "That's why the back of your fridge feels warm. It's the heat from your food.",
+      "visual": null
+    },
+    {
+      "text": "Cooled down, the gas turns back into a liquid, squeezes through a tiny tube, and gets ice cold again.",
+      "visual": null
+    },
+    {
+      "text": "Then the loop starts over. That hum you hear is the compressor switching on and off.",
+      "visual": null
+    },
+    {
+      "text": "So with the door open, it just moves kitchen heat in a circle, and the motor adds extra heat on top.",
+      "visual": null
+    },
+    {
+      "text": "Tip: vacuum the dust off those coils now and then, so the heat escapes more easily.",
+      "visual": null
+    },
+    {
+      "text": "Follow for more everyday things, explained in about a minute.",
+      "visual": null
+    }
+  ],
+  "sources": [
+    {
+      "title": "iFixit: How Refrigerators Work",
+      "url": "https://www.ifixit.com/News/how-refrigerators-work"
+    },
+    {
+      "title": "RTINGS: How Does A Refrigerator Work?",
+      "url": "https://www.rtings.com/refrigerator/learn/how-refrigerators-work"
+    }
+  ],
+  "series": "How things work"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "_test-de",
+  "language": "de",
+  "series": "Wie Dinge funktionieren",
+  "title": "Wie dein Kühlschrank wirklich funktioniert",
+  "caption": "Dein Kühlschrank macht keine Kälte, er schafft Wärme nach draußen. Hier ist die Kurzfassung, wie das funktioniert.",
+  "hashtags": ["#wissenschaft", "#wiedingefunktionieren", "#kühlschrank", "#shorts"],
+  "video_terms": ["refrigerator", "kitchen", "cooling", "compressor", "heat"],
+  "lines": [
+    {
+      "text": "Dein Kühlschrank macht keine Kälte. Er schafft Wärme aus dem Innenraum nach draußen.",
+      "visual": null
+    },
+    {
+      "text": "Ein Kältemittel verdampft in den Wänden und nimmt dabei die Wärme deiner Lebensmittel auf.",
+      "visual": {"type": "stat", "value": "-18 °C", "label": "Typische Gefriertemperatur"}
+    },
+    {
+      "text": "Dann presst ein Kompressor es zusammen, und die Wärme entweicht hinten über die Kühlschlangen.",
+      "visual": null
+    },
+    {
+      "text": "Darum ist die Luft hinter dem Kühlschrank immer warm.",
+      "visual": null
+    }
+  ],
+  "sources": [
+    {"title": "Kühlschrank (Wikipedia)", "url": "https://de.wikipedia.org/wiki/K%C3%BChlschrank"},
+    {"title": "Kompressionskältemaschine (Wikipedia)", "url": "https://de.wikipedia.org/wiki/Kompressionsk%C3%A4ltemaschine"}
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "_test-en",
+  "language": "en",
+  "series": "How things work",
+  "title": "How your fridge really works",
+  "caption": "Your fridge does not create cold, it pumps heat out of the box. Here is the short version of how that works.",
+  "hashtags": ["#science", "#howthingswork", "#fridge", "#shorts"],
+  "video_terms": ["refrigerator", "kitchen", "cooling", "compressor", "heat"],
+  "lines": [
+    {
+      "text": "Your fridge does not make cold. It moves heat out of the box.",
+      "visual": null
+    },
+    {
+      "text": "A liquid called refrigerant evaporates inside and soaks up warmth from your food.",
+      "visual": {"type": "stat", "value": "-18 °C", "label": "Typical freezer temperature"}
+    },
+    {
+      "text": "Then a compressor squeezes it, and the heat escapes through the coils on the back.",
+      "visual": null
+    },
+    {
+      "text": "That is why the air behind your fridge always feels warm.",
+      "visual": null
+    }
+  ],
+  "sources": [
+    {"title": "Refrigerator (Wikipedia)", "url": "https://en.wikipedia.org/wiki/Refrigerator"},
+    {"title": "Vapor-compression refrigeration (Wikipedia)", "url": "https://en.wikipedia.org/wiki/Vapor-compression_refrigeration"}
+  ]
+}

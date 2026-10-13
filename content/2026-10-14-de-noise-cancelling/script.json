@@ -1,0 +1,111 @@
+{
+  "id": "2026-10-14-de-noise-cancelling",
+  "language": "de",
+  "title": "So löschen Noise-Cancelling-Kopfhörer Lärm aus",
+  "caption": "Noise-Cancelling-Kopfhörer bekämpfen Lärm mit noch mehr Schall. Darum schlucken sie Triebwerke, aber keine Stimmen.",
+  "hashtags": [
+    "#wiefunktioniertdas",
+    "#technik",
+    "#wissen",
+    "#alltag",
+    "#erklärt"
+  ],
+  "video_terms": [
+    "headphones",
+    "airplane cabin",
+    "train travel",
+    "city noise",
+    "music listening",
+    "sound waves"
+  ],
+  "lines": [
+    {
+      "text": "Kopfhörer mit Noise Cancelling bekämpfen Lärm mit noch mehr Schall.",
+      "visual": null
+    },
+    {
+      "text": "Außen an jeder Ohrmuschel hört ein winziges Mikrofon die Umgebung ab.",
+      "visual": null
+    },
+    {
+      "text": "Ein Chip erzeugt daraus ein exaktes Spiegelbild, eine auf den Kopf gestellte Welle.",
+      "visual": null
+    },
+    {
+      "text": "Trifft ein Wellenberg des Lärms auf ein Wellental des Gegenschalls, löschen sie sich aus. Das heißt destruktive Interferenz.",
+      "visual": {
+        "type": "flow",
+        "title": "So entsteht Ruhe",
+        "steps": [
+          "Umgebungslärm",
+          "Mikrofon",
+          "Chip dreht die Welle",
+          "Lautsprecher",
+          "Wellen löschen sich"
+        ]
+      }
+    },
+    {
+      "text": "Ein zweites Mikrofon in der Muschel prüft, was noch durchkommt, und der Chip korrigiert ständig nach.",
+      "visual": null
+    },
+    {
+      "text": "Das Ganze läuft ununterbrochen und passt sich schneller an, als du es je merken würdest.",
+      "visual": null
+    },
+    {
+      "text": "Am besten klappt das bei gleichmäßigen, tiefen Geräuschen wie Flugzeugtriebwerken, Zugrattern oder dem Brummen einer Klimaanlage.",
+      "visual": {
+        "type": "compare",
+        "title": "Was Noise Cancelling schafft",
+        "left": {
+          "heading": "Schwer",
+          "text": "Stimmen, plötzliches Klirren"
+        },
+        "right": {
+          "heading": "Leicht",
+          "text": "Triebwerke, Rattern, Brummen"
+        }
+      }
+    },
+    {
+      "text": "Tiefe Töne sind lange, langsame Wellen. Der Gegenschall hat genug Zeit, sich genau anzupassen.",
+      "visual": null
+    },
+    {
+      "text": "Hohe, plötzliche Geräusche ändern sich zu schnell. Bis der Chip reagiert, ist die Welle schon weiter.",
+      "visual": null
+    },
+    {
+      "text": "Darum zählen die Polster trotzdem. Sie dämpfen viel von dem hohen Lärm, den die Elektronik verpasst.",
+      "visual": null
+    },
+    {
+      "text": "Übrigens: Die Idee ist alt. Ein deutscher Erfinder hat sie schon in den Dreißigerjahren patentiert.",
+      "visual": null
+    },
+    {
+      "text": "Und der Transparenzmodus? Gleiche Mikrofone, aber statt den Schall umzudrehen, leiten sie ihn einfach weiter.",
+      "visual": null
+    },
+    {
+      "text": "Folge für mehr Alltagstechnik, erklärt in einer Minute.",
+      "visual": null
+    }
+  ],
+  "sources": [
+    {
+      "title": "SoundGuys: How do noise cancelling headphones work?",
+      "url": "https://www.soundguys.com/how-do-noise-cancelling-headphones-work-12380"
+    },
+    {
+      "title": "Mental Floss: How Do Noise-Canceling Headphones Work?",
+      "url": "https://www.mentalfloss.com/article/49988/how-do-noise-canceling-headphones-work"
+    },
+    {
+      "title": "Wikipedia: Active noise control",
+      "url": "https://en.wikipedia.org/wiki/Active_noise_control"
+    }
+  ],
+  "series": "How things work"
+}

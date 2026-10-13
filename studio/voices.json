@@ -1,0 +1,11 @@
+{
+  "_note": "Provisional picks (2026-10-13): transcription-checked, accent not yet judged by a human. Qwen3-TTS CustomVoice via VoiceStudio; never send 'language'.",
+  "en": {
+    "voice": "Ryan",
+    "instructions": "Curious, warm science explainer talking to a friend. Clear and upbeat, never salesy. Brisk, steady pace. End each sentence on a confident, falling tone."
+  },
+  "de": {
+    "voice": "Aiden",
+    "instructions": "Neugieriger, freundlicher Wissenschaftserklärer, spricht mit einem Freund. Natürliche, klare deutsche Aussprache. Zügiges, gleichmäßiges Tempo. Sätze enden mit fallender Betonung."
+  }
+}

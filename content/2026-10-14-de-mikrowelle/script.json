@@ -1,0 +1,119 @@
+{
+  "id": "2026-10-14-de-mikrowelle",
+  "language": "de",
+  "title": "Die Mikrowelle gart nicht von innen nach außen",
+  "caption": "Deine Mikrowelle dreht Wassermoleküle milliardenfach pro Sekunde. Darum bleibt die Mitte oft kalt.",
+  "hashtags": [
+    "#wiefunktioniertdas",
+    "#technik",
+    "#wissen",
+    "#alltag",
+    "#erklärt"
+  ],
+  "video_terms": [
+    "microwave oven",
+    "kitchen",
+    "hot food",
+    "steam",
+    "water droplets",
+    "electronics"
+  ],
+  "lines": [
+    {
+      "text": "Die Mikrowelle gart Essen nicht von innen nach außen. Das ist ein Mythos.",
+      "visual": {
+        "type": "compare",
+        "title": "Kochen mit Mikrowelle",
+        "left": {
+          "heading": "Mythos",
+          "text": "Gart von innen nach außen"
+        },
+        "right": {
+          "heading": "Fakt",
+          "text": "Erhitzt zuerst die äußere Schicht"
+        }
+      }
+    },
+    {
+      "text": "In jedem Gerät steckt ein Magnetron. Es verwandelt Strom in Funkwellen.",
+      "visual": null
+    },
+    {
+      "text": "Darin lenkt ein Magnet einen Strom aus Elektronen zu einer kreisenden Wolke, und die bringt winzige Metallkammern zum Schwingen.",
+      "visual": null
+    },
+    {
+      "text": "Die Wellen prallen im Metallgehäuse hin und her und wechseln etwa zweieinhalb Milliarden Mal pro Sekunde die Richtung.",
+      "visual": {
+        "type": "stat",
+        "value": "2,45 GHz",
+        "label": "= 2,45 Milliarden Wechsel pro Sekunde"
+      }
+    },
+    {
+      "text": "Wassermoleküle sind ungleich geladen. Ein Ende ist leicht negativ, das andere leicht positiv.",
+      "visual": null
+    },
+    {
+      "text": "Bei jedem Wechsel drehen sie sich mit, wie winzige Kompassnadeln.",
+      "visual": null
+    },
+    {
+      "text": "Dieses Drehen und Anstoßen an Nachbarn wird zu Wärme.",
+      "visual": {
+        "type": "flow",
+        "title": "Vom Strom zur Wärme",
+        "steps": [
+          "Strom",
+          "Magnetron",
+          "Wellen",
+          "Wasser dreht sich",
+          "Wärme"
+        ]
+      }
+    },
+    {
+      "text": "Aber die Wellen dringen nur wenige Zentimeter ein. Die Mitte wird erst später warm, wenn sich die Wärme ausbreitet.",
+      "visual": null
+    },
+    {
+      "text": "Deshalb bleiben große Portionen innen kalt, und deshalb dreht sich der Teller. Er gleicht heiße und kalte Stellen aus.",
+      "visual": null
+    },
+    {
+      "text": "Und das Gitter in der Tür? Seine Löcher sind kleiner als die Wellen. Die bleiben drin, aber Licht kommt durch.",
+      "visual": {
+        "type": "stat",
+        "value": "12 cm",
+        "label": "Wellenlänge, viel größer als die Löcher"
+      }
+    },
+    {
+      "text": "Tipp: Nach der Hälfte umrühren und kurz ruhen lassen, damit sich die Wärme gleichmäßig verteilt.",
+      "visual": null
+    },
+    {
+      "text": "Folge für mehr Alltagstechnik, erklärt in einer Minute.",
+      "visual": null
+    }
+  ],
+  "sources": [
+    {
+      "title": "U.S. FDA: Microwave Ovens",
+      "url": "https://www.fda.gov/radiation-emittingproducts/resourcesforyouradiationemittingproducts/ucm252762.htm"
+    },
+    {
+      "title": "Health Physics Society: Microwave Ovens",
+      "url": "https://hps.org/hpspublications/articles/microwaveovens.html"
+    },
+    {
+      "title": "ScienceABC: How Does A Microwave Oven Work?",
+      "url": "https://www.scienceabc.com/innovation/how-does-a-microwave-oven-work.html"
+    },
+    {
+      "title": "everything RF: What is a Magnetron?",
+      "url": "https://www.everythingrf.com/community/what-is-a-magnetron"
+    }
+  ],
+  "series": "How things work"
+}

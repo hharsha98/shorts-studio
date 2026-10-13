@@ -1,0 +1,17 @@
+# Upstream tool (has its own git) and generated/heavy files
+MoneyPrinterTurbo/
+work/
+review/**/*.mp4
+review/**/*.mov
+*.wav
+*.mov
+*.mp4
+studio/voice-tests/
+studio/visuals-demo/
+__pycache__/
+.DS_Store
+# Secrets never live here, but just in case
+*.env
+config.toml
+review/
+work/
