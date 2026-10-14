@@ -50,7 +50,7 @@
       "broll": "clock"
     },
     {
-      "text": "Das Signal braucht etwa sieben Hundertstelsekunden bis zu dir.",
+      "text": "Das Signal ist dabei mit Lichtgeschwindigkeit unterwegs.",
       "visual": null,
       "broll": "space"
     },
@@ -70,7 +70,7 @@
       "broll": "earth orbit"
     },
     {
-      "text": "Eine Millionstelsekunde Abweichung bedeutet dreihundert Meter Fehler.",
+      "text": "Eine Mikrosekunde Abweichung bedeutet dreihundert Meter Fehler.",
       "visual": {
         "type": "stat",
         "value": "300 m",
@@ -89,7 +89,7 @@
       "broll": "planet"
     },
     {
-      "text": "Unterm Strich gewinnen sie achtunddreißig Millionstelsekunden pro Tag.",
+      "text": "Insgesamt gewinnen sie achtunddreißig Mikrosekunden pro Tag.",
       "visual": null,
       "broll": "clock"
     },

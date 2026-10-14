@@ -2,7 +2,7 @@
   "id": "2026-10-24-en-touchscreen",
   "language": "en",
   "series": "How things work",
-  "topic_noun": "touchscreen",
+  "topic_noun": "smartphone",
   "title": "Why Touchscreens Don't Work With Gloves (But a Sausage Does)",
   "hook": {
     "line1": "Gloves don't work.",
@@ -28,7 +28,7 @@
     {
       "text": "Gloves don't work on touchscreens. Sausages do.",
       "visual": null,
-      "broll": "touchscreen"
+      "broll": "smartphone"
     },
     {
       "text": "That's because your screen can't feel pressure at all.",

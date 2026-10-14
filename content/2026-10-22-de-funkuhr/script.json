@@ -41,7 +41,7 @@
       "broll": "radio tower"
     },
     {
-      "text": "Der Sender heißt DCF siebenundsiebzig und steht in Mainflingen.",
+      "text": "Der Sender heißt DCF siebenundsiebzig.",
       "visual": {
         "type": "stat",
         "value": "77,5 kHz",
@@ -60,7 +60,7 @@
       "broll": "abstract waves"
     },
     {
-      "text": "Eine Zehntelsekunde bedeutet null, zwei Zehntelsekunden bedeuten eins.",
+      "text": "Ein kurzer Aussetzer bedeutet null, ein langer bedeutet eins.",
       "visual": {
         "type": "flow",
         "title": "So spricht der Sender",

@@ -2,7 +2,7 @@
   "id": "2026-10-24-de-touchscreen",
   "language": "de",
   "series": "Wie funktioniert das?",
-  "topic_noun": "touchscreen",
+  "topic_noun": "smartphone",
   "title": "Warum Touchscreens mit Handschuhen nicht gehen (Würstchen schon)",
   "hook": {
     "line1": "Handschuhe: nein",
@@ -28,7 +28,7 @@
     {
       "text": "Dein Touchscreen ignoriert Handschuhe, aber ein Würstchen funktioniert.",
       "visual": null,
-      "broll": "touchscreen"
+      "broll": "smartphone"
     },
     {
       "text": "Denn dein Bildschirm spürt gar keinen Druck.",

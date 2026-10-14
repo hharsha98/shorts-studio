@@ -334,28 +334,37 @@ class ContinuityGateTests(unittest.TestCase):
         self.assertEqual(len(g["reasons"]), 1)
         self.assertIn("spread", g["reasons"][0])
 
-    def test_a_neighbour_jump_over_three_semitones_fails_alone(self):
-        g = self.gate([0, 0, 0, 3.5, 3.5, 3.5])
+    def test_a_neighbour_jump_over_the_limit_fails_alone(self):
+        jump = vt.MAX_JUMP_ST + 0.5  # a clean step in the middle of the take: the spread and the line offsets (jump / 2) stay inside their limits
+        g = self.gate([0, 0, 0, jump, jump, jump])
         self.assertFalse(g["ok"])
         self.assertEqual(len(g["reasons"]), 1)
         self.assertIn("line 2 to line 3", g["reasons"][0])
-        self.assertAlmostEqual(g["max_adjacent_jump_st"], 3.5, delta=0.01)
+        self.assertAlmostEqual(g["max_adjacent_jump_st"], jump, delta=0.01)
 
-    def test_a_loudness_jump_over_three_db_fails_alone(self):
-        g = self.gate([0, 0, 0, 0], loud=[-17.0, -17.2, -20.5, -20.6])
+    def test_a_neighbour_jump_just_inside_the_limit_passes(self):
+        jump = vt.MAX_JUMP_ST - 0.5
+        g = self.gate([0, 0, 0, jump, jump, jump])
+        self.assertTrue(g["ok"], g["reasons"])
+
+    def test_a_loudness_jump_over_the_limit_fails_alone(self):
+        jump = vt.MAX_JUMP_DB + 0.3
+        g = self.gate([0, 0, 0, 0], loud=[-17.0, -17.2, -17.2 - jump, -17.3 - jump])
         self.assertFalse(g["ok"])
         self.assertEqual(len(g["reasons"]), 1)
         self.assertIn("dB from line 1 to line 2", g["reasons"][0])
 
-    def test_exactly_three_db_still_passes(self):
-        self.assertTrue(self.gate([0, 0], loud=[-17.0, -20.0])["ok"])
+    def test_exactly_the_loudness_limit_still_passes(self):
+        self.assertTrue(self.gate([0, 0], loud=[-17.0, -17.0 - vt.MAX_JUMP_DB])["ok"])
 
     def test_reference_voice_register(self):
-        self.assertTrue(self.gate([0, 0.2, -0.2], ref=150 * 2 ** (2.9 / 12))["ok"])  # 2.9 st below the reference
-        far = self.gate([0, 0.2, -0.2], ref=150 * 2 ** (3.2 / 12))
+        inside = vt.MAX_REF_ST - 0.1
+        outside = vt.MAX_REF_ST + 0.2
+        self.assertTrue(self.gate([0, 0.2, -0.2], ref=150 * 2 ** (inside / 12))["ok"])  # just inside the limit, below the reference
+        far = self.gate([0, 0.2, -0.2], ref=150 * 2 ** (outside / 12))
         self.assertFalse(far["ok"])
         self.assertIn("reference voice", far["reasons"][0])
-        self.assertLess(far["ref_offset_st"], -3.0)
+        self.assertLess(far["ref_offset_st"], -vt.MAX_REF_ST)
 
     def test_no_reference_means_no_reference_check(self):
         self.assertTrue(self.gate([0, 0.2, -0.2], ref=None, base=400.0)["ok"])
@@ -876,42 +885,44 @@ class ProduceNarrationTests(TmpDirTest):
         self.assertIn("too many to patch", take["attempts"][0]["reason"])
         self.assertEqual([c for c in fake.synth_calls if c[0] != FULL], [])  # not one patch was tried
 
-    def test_six_rejected_takes_fail_in_plain_words_and_are_remembered(self):
+    def test_all_rejected_takes_fail_in_plain_words_and_are_remembered(self):
         fake = FakeVoice(pitch=lambda seed, i: 150.0 * (2 ** (6 / 12) if i == 2 else 1))
         with self.assertRaises(vt.VoiceTakeError) as caught:
             self.produce(fake)
         message = str(caught.exception)
-        self.assertEqual(len(fake.synth_calls), 6)
-        for seed in range(1, 7):
+        self.assertEqual(len(fake.synth_calls), vt.MAX_TAKES)
+        for seed in range(1, vt.MAX_TAKES + 1):
             self.assertIn(f"seed {seed}:", message)
-        self.assertIn("--voice-seed 7", message)
+        self.assertIn(f"--voice-seed {vt.MAX_TAKES + 1}", message)
         self.assertIn("steady", message)
         again = FakeVoice()
         with self.assertRaises(vt.VoiceTakeError) as second:
-            self.produce(again)  # same script: the six verdicts are remembered, nothing is voiced again
+            self.produce(again)  # same script: all the verdicts are remembered, nothing is voiced again
         self.assertEqual(again.synth_calls, [])
         self.assertIn("remembered", str(second.exception))
-        self.assertEqual(self.produce(FakeVoice(), start_seed=7)["seed"], 7)  # --voice-seed 7 goes beyond the rejected ones
+        beyond = vt.MAX_TAKES + 1
+        self.assertEqual(self.produce(FakeVoice(), start_seed=beyond)["seed"], beyond)  # --voice-seed beyond the rejected ones
 
-    def failing_then_accepted_at_seed_7(self):
-        """Seeds 1-6 come out in a wrong pitch for line 2 (all rejected), then --voice-seed 7 is accepted."""
-        bad = lambda seed, i: 150.0 * (2 ** (6 / 12) if i == 2 and seed < 7 else 1)
+    def failing_then_accepted_after_the_last_default_seed(self):
+        """Seeds 1..MAX_TAKES come out in a wrong pitch for line 2 (all rejected), then --voice-seed MAX_TAKES + 1 is accepted."""
+        accepted_seed = vt.MAX_TAKES + 1
+        bad = lambda seed, i: 150.0 * (2 ** (6 / 12) if i == 2 and seed < accepted_seed else 1)
         with self.assertRaises(vt.VoiceTakeError):
             self.produce(FakeVoice(pitch=bad))
-        return bad, self.produce(FakeVoice(pitch=bad), start_seed=7)
+        return bad, self.produce(FakeVoice(pitch=bad), start_seed=accepted_seed)
 
     def test_an_accepted_take_found_with_a_later_seed_is_reused_by_the_next_default_run(self):
-        bad, seven = self.failing_then_accepted_at_seed_7()
-        self.assertEqual(seven["seed"], 7)
+        bad, later = self.failing_then_accepted_after_the_last_default_seed()
+        self.assertEqual(later["seed"], vt.MAX_TAKES + 1)
         fake = FakeVoice(pitch=bad)
-        again = self.produce(fake, work_dir=self.tmp / "work-again")  # no --voice-seed: starts at 1, but 1-6 were all rejected
+        again = self.produce(fake, work_dir=self.tmp / "work-again")  # no --voice-seed: starts at 1, but 1..MAX_TAKES were all rejected
         self.assertEqual(fake.synth_calls, [])  # nothing is voiced
         self.assertTrue(again["cache"]["hit"])
-        self.assertEqual(again["seed"], 7)
-        self.assertEqual(vt.read_wav(again["narration"])[0], vt.read_wav(seven["narration"])[0])
-        self.assertEqual(again["timings"], seven["timings"])
+        self.assertEqual(again["seed"], vt.MAX_TAKES + 1)
+        self.assertEqual(vt.read_wav(again["narration"])[0], vt.read_wav(later["narration"])[0])
+        self.assertEqual(again["timings"], later["timings"])
         rejected = [a["seed"] for a in again["attempts"] if not a["accepted"]]
-        self.assertEqual(rejected, [1, 2, 3, 4, 5, 6])  # the report still shows why seeds 1-6 lost
+        self.assertEqual(rejected, list(range(1, vt.MAX_TAKES + 1)))  # the report still shows why seeds 1..MAX_TAKES lost
         self.assertTrue(again["attempts"][-1]["accepted"])
 
     def test_the_accepted_seed_pointer_is_only_a_last_resort(self):
@@ -924,23 +935,24 @@ class ProduceNarrationTests(TmpDirTest):
         self.assertEqual([c[1] for c in fake.synth_calls], [2])
 
     def test_the_accepted_seed_pointer_belongs_to_one_script(self):
-        bad, _seven = self.failing_then_accepted_at_seed_7()
+        bad, _later = self.failing_then_accepted_after_the_last_default_seed()
         merged = [LINES[0] + " " + LINES[1], *LINES[2:]]
         failing = FakeVoice(lines=merged, pitch=lambda seed, i: 150.0 * (2 ** (6 / 12) if i == 1 else 1))
-        with self.assertRaises(vt.VoiceTakeError):  # the merged split has no accepted take, so the other script's seed 7 is not used
+        with self.assertRaises(vt.VoiceTakeError):  # the merged split has no accepted take, so the other script's later seed is not used
             vt.produce_narration(merged, backend=failing, grade=simple_grade, voice="Ryan", model="m1", asr_model="asr1", ref_f0=150.0,
                                  work_dir=self.tmp / "w-merged", cache_root=self.tmp / "cache", log=lambda m: None)
 
     def test_a_pointed_take_that_fails_todays_gate_does_not_save_the_run(self):
-        _bad, _seven = self.failing_then_accepted_at_seed_7()
+        _bad, _later = self.failing_then_accepted_after_the_last_default_seed()
         with self.assertRaises(vt.VoiceTakeError):
-            self.produce(FakeVoice(), ref_f0=250.0, work_dir=self.tmp / "w-ref")  # the channel reference moved: seed 7 is wrong now
+            self.produce(FakeVoice(), ref_f0=250.0, work_dir=self.tmp / "w-ref")  # the channel reference moved: the pointed seed is wrong now
 
     def test_no_cache_flag_ignores_and_writes_no_pointer(self):
-        bad = lambda seed, i: 150.0 * (2 ** (6 / 12) if i == 2 and seed < 7 else 1)
+        accepted_seed = vt.MAX_TAKES + 1
+        bad = lambda seed, i: 150.0 * (2 ** (6 / 12) if i == 2 and seed < accepted_seed else 1)
         with self.assertRaises(vt.VoiceTakeError):
             self.produce(FakeVoice(pitch=bad), use_cache=False)
-        self.produce(FakeVoice(pitch=bad), start_seed=7, use_cache=False)
+        self.produce(FakeVoice(pitch=bad), start_seed=accepted_seed, use_cache=False)
         self.assertFalse((self.tmp / "cache").exists())
 
     def test_script_of_4096_characters_or_more_is_refused(self):

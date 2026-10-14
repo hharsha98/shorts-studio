@@ -36,7 +36,7 @@
       "broll": "frozen food"
     },
     {
-      "text": "Darin steckt ein Magnetron. Es macht aus Strom Funkwellen.",
+      "text": "Darin steckt ein Bauteil namens Magnetron. Es erzeugt Funkwellen.",
       "visual": null,
       "broll": "circuit board"
     },
@@ -60,7 +60,7 @@
       "broll": "compass"
     },
     {
-      "text": "Dieses Drehen und Reiben erzeugt Wärme.",
+      "text": "Diese Bewegung erzeugt Wärme.",
       "visual": {
         "type": "flow",
         "title": "Vom Strom zur Wärme",
