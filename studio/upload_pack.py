@@ -144,13 +144,16 @@ def format_pack(prefix: str, entries: list[tuple[str, dict]]) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
+    # One or more dates: `upload_pack.py 2026-10-20 2026-10-22 2026-10-24` makes ONE pack for a week whose videos are
+    # dated on different days; the pack is named after the first date.
+    if len(sys.argv) < 2:
         print(__doc__)
         return 1
-    prefix = sys.argv[1]
-    folders = sorted(f for f in REVIEW.glob(f"{prefix}-*") if (f / "final.mp4").is_file())
+    prefixes = sys.argv[1:]
+    prefix = prefixes[0]
+    folders = sorted({f for p in prefixes for f in REVIEW.glob(f"{p}-*") if (f / "final.mp4").is_file()})
     if not folders:
-        print(f"No finished videos in {REVIEW} starting with {prefix}-")
+        print(f"No finished videos in {REVIEW} starting with {', '.join(p + '-' for p in prefixes)}")
         return 1
     entries = []
     for lang in ("en", "de"):
