@@ -3,22 +3,19 @@
 Claude does everything else: scripts, voices, videos, checks, captions, weekly analysis.
 Tick a box by changing `[ ]` to `[x]`.
 
-## Now (about 20 minutes)
-- [ ] **Pixabay key** (free stock clips; Pexels has paused new keys). Create a free account at https://pixabay.com,
-      then open https://pixabay.com/api/docs/ while logged in. Your key is shown in green under "Parameters".
-      Run `nano ~/shorts-studio/MoneyPrinterTurbo/config.toml`, go to line 88 and write
-      `pixabay_api_keys = ["YOUR-KEY"]`. Save with Ctrl+O, Enter, then Ctrl+X.
-      Don't use TextEdit: it can turn `"` into curly quotes and break the file.
-      (If Pexels reopens later, a Pexels key on line 85 is used first.)
-- [ ] **Listen to the voice samples** in `studio/voice-tests/`. Which English voice do you prefer (Aiden or Ryan)?
-      Ask a native German speaker whether `de-Aiden.wav` / `de-Ryan.wav` sound natural or clearly foreign.
+## Now
+- [x] **Pixabay key**: done (in `MoneyPrinterTurbo/config.toml`, line 88).
+- [ ] **Watch the videos** (phone previews) and tell Claude what to change. The upload packs are in `review/`:
+      `UPLOAD-PACK-2026-10-14.md` (week 1, 5 videos) and `UPLOAD-PACK-2026-10-20.md` (week 2, 5 videos).
+- [ ] **German voice:** the German videos are being moved to the native German "Thorsten" voice. When the samples
+      arrive, ask a native German speaker if it sounds natural.
+- [ ] ⏰ **Deadline Thu 22 Oct:** the clock-change videos only make sense before the change on Sunday 25 Oct.
+      They can only go out if your accounts and Impressum are ready by then.
 
 ## Before the first post
-- [ ] **Pick a brand name** (one idea for both languages). Check the handle is free on all 3 platforms.
-      Also do a quick trademark search at https://register.dpma.de and https://euipo.europa.eu/eSearch/
-  1. **How It Ticks** / **So tickt's** (my favourite: the same idiom works in both languages)
-  2. **Inside Things** / **Von innen erklärt**
-  3. **Explained in 60** / **Erklärt in 60**
+- [x] **Brand name:** **The Inner Tick** (EN, @theinnertick) / **So tickt's** (DE, @sotickts).
+      "How It Ticks" was dropped: 12 small YouTube channels in the same niche already use it.
+- [ ] **Quick trademark search** for both names at https://register.dpma.de and https://euipo.europa.eu/eSearch/
 - [ ] **Book the free IHK start-up advice** (Gründungsberatung) at your local IHK. Questions to ask:
   1. Do I need an Impressum from the very first post if I plan to earn money later?
   2. Which address can I use? (My German home address? A business-address service? Is my address in India OK?
@@ -28,7 +25,8 @@ Tick a box by changing `[ ]` to `[x]`.
 - [ ] **If you have a job or contract** (including a thesis contract or a disclosure agreement): check whether
       a side job (Nebentätigkeit) must be reported to the employer. Make sure the topics don't touch anything confidential.
 - [ ] **Impressum page**, set up the way the IHK advises (Claude can draft the text). Put its link in each bio.
-- [ ] **Create 6 accounts** (EN brand + DE brand on TikTok, YouTube, Instagram):
+- [ ] **Create 6 accounts** by following **`setup-kit/ACCOUNT-SETUP.md`** (step by step, about 45 min, with the
+      pictures, bios and an Impressum draft). In short:
   - Use a new email for the brand, a password manager, and **2FA** (two-step login) everywhere.
   - **TikTok:** a *personal* account (business accounts can't join Creator Rewards).
   - **Instagram:** switch to a *Creator* account.
