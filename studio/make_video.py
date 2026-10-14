@@ -111,7 +111,9 @@ KEPT_WORK_FILES = ("timings.json", "mpt.log", "mpt-subtitles.log")  # step_clean
 FOOTAGE_MODES = ("auto", "own", "mpt")
 BROLL_MIN_CHARS, BROLL_MAX_CHARS, BROLL_MAX_WORDS = 2, 40, 4
 OWN_FOOTAGE_EXTRA_SECONDS = 5  # --video-clip-duration = narration + this: MPT must take our whole B-roll file as ONE clip
-ORDER_CHECK_LIMIT = 12.0  # mean grey difference (0-255) between MPT's picture and our B-roll at the same second
+# Mean grey difference (0-255) between MPT's picture and our B-roll at the same second. Measured: the same shot
+# scores 4-13 (fine-textured clips after two encodes reach ~13), a shuffled/looped shot 37+, an unrelated shot ~126.
+ORDER_CHECK_LIMIT = 25.0
 
 LOCAL_MATERIAL_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".jpg", ".jpeg", ".png", ".bmp"}
 
