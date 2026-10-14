@@ -901,7 +901,7 @@ class PreflightRobustnessTests(unittest.TestCase):
             with self.assertRaises(mv.GateError) as ctx:
                 mv.load_visuals_module([1, 2])
         self.assertIn("render_and_overlay", str(ctx.exception))
-        self.assertIn("--no-visuals", str(ctx.exception))
+        self.assertIn("captions", str(ctx.exception))  # visuals.py draws the captions, so --no-visuals cannot avoid it
 
     def test_visuals_module_with_render_function_is_accepted(self):
         fake = type(sys)("visuals")
@@ -914,6 +914,13 @@ class PreflightRobustnessTests(unittest.TestCase):
             with self.assertRaises(mv.GateError) as ctx:
                 mv.load_visuals_module([3, 5])
         self.assertIn("lines 3, 5", str(ctx.exception))
+
+    def test_visuals_module_is_needed_for_the_captions_even_without_any_visual(self):
+        with mock.patch.object(mv.importlib, "import_module", side_effect=ModuleNotFoundError("no", name="visuals")):
+            with self.assertRaises(mv.GateError) as ctx:
+                mv.load_visuals_module([])
+        self.assertIn("draws the captions", str(ctx.exception))
+        self.assertNotIn("lines", str(ctx.exception))
 
     def test_broken_visuals_module_is_a_gate_error(self):
         with mock.patch.object(mv.importlib, "import_module", side_effect=SyntaxError("oops")):
@@ -971,7 +978,13 @@ class ReportPathTests(unittest.TestCase):
 
 
 class OutputAndCleanupTests(unittest.TestCase):
-    """step_output + step_cleanup on a fake tree: subtitles are kept, the report points at kept files."""
+    """step_output + step_cleanup on a fake tree: the corrected captions are kept, the report points at kept files."""
+
+    WORDS = [
+        {"text": "Hello", "start": 0.0, "end": 0.3, "timing": "heard"},
+        {"text": "world.", "start": 0.3, "end": 0.6, "timing": "heard"},
+    ]
+    PHRASES = [{"start": 0.0, "end": 1.0, "text": "Hello world."}]
 
     def make_ctx(self, tmp: Path, keep_work: bool):
         args = mv.parse_args(["x.json"] + (["--keep-work"] if keep_work else []))
@@ -979,23 +992,27 @@ class OutputAndCleanupTests(unittest.TestCase):
         ctx.script = good_script()
         ctx.work = tmp / "work" / ctx.script["id"]
         (ctx.work / "lines").mkdir(parents=True)
-        for name in ("narration.wav", "timings.json", "mpt.log", "failed-report.json", "sheet.png", "final-visuals.mp4"):
+        for name in ("narration.wav", "timings.json", "mpt.log", "mpt-subtitles.log", "failed-report.json", "sheet.png", "final-visuals.mp4"):
             (ctx.work / name).write_text(name)
         task_dir = tmp / "mpt" / "storage" / "tasks" / "T1"
         task_dir.mkdir(parents=True)
-        (task_dir / "subtitle.srt").write_text("1\n00:00:00,000 --> 00:00:00,300\nHello\n        \n2\n00:00:00,300 --> 00:00:00,600\nworld\n        \n")
         (task_dir / "final-1.mp4").write_text("v")
-        mpt = {"video": task_dir / "final-1.mp4", "subtitle": task_dir / "subtitle.srt", "task_dir": task_dir, "task_id": "T1"}
+        whisper_dir = tmp / "mpt" / "storage" / "tasks" / "T2"  # the Whisper timing run (--stop-at subtitle)
+        whisper_dir.mkdir(parents=True)
+        (whisper_dir / "subtitle.srt").write_text("1\n00:00:00,000 --> 00:00:00,300\nHallo\n        \n")
+        mpt = {"video": task_dir / "final-1.mp4", "task_dir": task_dir, "task_id": "T1", "extra_task_dirs": [whisper_dir],
+               "captions": {"words": [dict(w) for w in self.WORDS], "phrases": [dict(p) for p in self.PHRASES]}}
         ctx.report.update(
             narration={"path": str(ctx.work / "narration.wav"), "duration": 3.0},
-            mpt={"log": str(ctx.work / "mpt.log"), "subtitle_path": str(mpt["subtitle"]), "video": str(mpt["video"])},
+            mpt={"log": str(ctx.work / "mpt.log"), "video": str(mpt["video"]),
+                 "subtitle_run": {"log": str(ctx.work / "mpt-subtitles.log"), "subtitle_path": str(whisper_dir / "subtitle.srt")}},
             visuals={"out": str(ctx.work / "final-visuals.mp4"), "panels": 1},
         )
         ctx.checks += [  # the sentences the real steps write (they contain paths)
             {"name": "narration joined", "ok": True, "detail": f"3.0 s, 2 lines, 0.25 s gaps; timings in {ctx.work / 'timings.json'}"},
-            {"name": "MPT subtitle path", "ok": True, "detail": f"{mpt['subtitle']} (the result must contain a subtitle file)"},
+            {"name": "MPT subtitle path", "ok": True, "detail": f"{whisper_dir / 'subtitle.srt'} (the Whisper run must write a subtitle file)"},
             {"name": "MPT video", "ok": True, "detail": f"{mpt['video']}"},
-            {"name": "visuals", "ok": True, "detail": f"1 visual line(s) rendered onto the video -> {ctx.work / 'final-visuals.mp4'}"},
+            {"name": "visuals", "ok": True, "detail": f"2 caption words and 1 visual line(s) rendered onto the video in one ffmpeg pass -> {ctx.work / 'final-visuals.mp4'}"},
             {"name": "contact sheet", "ok": True, "detail": str(ctx.work / "sheet.png")},
         ]
         return ctx, mpt
@@ -1010,33 +1027,40 @@ class OutputAndCleanupTests(unittest.TestCase):
                 after_output = json.loads((folder / "report.json").read_text(encoding="utf-8"))
                 mv.step_cleanup(ctx, mpt, folder)
                 after_cleanup = json.loads((folder / "report.json").read_text(encoding="utf-8"))
-            return {"folder_files": sorted(p.name for p in folder.iterdir()), "srt": (folder / "subtitles.srt").read_text(),
+            return {"folder_files": sorted(p.name for p in folder.iterdir()), "srt": (folder / "subtitles.srt").read_text(encoding="utf-8"),
+                    "words_json": json.loads((folder / "captions-words.json").read_text(encoding="utf-8")),
                     "after_output": after_output, "after_cleanup": after_cleanup, "folder": str(folder),
-                    "work_left": sorted(p.name for p in ctx.work.iterdir()), "task_dir_exists": mpt["task_dir"].exists(),
-                    "work": str(ctx.work), "task_dir": str(mpt["task_dir"])}
+                    "work_left": sorted(p.name for p in ctx.work.iterdir()),
+                    "task_dirs_exist": [d.exists() for d in (mpt["task_dir"], *mpt["extra_task_dirs"])],
+                    "work": str(ctx.work), "task_dir": str(mpt["task_dir"]), "whisper_dir": str(mpt["extra_task_dirs"][0])}
 
-    def test_subtitles_are_kept_and_report_points_at_kept_copies(self):
+    def test_corrected_captions_are_kept_and_report_points_at_kept_copies(self):
         r = self.run_steps(keep_work=False)
-        self.assertEqual(r["folder_files"], ["caption.txt", "final.mp4", "report.json", "sheet.png", "subtitles.srt"])
-        self.assertEqual(r["srt"], "1\n00:00:00,000 --> 00:00:00,300\nHello\n\n2\n00:00:00,300 --> 00:00:00,600\nworld\n\n")
+        self.assertEqual(r["folder_files"], ["caption.txt", "captions-words.json", "final.mp4", "report.json", "sheet.png", "subtitles.srt"])
+        # the YouTube file holds the phrases of the CORRECTED captions, not Whisper's raw words
+        self.assertEqual(r["srt"], "1\n00:00:00,000 --> 00:00:01,000\nHello world.\n\n")
+        self.assertEqual(r["words_json"], self.WORDS)  # the per-word list, as the video shows it
         for report in (r["after_output"], r["after_cleanup"]):
-            self.assertEqual(report["mpt"]["subtitle_path"], r["folder"] + "/subtitles.srt")
             self.assertEqual(report["visuals"]["out"], r["folder"] + "/final.mp4")
             self.assertEqual(report["outputs"]["subtitles"], r["folder"] + "/subtitles.srt")
+            self.assertEqual(report["outputs"]["captions_words"], r["folder"] + "/captions-words.json")
 
     def test_cleanup_records_what_it_deleted_and_nulls_dead_paths(self):
         r = self.run_steps(keep_work=False)
-        self.assertEqual(r["work_left"], ["mpt.log", "timings.json"])
-        self.assertFalse(r["task_dir_exists"])
+        self.assertEqual(r["work_left"], ["mpt-subtitles.log", "mpt.log", "timings.json"])
+        self.assertEqual(r["task_dirs_exist"], [False, False])  # the video run AND the Whisper run are removed
         cleanup = r["after_cleanup"]["cleanup"]
         self.assertTrue(cleanup["performed"])
         names = [Path(x).name for x in cleanup["removed"]]
-        for expected in ("T1", "lines", "narration.wav", "sheet.png", "final-visuals.mp4", "failed-report.json"):
+        for expected in ("T1", "T2", "lines", "narration.wav", "sheet.png", "final-visuals.mp4", "failed-report.json"):
             self.assertIn(expected, names)
         self.assertNotIn("mpt.log", names)
+        self.assertNotIn("mpt-subtitles.log", names)
         self.assertIsNone(r["after_cleanup"]["narration"]["path"])
         self.assertIsNone(r["after_cleanup"]["mpt"]["video"])
+        self.assertIsNone(r["after_cleanup"]["mpt"]["subtitle_run"]["subtitle_path"])
         self.assertTrue(r["after_cleanup"]["mpt"]["log"].endswith("mpt.log"))
+        self.assertTrue(r["after_cleanup"]["mpt"]["subtitle_run"]["log"].endswith("mpt-subtitles.log"))
         self.assertIsNotNone(r["after_output"]["narration"]["path"])  # before cleanup the file still existed
 
     @staticmethod
@@ -1048,26 +1072,27 @@ class OutputAndCleanupTests(unittest.TestCase):
         folder = r["folder"]
         for report in (r["after_output"], r["after_cleanup"]):
             d = self.details(report)
-            self.assertIn(f"{folder}/subtitles.srt", d["MPT subtitle path"])
             self.assertTrue(d["visuals"].endswith(f"-> {folder}/final.mp4"), d["visuals"])
             self.assertEqual(d["contact sheet"], f"{folder}/sheet.png")
-            self.assertNotIn(r["task_dir"], d["MPT subtitle path"])
 
     def test_check_sentences_never_name_a_deleted_file_after_cleanup(self):
         r = self.run_steps(keep_work=False)
         d = self.details(r["after_cleanup"])
         self.assertEqual(d["MPT video"], "final-1.mp4 (deleted after the run)")
+        self.assertTrue(d["MPT subtitle path"].startswith("subtitle.srt (deleted after the run)"), d["MPT subtitle path"])
         self.assertIn(r["work"] + "/timings.json", d["narration joined"])  # a kept file keeps its full path
         for name, detail in d.items():
             self.assertNotIn(r["task_dir"], detail, name)
+            self.assertNotIn(r["whisper_dir"], detail, name)
             for gone in ("narration.wav", "final-visuals.mp4"):
                 self.assertNotIn(r["work"] + "/" + gone, detail, name)
-        # before cleanup the temporary video still existed, so its path was still correct
+        # before cleanup the temporary files still existed, so their paths were still correct
         self.assertIn(r["task_dir"], self.details(r["after_output"])["MPT video"])
+        self.assertIn(r["whisper_dir"], self.details(r["after_output"])["MPT subtitle path"])
 
     def test_keep_work_deletes_nothing_and_says_so(self):
         r = self.run_steps(keep_work=True)
-        self.assertTrue(r["task_dir_exists"])
+        self.assertEqual(r["task_dirs_exist"], [True, True])
         self.assertIn("narration.wav", r["work_left"])
         self.assertEqual(r["after_cleanup"]["cleanup"], {"performed": False, "reason": "--keep-work", "removed": []})
         self.assertTrue(r["after_cleanup"]["narration"]["path"].endswith("narration.wav"))
@@ -1090,24 +1115,33 @@ class TextRewriteTests(unittest.TestCase):
         self.assertEqual(mv.mark_deleted_in_strings("narration.wav is gone", ["/w/id/narration.wav"]), "narration.wav is gone")
 
 
-class SubtitleDifferenceWarningTests(unittest.TestCase):
-    def test_no_differences_no_warning(self):
-        self.assertIsNone(mv.subtitle_difference_warning([]))
+class FixedInCaptionsNoteTests(unittest.TestCase):
+    def test_no_differences_no_note(self):
+        self.assertIsNone(mv.fixed_in_captions_note([]))
 
     def test_every_differing_word_is_listed(self):
         diffs = ['script word(s) missing in the subtitle: "an"', 'script "zwängt" -> subtitle "zwingt"']
-        text = mv.subtitle_difference_warning(diffs)
-        self.assertIn("2 caption spot(s)", text)
+        text = mv.fixed_in_captions_note(diffs)
+        self.assertIn("fixed in captions", text)
+        self.assertIn("2 spot(s)", text)
         self.assertIn("zwingt", text)
         self.assertIn('missing in the subtitle: "an"', text)
-        self.assertIn("final.mp4", text)
+        self.assertIn("narration", text)  # it points at the VOICE: the captions themselves are right
 
-    def test_a_passing_comparison_with_a_misspelling_produces_the_warning(self):
+    def test_a_passing_comparison_with_a_misspelling_is_listed_as_fixed(self):
         script = ["Der Druck zwängt das Gas durch die Kühlschlange und das hier ist ein langer Satz"]
         cues = [{"index": 1, "start": 0, "end": 1, "text": script[0].replace("zwängt", "zwingt")}]
-        ok, wer, _msg, diffs = mv.check_srt_accuracy(cues, script)
+        ok, wer, msg, diffs = mv.check_srt_accuracy(cues, script)
         self.assertTrue(ok)  # below the 10 percent limit, so the gate lets it through ...
-        self.assertIn("zwingt", mv.subtitle_difference_warning(diffs))  # ... but the user is told
+        self.assertIn("fixed in the captions", msg)  # ... the captions show the script's word ...
+        self.assertIn("zwingt", mv.fixed_in_captions_note(diffs))  # ... and the user can still see what Whisper heard
+
+    def test_the_voice_gate_message_talks_about_the_voice(self):
+        script = ["one two three four five six seven eight nine ten"]
+        cues = [{"index": 1, "start": 0, "end": 1, "text": "one two free four five six seven eight nine ten eleven"}]
+        ok, _wer, msg, _diffs = mv.check_srt_accuracy(cues, script)
+        self.assertFalse(ok)
+        self.assertIn("voice", msg)
 
 
 class UnexpectedErrorTests(unittest.TestCase):
@@ -1295,6 +1329,356 @@ class FootageModeTests(unittest.TestCase):
     def test_fixed_order_flags_are_ignored_without_local_files(self):
         cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", source="pexels", fixed_order_seconds=72)
         self.assertNotIn("--video-clip-duration", cmd)
+
+
+class CaptionlessVideoCommandTests(unittest.TestCase):
+    """The two MoneyPrinterTurbo runs: Whisper timing only (--stop-at subtitle) and the video WITHOUT captions."""
+
+    def pairs(self, cmd):
+        return dict(zip(cmd[4:], cmd[5:]))
+
+    def test_the_video_run_has_no_captions_and_no_caption_styling(self):
+        cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id", [Path("/w/broll.mp4")], burn_captions=False, fixed_order_seconds=72)
+        self.assertIn("--no-subtitle-enabled", cmd)
+        self.assertNotIn("--subtitle-enabled", cmd)
+        for flag in ("--font-name", "--subtitle-display-mode", "--subtitle-animation", "--subtitle-position", "--custom-position",
+                     "--font-size", "--stroke-width", "--stroke-color", "--text-fore-color", "--no-subtitle-background-enabled", "--stop-at"):
+            self.assertNotIn(flag, cmd)
+        pairs = self.pairs(cmd)  # everything else stays as it was: our own B-roll in order, no music, narration, 9:16
+        self.assertEqual(pairs["--video-source"], "local")
+        self.assertEqual(pairs["--video-materials"], "/w/broll.mp4")
+        self.assertEqual(pairs["--video-concat-mode"], "sequential")
+        self.assertEqual(pairs["--video-transition-mode"], "none")
+        self.assertEqual(pairs["--video-clip-duration"], "72")
+        self.assertEqual(pairs["--video-clip-speed"], "1.0")
+        self.assertEqual(pairs["--bgm-type"], "none")
+        self.assertEqual(pairs["--custom-audio-file"], "/n.wav")
+        self.assertEqual(pairs["--video-aspect"], "9:16")
+        self.assertEqual(pairs["--task-id"], "id")
+
+    def test_the_default_run_still_burns_captions_and_runs_to_the_end(self):
+        cmd = mv.build_mpt_command("uv", "x", ["t"], Path("/n.wav"), "id")
+        self.assertIn("--subtitle-enabled", cmd)
+        self.assertNotIn("--no-subtitle-enabled", cmd)
+        self.assertNotIn("--stop-at", cmd)
+
+    def test_the_whisper_run_stops_after_the_subtitle_stage_and_needs_no_footage(self):
+        cmd = mv.build_mpt_command("uv", "Das Skript.", ["t"], Path("/n.wav"), "id", [Path("/w/broll.mp4")], stop_at="subtitle",
+                                   fixed_order_seconds=72, source="pixabay")
+        pairs = self.pairs(cmd)
+        self.assertEqual(pairs["--stop-at"], "subtitle")
+        self.assertEqual(cmd[-2:], ["--stop-at", "subtitle"])
+        self.assertEqual(pairs["--video-script"], "Das Skript.")
+        self.assertEqual(pairs["--custom-audio-file"], "/n.wav")
+        self.assertEqual(pairs["--bgm-type"], "none")
+        self.assertIn("--subtitle-enabled", cmd)  # the subtitle stage must produce a file
+        for flag in ("--video-source", "--video-materials", "--video-concat-mode", "--video-clip-duration"):
+            self.assertNotIn(flag, cmd)
+
+    def test_burned_captions_are_detected(self):
+        ok_params = {"subtitle_enabled": False}
+        self.assertEqual(mv.find_burned_captions("generating video", {"videos": ["a.mp4"]}, ok_params), [])
+        self.assertEqual(mv.find_burned_captions("x", {"videos": [], "subtitle_path": ""}, ok_params), [])
+        self.assertTrue(mv.find_burned_captions("x", {"subtitle_path": "/t/subtitle.srt"}, ok_params))
+        self.assertTrue(mv.find_burned_captions("detected language: 'de', probability: 1.00", {}, ok_params))
+        self.assertTrue(mv.find_burned_captions("x", {}, {"subtitle_enabled": True}))
+        self.assertTrue(mv.find_burned_captions("x", {}, {}))  # not saying "disabled" is not good enough
+        self.assertEqual(mv.find_burned_captions("x", {}, None), [])  # saved params unreadable: the other signals decide
+
+    def test_caption_overlay_position_matches_the_old_caption_box(self):
+        import visuals
+
+        self.assertEqual(visuals.CAPTION_Y, mv.CAPTION_BOX_TOP_Y)
+        self.assertGreater(visuals.CAPTION_Y, mv.CAPTION_TOP_LIMIT_Y)  # below the diagram panels
+        self.assertLessEqual(visuals.CAPTION_Y + visuals.CAPTION_H, mv.FRAME_HEIGHT)
+        self.assertEqual(visuals.CAPTION_W, 1080)
+        for size in (mv.CAPTION_FONT_MIN, mv.CAPTION_FONT_MAX):  # the box of every allowed font size fits the canvas
+            box = mv.caption_box_height(size, mv.caption_stroke_width(size), math.ceil(1.35 * size))
+            self.assertLessEqual(box, visuals.CAPTION_H)
+
+
+class CaptionStepTests(unittest.TestCase):
+    """step_captions: one caption per script word, gates, report."""
+
+    SCRIPT_LINES = [{"text": "Trifft ein Wellenberg auf ein Wellental, löschen sie sich aus.", "visual": None},
+                    {"text": "Das heißt destruktive Interferenz.", "visual": None}]
+
+    def make(self):
+        ctx = mv.Ctx(mv.parse_args(["content/x/script.json"]))
+        script = good_script()
+        script["lines"] = [dict(line) for line in self.SCRIPT_LINES]
+        ctx.script = script
+        ctx.report["captions"] = {"mode": "word_by_word"}
+        setup = {"caption": {"font_size": 69, "stroke_width": 6, "box_height": 141}}
+        return ctx, setup
+
+    def whisper(self, words, diffs=()):
+        cues = [{"index": k + 1, "start": 0.4 * k, "end": 0.4 * (k + 1), "text": w} for k, w in enumerate(words)]
+        return {"cues": cues, "differences": list(diffs)}
+
+    def run_step(self, ctx, setup, whisper, total=10.0):
+        with contextlib.redirect_stdout(io.StringIO()):
+            return mv.step_captions(ctx, whisper, setup, total)
+
+    def test_captions_have_the_script_spelling_not_whiskers(self):
+        ctx, setup = self.make()
+        heard = ["rift", "ein", "Wellenberg", "auf", "ein", "Wellental", "löschen", "sie", "sich", "aus", "Das", "heißt", "destruktive", "Interferenz"]
+        result = self.run_step(ctx, setup, self.whisper(heard, ['script "trifft" -> subtitle "rift"']))
+        self.assertEqual(" ".join(w["text"] for w in result["words"]),
+                         "Trifft ein Wellenberg auf ein Wellental, löschen sie sich aus. Das heißt destruktive Interferenz.")
+        self.assertEqual(result["words"][0]["start"], 0.0)  # the time of "rift"
+        self.assertEqual(result["words"][0]["end"], 0.4)
+        self.assertEqual(result["style"], {"font_size": 69, "stroke_width": 6, "box_height": 141})
+        self.assertTrue(result["phrases"])
+        names = {c["name"]: c for c in ctx.checks}
+        self.assertTrue(names["captions match script"]["ok"])
+        self.assertTrue(names["caption timing"]["ok"])
+        self.assertEqual(ctx.report["captions"]["fixed_in_captions"], ['script "trifft" -> subtitle "rift"'])
+        self.assertEqual(ctx.report["captions"]["alignment"]["words"], 14)
+        self.assertEqual(ctx.report["captions"]["script_words"], 14)
+        self.assertIn("Remotion", ctx.report["captions"]["renderer"])
+
+    def test_the_gate_fails_loudly_when_a_caption_word_is_not_the_script_word(self):
+        ctx, setup = self.make()
+        heard = ["Trifft", "ein", "Wellenberg", "auf", "ein", "Wellental", "löschen", "sie", "sich", "aus", "Das", "heißt", "destruktive", "Interferenz"]
+        wrong = [{"text": "Rift" if k == 0 else w, "start": 0.4 * k, "end": 0.4 * (k + 1), "timing": "heard"}
+                 for k, w in enumerate(" ".join(line["text"] for line in self.SCRIPT_LINES).split())]
+        with mock.patch.object(mv.captionlib, "align_words", return_value=wrong):
+            with self.assertRaises(mv.GateError) as raised:
+                self.run_step(ctx, setup, self.whisper(heard))
+        self.assertIn("captions match script failed", str(raised.exception))
+        self.assertIn("'Rift'", str(raised.exception))
+
+    def test_alignment_trouble_is_a_plain_gate_error(self):
+        ctx, setup = self.make()
+        with self.assertRaises(mv.GateError) as raised:
+            self.run_step(ctx, setup, self.whisper(["a", "b"]), total=0.3)  # 14 words cannot fit into 0.3 s
+        self.assertIn("Could not build the captions", str(raised.exception))
+
+    def test_many_guessed_words_give_a_warning(self):
+        ctx, setup = self.make()
+        self.run_step(ctx, setup, self.whisper(["Trifft", "ein", "Wellenberg"]))  # 11 of 14 words missing from Whisper
+        self.assertTrue(any("spreading or interpolating" in w for w in ctx.warnings))
+
+    def test_a_perfect_transcript_gives_no_warning(self):
+        ctx, setup = self.make()
+        heard = ["Trifft", "ein", "Wellenberg", "auf", "ein", "Wellental", "löschen", "sie", "sich", "aus", "Das", "heißt", "destruktive", "Interferenz"]
+        self.run_step(ctx, setup, self.whisper(heard))
+        self.assertEqual(ctx.warnings, [])
+        self.assertEqual(ctx.report["captions"]["alignment"]["guessed"], 0)
+        self.assertEqual(ctx.report["captions"]["fixed_in_captions"], [])
+
+    def test_a_late_first_caption_is_only_a_warning(self):
+        ctx, setup = self.make()
+        heard = ["Trifft", "ein", "Wellenberg", "auf", "ein", "Wellental", "löschen", "sie", "sich", "aus", "Das", "heißt", "destruktive", "Interferenz"]
+        whisper = self.whisper(heard)
+        for cue in whisper["cues"]:
+            cue["start"] += 2.0
+            cue["end"] += 2.0
+        self.run_step(ctx, setup, whisper, total=10.0)
+        self.assertTrue(any("first caption only appears" in w for w in ctx.warnings))
+
+
+class WhisperStepTests(unittest.TestCase):
+    def make(self, tmp):
+        ctx = mv.Ctx(mv.parse_args(["content/x/script.json"]))
+        ctx.script = good_script()
+        ctx.work = tmp / "work"
+        ctx.work.mkdir()
+        setup = {"caption": {"font_size": 69, "stroke_width": 6, "box_height": 141, "position_percent": 73.07}}
+        return ctx, setup
+
+    def run_step(self, ctx, setup, srt_text, log_lines=("detected language: 'en', probability: 0.99",)):
+        srt = ctx.work / "subtitle.srt"
+        srt.write_text(srt_text, encoding="utf-8")
+        seen = {}
+
+        def fake_run(c, cmd, log_path, record):
+            seen["cmd"], seen["log"] = cmd, log_path
+            record.update(log=str(log_path), exit_code=0)
+            return list(log_lines), {"subtitle_path": str(srt)}
+
+        with mock.patch.object(mv, "find_tool", return_value="/bin/uv"), mock.patch.object(mv, "run_mpt_task", side_effect=fake_run), \
+                contextlib.redirect_stdout(io.StringIO()):
+            result = mv.step_whisper_timing(ctx, Path("/w/narration.wav"), setup, "Your fridge does not make cold. It moves heat out of the box.",
+                                            ["Your fridge does not make cold.", "It moves heat out of the box."])
+        return result, seen
+
+    GOOD_SRT = "".join(f"{k}\n00:00:0{k // 2},{(k % 2) * 500:03d} --> 00:00:0{(k + 1) // 2},{((k + 1) % 2) * 500:03d}\n{w}\n\n"
+                       for k, w in enumerate("Your fridge does not make cold. It moves heat out of the box.".split(), 1))
+
+    def test_the_whisper_run_stops_at_the_subtitle_stage_and_is_checked(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, setup = self.make(Path(raw))
+            result, seen = self.run_step(ctx, setup, self.GOOD_SRT)
+        self.assertEqual(seen["cmd"][-2:], ["--stop-at", "subtitle"])
+        self.assertTrue(str(seen["log"]).endswith("mpt-subtitles.log"))
+        self.assertEqual(len(result["cues"]), 13)
+        names = {c["name"]: c["ok"] for c in ctx.checks}
+        self.assertTrue(names["MPT subtitle path"])
+        self.assertTrue(names["whisper language"])
+        self.assertTrue(names["whisper vs script"])  # the voice-quality gate is still there
+        self.assertEqual(ctx.report["srt"]["wer"], 0.0)
+        self.assertEqual(ctx.report["srt"]["wer_limit"], mv.SRT_WER_LIMIT)
+        self.assertEqual(ctx.report["mpt"]["subtitle_run"]["exit_code"], 0)
+        self.assertEqual(result["task_dir"].name, result["task_id"])
+
+    def test_a_voice_that_whisper_cannot_understand_still_fails_the_run(self):
+        bad = "".join(f"{k}\n00:00:00,{k:03d} --> 00:00:00,{k + 1:03d}\nblah{k}\n\n" for k in range(1, 13))
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, setup = self.make(Path(raw))
+            with self.assertRaises(mv.GateError) as raised:
+                self.run_step(ctx, setup, bad)
+        self.assertIn("whisper vs script failed", str(raised.exception))
+        self.assertIn("voice", str(raised.exception))
+
+    def test_the_wrong_language_still_fails_the_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, setup = self.make(Path(raw))
+            with self.assertRaises(mv.GateError) as raised:
+                self.run_step(ctx, setup, self.GOOD_SRT, log_lines=("detected language: 'de', probability: 0.99",))
+        self.assertIn("whisper language failed", str(raised.exception))
+
+
+class VisualsStepTests(unittest.TestCase):
+    """step_visuals hands the captions (and, unless --no-visuals, the panels) to visuals.render_and_overlay."""
+
+    def make(self, tmp, extra_args=()):
+        ctx = mv.Ctx(mv.parse_args(["x.json", *extra_args]))
+        ctx.script = good_script()  # line 1 has a stat visual
+        ctx.work = tmp
+        words = [{"text": w, "start": 0.3 * k, "end": 0.3 * (k + 1), "timing": "heard"}
+                 for k, w in enumerate(" ".join(line["text"] for line in ctx.script["lines"]).split())]
+        mpt = {"video": tmp / "mpt.mp4", "captions": {"words": words, "phrases": [], "stats": {},
+                                                      "style": {"font_size": 69, "stroke_width": 6, "box_height": 141}}}
+        return ctx, mpt
+
+    def run_step(self, ctx, mpt):
+        calls = []
+
+        def fake_render(base, script, timings, out, work, captions=None):
+            calls.append({"base": base, "script": script, "captions": captions})
+            Path(out).write_text("video")
+            return {"panels": 1, "render_seconds": 1.0, "out": out, "captions": {"words": 2, "render_seconds": 1.0}}
+
+        fake = type(sys)("visuals")
+        fake.render_and_overlay = fake_render
+        with mock.patch.object(mv, "load_visuals_module", return_value=fake), contextlib.redirect_stdout(io.StringIO()):
+            out = mv.step_visuals(ctx, mpt, [{"index": 0, "start": 0, "end": 2}, {"index": 1, "start": 2.25, "end": 4}])
+        return out, calls
+
+    def test_captions_and_panels_go_in_one_call(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            out, calls = self.run_step(ctx, mpt)
+            self.assertEqual(len(calls), 1)
+            captions = calls[0]["captions"]
+            self.assertEqual(captions["words"][:2], [{"text": "Your", "start": 0.0, "end": 0.3}, {"text": "fridge", "start": 0.3, "end": 0.6}])
+            self.assertEqual(" ".join(w["text"] for w in captions["words"]), " ".join(line["text"] for line in ctx.script["lines"]))
+            self.assertTrue(all(set(w) == {"text", "start", "end"} for w in captions["words"]))
+            self.assertEqual((captions["font_size"], captions["stroke_width"], captions["box_height"]), (69, 6, 141))
+            self.assertEqual((captions["text_color"], captions["stroke_color"]), ("#FFFFFF", "#000000"))
+            self.assertIsNotNone(calls[0]["script"]["lines"][1]["visual"])
+            self.assertEqual(out, ctx.work / "final-visuals.mp4")
+            self.assertEqual(ctx.report["visuals"]["captions"]["words"], 2)
+            self.assertIn("13 caption words and 1 visual line(s)", ctx.checks[-1]["detail"])
+            self.assertTrue(any(c["name"] == "captions match script (as drawn)" and c["ok"] for c in ctx.checks))
+
+    def test_no_visuals_still_draws_the_captions(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw), ["--no-visuals"])
+            out, calls = self.run_step(ctx, mpt)
+            self.assertEqual(len(calls), 1)
+            self.assertTrue(calls[0]["captions"]["words"])
+            self.assertTrue(all(line["visual"] is None for line in calls[0]["script"]["lines"]))
+            self.assertEqual(ctx.report["visuals"]["skipped"], "--no-visuals")
+            self.assertNotIn("visual line", ctx.checks[-1]["detail"])
+            self.assertTrue(out.name == "final-visuals.mp4")
+            self.assertIsNotNone(good_script()["lines"][1]["visual"])  # the caller's script is not changed
+
+    def test_a_script_without_visuals_still_draws_the_captions(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            ctx.script["lines"][1]["visual"] = None
+            _out, calls = self.run_step(ctx, mpt)
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(ctx.report["visuals"]["skipped"], "no line has a visual")
+
+    def test_changed_caption_words_are_stopped_before_rendering(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            mpt["captions"]["words"][0]["text"] = "Rift"  # somebody changed a word after the gate
+            fake = type(sys)("visuals")
+            fake.render_and_overlay = mock.Mock()
+            with mock.patch.object(mv, "load_visuals_module", return_value=fake), contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(mv.GateError) as raised:
+                    mv.step_visuals(ctx, mpt, [])
+            self.assertIn("captions match script (as drawn) failed", str(raised.exception))
+            fake.render_and_overlay.assert_not_called()
+
+    def test_a_crash_in_visuals_is_a_plain_gate_error(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            fake = type(sys)("visuals")
+            fake.render_and_overlay = mock.Mock(side_effect=RuntimeError("remotion failed"))
+            with mock.patch.object(mv, "load_visuals_module", return_value=fake), contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(mv.GateError) as raised:
+                    mv.step_visuals(ctx, mpt, [])
+            self.assertIn("remotion failed", str(raised.exception))
+
+
+class MptStepOrderTests(unittest.TestCase):
+    """step_mpt: Whisper timing run first, then the footage, then the video run WITHOUT captions."""
+
+    def test_order_and_commands(self):
+        events = []
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            ctx = mv.Ctx(mv.parse_args(["x.json"]))
+            ctx.script = good_script()
+            ctx.work = tmp / "work"
+            ctx.work.mkdir()
+            ctx.report["captions"] = {}
+            video = tmp / "final-1.mp4"
+            video.write_text("v")
+            setup = {"caption": {"font_size": 69, "stroke_width": 6, "box_height": 141, "position_percent": 73.07},
+                     "footage": "local", "local_files": [Path("/m/a.mp4")], "source": None}
+            whisper = {"cues": [], "differences": [], "task_dir": tmp / "tasks" / "W", "task_id": "W", "log_text": "detected language: 'en'"}
+            captions = {"words": [], "phrases": [], "stats": {}, "style": {}}
+
+            def fake_whisper(c, narration, st, script_text, texts):
+                events.append("whisper")
+                c.report["mpt"] = {"subtitle_run": {"task_id": "W"}}
+                return whisper
+
+            def fake_captions(c, w, st, total):
+                events.append("captions")
+                return captions
+
+            seen = {}
+
+            def fake_run(c, cmd, log_path, record):
+                events.append("video")
+                seen["cmd"] = cmd
+                record.update(log=str(log_path), exit_code=0)
+                return ["generating video"], {"videos": [str(video)], "subtitle_path": "", "audio_duration": 72}
+
+            with mock.patch.object(mv, "step_whisper_timing", side_effect=fake_whisper), mock.patch.object(mv, "step_captions", side_effect=fake_captions), \
+                    mock.patch.object(mv, "run_mpt_task", side_effect=fake_run), mock.patch.object(mv, "find_tool", return_value="/bin/uv"), \
+                    mock.patch.object(mv, "MPT_DIR", tmp / "mpt"), contextlib.redirect_stdout(io.StringIO()):
+                mpt = mv.step_mpt(ctx, Path("/w/narration.wav"), setup, [], 10.0)
+        self.assertEqual(events, ["whisper", "captions", "video"])
+        self.assertIn("--no-subtitle-enabled", seen["cmd"])
+        self.assertNotIn("--subtitle-enabled", seen["cmd"])
+        self.assertNotIn("--stop-at", seen["cmd"])
+        self.assertEqual(mpt["captions"], captions)
+        self.assertEqual(mpt["extra_task_dirs"], [whisper["task_dir"]])  # cleanup must remove the Whisper run too
+        self.assertEqual(mpt["video"], video)
+        names = {c["name"]: c["ok"] for c in ctx.checks}
+        self.assertTrue(names["no burned-in captions"])
+        self.assertTrue(any("saved task params" in w for w in ctx.warnings))  # the fake MPT task folder has no script.json
+        self.assertEqual(ctx.report["mpt"]["subtitle_run"], {"task_id": "W"})  # the Whisper run's entry survives
+        self.assertEqual(ctx.report["mpt"]["exit_code"], 0)
 
 
 class OwnFootageStepTests(unittest.TestCase):

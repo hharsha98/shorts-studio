@@ -60,7 +60,7 @@ export const calculateShortsPanelMetadata: CalculateMetadataFunction<ShortsPanel
 const ACCENT = "#FFB000";
 const INK = "#0E1116";
 const CARD_BG = "rgba(14,17,22,0.88)";
-const FONT_FAMILY = "Be Vietnam Pro";
+export const FONT_FAMILY = "Be Vietnam Pro";
 const FONT_FALLBACK = `"${FONT_FAMILY}", "Helvetica Neue", Arial, sans-serif`;
 const CARD_W = 1032; // 24 px margin each side on the 1080 canvas
 const CARD_PAD_X = 40;
@@ -71,12 +71,12 @@ const ENTER_FRAMES = 10;
 const EXIT_FRAMES = 8;
 
 // ---------------------------------------------------------------- font loading
-const FONT_CSS = `@font-face{font-family:"${FONT_FAMILY}";src:url(${staticFile(
+export const FONT_CSS = `@font-face{font-family:"${FONT_FAMILY}";src:url(${staticFile(
   "fonts/BeVietnamPro-Bold.ttf",
 )}) format("truetype");font-weight:700;font-style:normal;font-display:block;}`;
 
 /** Loads the font before the first frame is captured (delayRender holds the screenshot). */
-const useBeVietnamPro = (): boolean => {
+export const useBeVietnamPro = (): boolean => {
   const [handle] = useState(() => delayRender("Loading Be Vietnam Pro Bold"));
   const [ready, setReady] = useState(false);
 

@@ -12,16 +12,22 @@ What it does, in order (every gate fails LOUDLY: non-zero exit + a plain-English
      3. voice every line with VoiceStudio, transcribe it back, check the word error rate
      4. join the lines (0.25 s gaps) into work/<id>/narration.wav + work/<id>/timings.json
      5. length gate (default 61-75 s)           <- --stage voice stops here
-     6. stock footage: studio/footage.py picks one Pixabay clip per script line (lines[].broll), cuts them to
-        1080x1920 and joins them into work/<id>/broll.mp4 (--footage own, the default when a Pixabay key is set;
-        --footage mpt lets MoneyPrinterTurbo search by itself)
-        MoneyPrinterTurbo (MPT) builds video + burned-in ONE-WORD-AT-A-TIME captions (pop animation),
-        placed with their top edge at y=1300: below the diagram panels, above the YouTube Shorts
-        title/channel overlay. The subtitle file must match the script (word error rate gate)
-     7. optional diagram overlays (studio/visuals.py), skipped with --no-visuals
-     8. final checks (duration, 1080x1920, audio, subtitle timing) + contact sheet
+     6. captions and video:
+        a. MoneyPrinterTurbo (MPT) runs once with --stop-at subtitle: Whisper hears the narration and writes one cue
+           per word (the TIMING; its spelling is sometimes wrong). Word error rate gate: a voice-quality signal.
+        b. studio/captions.py aligns those cues with the SCRIPT: one caption per script word, spelled exactly as in
+           the script, timed from Whisper. Gate "captions match script".
+        c. stock footage: studio/footage.py picks one Pixabay clip per script line (lines[].broll), cuts them to
+           1080x1920 and joins them into work/<id>/broll.mp4 (--footage own, the default when a Pixabay key is set;
+           --footage mpt lets MoneyPrinterTurbo search by itself)
+        d. MPT builds the video from our B-roll and the narration WITHOUT captions (--no-subtitle-enabled)
+     7. Remotion draws the captions (ONE word at a time, white with black outline, pop animation, top edge at y=1300:
+        below the diagram panels, above the YouTube Shorts title/channel overlay) and, unless --no-visuals, the diagram
+        panels; studio/visuals.py puts both on the video in ONE ffmpeg pass
+     8. final checks (duration, 1080x1920, audio, caption timing) + contact sheet
      9. credits for the stock footage that was really used (own footage: exactly the clips in the video)
-    10. review/<date>-<language>-<slug>/ : final.mp4, subtitles.srt, sheet.png, caption.txt, report.json
+    10. review/<date>-<language>-<slug>/ : final.mp4, subtitles.srt (the corrected captions as readable phrases),
+        captions-words.json (the per-word captions), sheet.png, caption.txt, report.json
     11. cleanup of the big temporary files (skipped with --keep-work); report.json records what was deleted
 
 Python standard library only. The pure helper functions (validation, WER, SRT sanity,
@@ -49,7 +55,6 @@ import threading
 import time
 import tomllib
 import traceback
-import unicodedata
 import urllib.error
 import urllib.request
 import uuid
@@ -60,6 +65,8 @@ STUDIO_DIR = ROOT / "studio"
 if str(STUDIO_DIR) not in sys.path:  # `import footage` must work however this file is started or imported
     sys.path.insert(0, str(STUDIO_DIR))
 import footage  # noqa: E402  (studio/footage.py: our own stock-footage choice)
+import captions as captionlib  # noqa: E402  (studio/captions.py: the script's words with Whisper's timing)
+from captions import normalize_words  # noqa: E402,F401  (one normalisation for the WER and the caption alignment)
 MPT_DIR = ROOT / "MoneyPrinterTurbo"
 VOICES_FILE = STUDIO_DIR / "voices.json"
 WORK_ROOT = ROOT / "work"
@@ -99,6 +106,7 @@ DISCLOSURE = {
 }
 SOURCES_LABEL = {"en": "Sources:", "de": "Quellen:"}
 LANGUAGES = ("en", "de")
+KEPT_WORK_FILES = ("timings.json", "mpt.log", "mpt-subtitles.log")  # step_cleanup keeps these in work/<id>
 
 FOOTAGE_MODES = ("auto", "own", "mpt")
 BROLL_MIN_CHARS, BROLL_MAX_CHARS, BROLL_MAX_WORDS = 2, 40, 4
@@ -266,21 +274,6 @@ def validate_script(data) -> tuple[list[str], list[str]]:
 # --------------------------------------------------------------------------------------
 # 3. Word error rate (pure)
 # --------------------------------------------------------------------------------------
-
-
-def normalize_words(text: str) -> list[str]:
-    """Lowercase, NFC, dashes become spaces, other punctuation/symbols are dropped, split to words."""
-    text = unicodedata.normalize("NFC", text or "").lower()
-    out = []
-    for ch in text:
-        cat = unicodedata.category(ch)
-        if cat == "Pd" or ch == "/":
-            out.append(" ")
-        elif cat[0] in ("P", "S"):
-            continue
-        else:
-            out.append(ch)
-    return "".join(out).split()
 
 
 def levenshtein(a: list, b: list) -> int:
@@ -486,36 +479,36 @@ def subtitle_timing_hint(starts: list[float], timings: list[dict], work: Path) -
 
 
 def check_srt_accuracy(cues: list[dict], script_texts: list[str], limit: float = SRT_WER_LIMIT) -> tuple[bool, float, str, list[str]]:
-    """Word error rate of ALL subtitle cues together against the whole script.
+    """Word error rate of ALL of Whisper's word cues together against the whole script.
 
-    In word-by-word mode MoneyPrinterTurbo does not run its subtitle.correct step, so the subtitle file holds
-    exactly what Whisper heard. Returns (ok, wer, message, differing words).
+    This is a VOICE-quality signal: if Whisper often hears something else than the script, the voice probably
+    mispronounces those words. The captions themselves do not suffer (they show the script's own words, see
+    studio/captions.py), but the listener does. Returns (ok, wer, message, differing words).
     """
     reference = " ".join(script_texts)
     heard = " ".join(c["text"] for c in cues)
     wer = word_error_rate(reference, heard)
     diffs = word_differences(reference, heard)
     if wer <= limit:
-        return True, wer, f"subtitle text vs script: word error rate {wer:.3f} (limit {limit:.2f}), {len(diffs)} differing spot(s)", diffs
+        return True, wer, f"word error rate {wer:.3f} (limit {limit:.2f}), {len(diffs)} differing spot(s) (fixed in the captions)", diffs
     shown = "\n      ".join(diffs)
     return False, wer, (
-        f"The subtitle file does not match the script: word error rate {wer:.3f} is above {limit:.2f}. "
+        f"Whisper does not hear the script in the narration: word error rate {wer:.3f} is above {limit:.2f}. "
         f"Whisper (inside MoneyPrinterTurbo) heard these differences:\n      {shown}\n"
-        "  Reword the lines that contain those words (simpler words, numbers as words) and run again."
+        "  The voice probably says these words badly. Reword the lines that contain them (simpler words, numbers as words) and run again."
     ), diffs
 
 
-def subtitle_difference_warning(diffs: list[str]) -> str | None:
-    """A warning that lists the caption words that differ from the script, or None when there are none.
+def fixed_in_captions_note(diffs: list[str]) -> str | None:
+    """A note that lists where Whisper heard something else than the script (the captions show the script's word), or None.
 
-    The captions are burned into the video exactly as Whisper wrote them, so a small mishearing (a misspelled
-    word) can pass the word-error-rate gate and still be on screen. This puts those words in front of the user.
+    Nothing wrong reaches the screen, but it tells the user which words the VOICE may say unclearly.
     """
     if not diffs:
         return None
     shown = "\n      ".join(diffs)
-    return (f"{len(diffs)} caption spot(s) differ from the script. The video shows the words as Whisper wrote them, "
-            f"so look at these in final.mp4:\n      {shown}")
+    return (f"fixed in captions: {len(diffs)} spot(s) where Whisper heard something else than the script. "
+            f"The captions show the script's words; listen to these in the narration:\n      {shown}")
 
 
 def first_caption_problem(cues: list[dict], limit_seconds: float = 1.0) -> str | None:
@@ -710,8 +703,15 @@ def resolve_footage_mode(requested: str, has_local_materials: bool, has_pixabay_
 def build_mpt_command(uv: str, script_text: str, terms: list[str], narration: Path, task_id: str,
                       local_files: list[Path] | None = None, font_size: int = CAPTION_FONT_MAX,
                       stroke_width: int | None = None, position_percent: float | None = None,
-                      source: str | None = None, fixed_order_seconds: int | None = None) -> list[str]:
+                      source: str | None = None, fixed_order_seconds: int | None = None,
+                      stop_at: str | None = None, burn_captions: bool = True) -> list[str]:
     """The `uv run python cli.py ...` command (run it with cwd = MoneyPrinterTurbo).
+
+    Two kinds of run:
+    - stop_at="subtitle": only Whisper's word timing is wanted (MPT stops after the subtitle stage, no footage, no
+      video), so no footage options are added.
+    - burn_captions=False (the video run): MPT builds the video WITHOUT captions (--no-subtitle-enabled, so it does
+      not even run Whisper); our own captions are drawn later by Remotion (studio/visuals.py).
 
     fixed_order_seconds (own footage): the local material is ONE already-cut B-roll file, so MPT must play it once,
     from start to end, in our order: sequential mode, no transitions, normal speed, and a clip length longer than
@@ -726,20 +726,31 @@ def build_mpt_command(uv: str, script_text: str, terms: list[str], narration: Pa
         "--video-terms", ",".join(terms),
         "--custom-audio-file", str(narration),
         "--bgm-type", "none",
-        "--font-name", SUBTITLE_FONT,
-        "--subtitle-enabled",
-        "--no-subtitle-background-enabled",  # never let a background saved by the MPT WebUI shrink the room for a word
-        "--subtitle-display-mode", SUBTITLE_DISPLAY_MODE,
-        "--subtitle-animation", SUBTITLE_ANIMATION,
-        "--subtitle-position", SUBTITLE_POSITION,
-        "--custom-position", f"{position_percent:g}",
-        "--font-size", str(int(font_size)),
-        "--stroke-width", str(int(stroke_width)),
-        "--stroke-color", SUBTITLE_STROKE_COLOR,
-        "--text-fore-color", SUBTITLE_TEXT_COLOR,
+    ]
+    if burn_captions:
+        cmd += [
+            "--font-name", SUBTITLE_FONT,
+            "--subtitle-enabled",
+            "--no-subtitle-background-enabled",  # never let a background saved by the MPT WebUI shrink the room for a word
+            "--subtitle-display-mode", SUBTITLE_DISPLAY_MODE,
+            "--subtitle-animation", SUBTITLE_ANIMATION,
+            "--subtitle-position", SUBTITLE_POSITION,
+            "--custom-position", f"{position_percent:g}",
+            "--font-size", str(int(font_size)),
+            "--stroke-width", str(int(stroke_width)),
+            "--stroke-color", SUBTITLE_STROKE_COLOR,
+            "--text-fore-color", SUBTITLE_TEXT_COLOR,
+        ]
+    else:
+        cmd += ["--no-subtitle-enabled"]
+    cmd += [
         "--video-aspect", "9:16",
         "--task-id", task_id,
     ]
+    if stop_at:
+        cmd += ["--stop-at", stop_at]
+    if stop_at == "subtitle":
+        return cmd
     if local_files:
         cmd += ["--video-source", "local", "--video-materials", ",".join(str(p) for p in local_files)]
         if fixed_order_seconds:
@@ -844,6 +855,18 @@ def find_bgm_usage(log_text: str, saved_params: dict | None = None) -> list[str]
             problems.append(f"MPT saved bgm_type={saved_params.get('bgm_type')!r} for this task")
         if saved_params.get("bgm_file"):
             problems.append(f"MPT saved bgm_file={saved_params.get('bgm_file')!r} for this task")
+    return problems
+
+
+def find_burned_captions(log_text: str, result: dict, saved_params: dict | None = None) -> list[str]:
+    """Anything that suggests MPT's own video has captions burned in (we draw ours; two sets would double on screen)."""
+    problems = []
+    if isinstance(result, dict) and result.get("subtitle_path"):
+        problems.append(f"MPT returned a subtitle file for the video run: {result.get('subtitle_path')}")
+    if re.search(r"detected language: '", strip_ansi(log_text)):
+        problems.append("Whisper ran inside the video run")
+    if isinstance(saved_params, dict) and saved_params.get("subtitle_enabled") is not False:
+        problems.append(f"MPT saved subtitle_enabled={saved_params.get('subtitle_enabled')!r} for this task")
     return problems
 
 
@@ -1231,20 +1254,23 @@ def step_validate(ctx: Ctx) -> None:
 
 
 def load_visuals_module(needed: list[int]):
-    """Import studio/visuals.py and make sure render_and_overlay exists; plain GateError otherwise."""
+    """Import studio/visuals.py and make sure render_and_overlay exists; plain GateError otherwise.
+
+    `needed` = the lines that have a visual. visuals.py is needed even without any: it draws the captions.
+    """
     if str(STUDIO_DIR) not in sys.path:
         sys.path.insert(0, str(STUDIO_DIR))
+    what = ("lines " + ", ".join(map(str, needed)) + " have a visual and the captions are drawn by it") if needed else "it draws the captions"
     try:
         module = importlib.import_module("visuals")
     except ModuleNotFoundError as exc:
         if exc.name == "visuals":
-            raise GateError("studio/visuals.py does not exist yet, but lines " + ", ".join(map(str, needed)) +
-                            " have a visual. Build it, or run again with --no-visuals.")
+            raise GateError(f"studio/visuals.py does not exist yet, but {what}. Build it first.")
         raise GateError(f"studio/visuals.py could not be imported (missing module {exc.name!r}).")
     except Exception as exc:  # a broken visuals.py must not crash the run with a raw traceback
-        raise GateError(f"studio/visuals.py could not be imported: {type(exc).__name__}: {exc}. Fix it, or run again with --no-visuals.")
+        raise GateError(f"studio/visuals.py could not be imported: {type(exc).__name__}: {exc}. Fix it first ({what}).")
     if not callable(getattr(module, "render_and_overlay", None)):
-        raise GateError("studio/visuals.py has no render_and_overlay function. Fix it, or run again with --no-visuals.")
+        raise GateError(f"studio/visuals.py has no render_and_overlay function. Fix it first ({what}).")
     return module
 
 
@@ -1316,9 +1342,8 @@ def step_preflight(ctx: Ctx) -> dict:
         ctx.warn("MoneyPrinterTurbo picks the footage itself; it finds few portrait clips and often off-topic ones. Prefer --footage own.")
 
     needs_visuals = [k for k, line in enumerate(script["lines"]) if line.get("visual")]
-    if needs_visuals and not args.no_visuals:
-        load_visuals_module(needs_visuals)  # fail now, not after minutes of voice + video work
-        ctx.say("  studio/visuals.py: render_and_overlay found")
+    load_visuals_module(needs_visuals if not args.no_visuals else [])  # fail now, not after minutes of voice + video work
+    ctx.say("  studio/visuals.py: render_and_overlay found (it draws the captions" + ("" if args.no_visuals or not needs_visuals else " and the diagram panels") + ")")
 
     caption = pick_caption_style([line["text"].strip() for line in script["lines"]], font_path)
     ctx.check("caption size", caption["box_top_y"] >= CAPTION_TOP_LIMIT_Y,
@@ -1541,49 +1566,33 @@ def step_own_footage(ctx: Ctx, timings: list[dict], total: float) -> dict:
     return result
 
 
-def step_mpt(ctx: Ctx, narration: Path, setup: dict, timings: list[dict] | None = None, total: float | None = None) -> dict:
-    ctx.step(6, "Stock footage + MoneyPrinterTurbo: video + subtitles")
-    broll = None
-    if setup.get("footage") == "own":
-        if timings is None or total is None:
-            raise GateError("Own footage needs the narration timings (internal error: step_mpt was called without them).")
-        broll = step_own_footage(ctx, timings, total)
-    local_files = [broll["path"].resolve()] if broll else setup["local_files"]
-    script_texts = [line["text"].strip() for line in ctx.script["lines"]]
-    script_text = mpt_script_text(script_texts)
-    task_id = str(uuid.uuid4())
-    caption = setup["caption"]
-    cmd = build_mpt_command(find_tool("uv"), script_text, ctx.script["video_terms"], narration.resolve(), task_id, local_files,
-                            font_size=caption["font_size"], stroke_width=caption["stroke_width"],
-                            position_percent=caption["position_percent"], source=setup.get("source"),
-                            fixed_order_seconds=math.ceil(total) + OWN_FOOTAGE_EXTRA_SECONDS if broll else None)
-    log_path = ctx.work / "mpt.log"
-    task_dir = MPT_DIR / "storage" / "tasks" / task_id
-    ctx.say(f"  task id {task_id}; log: {log_path}")
-    before = snapshot_local_copies()
+def run_mpt_task(ctx: Ctx, cmd: list[str], log_path: Path, record: dict) -> tuple[list[str], dict]:
+    """Run one MoneyPrinterTurbo cli.py command and return (log lines, its "result" JSON).
+
+    The command and the log go to log_path. `record` is filled with task_id/log/exit_code BEFORE any failure is
+    raised, so a failed run still shows up in the partial report. Any trouble (cannot start, timeout, non-zero
+    exit, no result JSON) becomes a plain GateError.
+    """
     lines: list[str] = []
     env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8"}
-    try:
-        with open(log_path, "w", encoding="utf-8", buffering=1) as log:
-            log.write("# " + " ".join(shlex.quote(c) for c in cmd) + "\n")
-            last_ping = time.time()
+    with open(log_path, "w", encoding="utf-8", buffering=1) as log:
+        log.write("# " + " ".join(shlex.quote(c) for c in cmd) + "\n")
+        last_ping = time.time()
 
-            def on_line(raw: str) -> None:
-                nonlocal last_ping
-                line = strip_ansi(raw)
-                lines.append(line)
-                log.write(line + "\n")
-                if time.time() - last_ping > 30:
-                    ctx.say(f"    ... MPT working: {line[:110]}")
-                    last_ping = time.time()
+        def on_line(raw: str) -> None:
+            nonlocal last_ping
+            line = strip_ansi(raw)
+            lines.append(line)
+            log.write(line + "\n")
+            if time.time() - last_ping > 30:
+                ctx.say(f"    ... MPT working: {line[:110]}")
+                last_ping = time.time()
 
-            try:
-                code, timed_out = run_streaming(cmd, MPT_DIR, env, MPT_TIMEOUT_SECONDS, on_line)
-            except OSError as exc:
-                raise GateError(f"MoneyPrinterTurbo could not be started: {exc}")
-    finally:
-        ctx.removed_early += remove_new_local_copies(before)
-    ctx.report["mpt"] = {"task_id": task_id, "log": str(log_path), "exit_code": code, "script_text": script_text}
+        try:
+            code, timed_out = run_streaming(cmd, MPT_DIR, env, MPT_TIMEOUT_SECONDS, on_line)
+        except OSError as exc:
+            raise GateError(f"MoneyPrinterTurbo could not be started: {exc}")
+    record.update(log=str(log_path), exit_code=code)
     if timed_out:
         raise GateError(f"MoneyPrinterTurbo did not finish within {MPT_TIMEOUT_SECONDS // 60} minutes, so it and everything it started was stopped. "
                         f"Full log: {log_path}")
@@ -1593,13 +1602,123 @@ def step_mpt(ctx: Ctx, narration: Path, setup: dict, timings: list[dict] | None 
     parsed = parse_mpt_result(lines)
     if parsed is None:
         raise GateError(f"MoneyPrinterTurbo finished but printed no result JSON. See {log_path}")
-    result = parsed["result"]
-    log_text = "\n".join(lines)
-    notes = collect_mpt_notes(log_text)
+    return lines, parsed["result"]
 
+
+def step_whisper_timing(ctx: Ctx, narration: Path, setup: dict, script_text: str, script_texts: list[str]) -> dict:
+    """MoneyPrinterTurbo with --stop-at subtitle: Whisper hears our narration and writes one cue per word.
+
+    Only the TIMING of these cues is used for the captions (their spelling is sometimes wrong). The word error
+    rate against the script stays a gate as a signal for the quality of the VOICE.
+    """
+    ctx.say("  a) Whisper timing: MoneyPrinterTurbo --stop-at subtitle (no footage, no video)")
+    caption = setup["caption"]
+    task_id = str(uuid.uuid4())
+    cmd = build_mpt_command(find_tool("uv"), script_text, ctx.script["video_terms"], narration.resolve(), task_id,
+                            font_size=caption["font_size"], stroke_width=caption["stroke_width"],
+                            position_percent=caption["position_percent"], stop_at="subtitle")
+    log_path = ctx.work / "mpt-subtitles.log"
+    task_dir = MPT_DIR / "storage" / "tasks" / task_id
+    ctx.say(f"    task id {task_id}; log: {log_path}")
+    record: dict = {"task_id": task_id}
+    ctx.report["mpt"] = {"subtitle_run": record}
+    lines, result = run_mpt_task(ctx, cmd, log_path, record)
+    log_text = "\n".join(lines)
     subtitle_path = result.get("subtitle_path")
+    record["subtitle_path"] = subtitle_path
     ctx.check("MPT subtitle path", bool(subtitle_path) and Path(subtitle_path).is_file(),
-              f"{subtitle_path or 'none'} (the result must contain a subtitle file)")
+              f"{subtitle_path or 'none'} (the Whisper run must write a subtitle file)")
+    ok, detail = check_whisper_language(log_text, ctx.script["language"])
+    ctx.check("whisper language", ok, detail)
+
+    cues = parse_srt(Path(subtitle_path).read_text(encoding="utf-8"))
+    sub_ok, sub_wer, sub_detail, sub_diffs = check_srt_accuracy(cues, script_texts)
+    raw_problems = srt_problems(cues)  # information only: the captions are rebuilt from the script, these cannot reach the screen
+    ctx.report["srt"] = {"cues": len(cues), "wer": round(sub_wer, 4), "wer_limit": SRT_WER_LIMIT, "differences": sub_diffs,
+                         "whisper_timing_problems": raw_problems}
+    ctx.check("whisper vs script", sub_ok, sub_detail)
+    detected = detect_whisper_language(log_text) or (None, None)
+    ctx.report["mpt"].update(notes=collect_mpt_notes(log_text), whisper={"language": detected[0], "probability": detected[1]})
+    return {"cues": cues, "subtitle_path": Path(subtitle_path), "task_dir": task_dir, "task_id": task_id,
+            "log_text": log_text, "differences": sub_diffs, "wer": sub_wer}
+
+
+def step_captions(ctx: Ctx, whisper: dict, setup: dict, total: float) -> dict:
+    """One caption per SCRIPT word (exactly as written), timed from Whisper's cues (studio/captions.py).
+
+    Gates: "captions match script" (fatal: the words that will be drawn ARE the script's words), the timing rules
+    of captions.caption_problems (fatal), the first caption near the start (a warning).
+    """
+    ctx.say("  b) Captions: the script's words with Whisper's timing")
+    texts = [line["text"].strip() for line in ctx.script["lines"]]
+    try:
+        words = captionlib.align_words(whisper["cues"], texts, end_limit=total)
+    except captionlib.CaptionError as exc:
+        raise GateError(f"Could not build the captions from the script and Whisper's timing: {exc}") from None
+    ok, detail = captionlib.captions_match_script([w["text"] for w in words], texts)
+    ctx.check("captions match script", ok, detail)
+    stats = captionlib.alignment_stats(words)
+    ctx.say(f"    timing: {stats['heard']} words have their own Whisper time, {stats['spread']} share a block of time, "
+            f"{stats['interpolated']} were placed between their neighbours")
+    guessed = captionlib.guessed_warning(stats)
+    if guessed:
+        ctx.warn(guessed)
+    problems = captionlib.caption_problems(words, total)
+    ctx.check("caption timing", not problems,
+              f"{len(words)} caption words, in order, none overlapping, each at least {captionlib.MIN_WORD_SECONDS:g} s, "
+              f"all inside the {total:.1f} s narration" if not problems else "; ".join(problems[:6]))
+    late = first_caption_problem(words)
+    if late:
+        ctx.warn(late)
+    else:
+        ctx.check("captions from the start", True, f"first caption at {words[0]['start']:.2f} s")
+    note = fixed_in_captions_note(whisper["differences"])
+    if note:
+        ctx.say(f"  {note}")
+    phrases = captionlib.group_phrases(words, end_limit=total)
+    style = setup["caption"]
+    ctx.report["captions"].update(
+        renderer="Remotion composition WordCaptions (our own captions: the script's words, Whisper's timing)",
+        script_words=len(words), alignment=stats, fixed_in_captions=whisper["differences"], phrases=len(phrases),
+    )
+    return {"words": words, "phrases": phrases, "stats": stats,
+            "style": {"font_size": style["font_size"], "stroke_width": style["stroke_width"], "box_height": style["box_height"]}}
+
+
+def step_mpt(ctx: Ctx, narration: Path, setup: dict, timings: list[dict] | None = None, total: float | None = None) -> dict:
+    ctx.step(6, "Whisper timing, captions from the script, stock footage and the MoneyPrinterTurbo video (no captions)")
+    script_texts = [line["text"].strip() for line in ctx.script["lines"]]
+    script_text = mpt_script_text(script_texts)
+    if total is None:
+        raise GateError("The captions need the narration length (internal error: step_mpt was called without it).")
+
+    whisper = step_whisper_timing(ctx, narration, setup, script_text, script_texts)
+    captions = step_captions(ctx, whisper, setup, total)
+
+    broll = None
+    if setup.get("footage") == "own":
+        if timings is None:
+            raise GateError("Own footage needs the narration timings (internal error: step_mpt was called without them).")
+        broll = step_own_footage(ctx, timings, total)
+    local_files = [broll["path"].resolve()] if broll else setup["local_files"]
+
+    ctx.say("  d) MoneyPrinterTurbo video WITHOUT captions (our captions are drawn in step 7)")
+    task_id = str(uuid.uuid4())
+    cmd = build_mpt_command(find_tool("uv"), script_text, ctx.script["video_terms"], narration.resolve(), task_id, local_files,
+                            source=setup.get("source"), burn_captions=False,
+                            fixed_order_seconds=math.ceil(total) + OWN_FOOTAGE_EXTRA_SECONDS if broll else None)
+    log_path = ctx.work / "mpt.log"
+    task_dir = MPT_DIR / "storage" / "tasks" / task_id
+    ctx.say(f"    task id {task_id}; log: {log_path}")
+    before = snapshot_local_copies()
+    ctx.report["mpt"].update(task_id=task_id, script_text=script_text)  # keeps the "subtitle_run" entry of the Whisper run
+    try:
+        lines, result = run_mpt_task(ctx, cmd, log_path, ctx.report["mpt"])
+    finally:
+        ctx.removed_early += remove_new_local_copies(before)
+    log_text = "\n".join(lines)
+    notes = collect_mpt_notes(log_text) + (ctx.report["mpt"].get("notes") or [])
+
     mpt_warnings = result.get("warnings")
     ctx.check("MPT result warnings", not mpt_warnings, "none" if not mpt_warnings else f"MPT reported warnings: {mpt_warnings}")
 
@@ -1607,41 +1726,27 @@ def step_mpt(ctx: Ctx, narration: Path, setup: dict, timings: list[dict] | None 
     try:
         saved_params = json.loads((task_dir / "script.json").read_text(encoding="utf-8")).get("params")
     except (OSError, ValueError):
-        ctx.warn("could not read MPT's saved task params to double-check the no-music setting")
-    bgm = find_bgm_usage(log_text, saved_params)
+        ctx.warn("could not read MPT's saved task params to double-check the no-music and no-captions settings")
+    bgm = find_bgm_usage(log_text + "\n" + whisper["log_text"], saved_params)
     ctx.check("no background music", not bgm, "MPT mixed no music" if not bgm else "; ".join(bgm))
 
-    ok, detail = check_whisper_language(log_text, ctx.script["language"])
-    ctx.check("whisper language", ok, detail)
-
-    # Word-by-word mode skips MPT's own subtitle correction, so the file holds what Whisper really heard.
-    cues = parse_srt(Path(subtitle_path).read_text(encoding="utf-8"))
-    sub_ok, sub_wer, sub_detail, sub_diffs = check_srt_accuracy(cues, script_texts)
-    ctx.report["srt"] = {"cues": len(cues), "wer": round(sub_wer, 4), "wer_limit": SRT_WER_LIMIT, "differences": sub_diffs}
-    ctx.check("subtitle accuracy", sub_ok, sub_detail)
-    diff_warning = subtitle_difference_warning(sub_diffs)
-    if diff_warning:
-        ctx.warn(diff_warning)
-    late = first_caption_problem(cues)
-    if late:
-        ctx.warn(late)
-    else:
-        ctx.check("captions from the start", True, f"first caption at {cues[0]['start']:.2f} s")
+    burned = find_burned_captions(log_text, result, saved_params)
+    ctx.check("no burned-in captions", not burned,
+              "MPT's video has no captions (ours are added in step 7)" if not burned else "; ".join(burned))
 
     videos = result.get("videos") or []
     video = Path(videos[0]) if videos else None
     ctx.check("MPT video", bool(video) and video.is_file(), f"{video}" if video else "MPT returned no video file")
     if broll:
         check_footage_order(ctx, video, broll)
-    detected = detect_whisper_language(log_text) or (None, None)
     ctx.report["mpt"].update(
-        notes=notes, subtitle_path=subtitle_path, video=str(video), warnings=mpt_warnings or [],
+        notes=notes, video=str(video), warnings=mpt_warnings or [],
         audio_duration=result.get("audio_duration"), materials=result.get("materials"),
-        whisper={"language": detected[0], "probability": detected[1]},
     )
     if notes:
         ctx.say(f"  {len(notes)} subtitle alignment note(s) recorded in the report")
-    return {"video": video, "subtitle": Path(subtitle_path), "task_dir": task_dir, "task_id": task_id, "broll": broll}
+    return {"video": video, "task_dir": task_dir, "task_id": task_id, "broll": broll, "captions": captions,
+            "extra_task_dirs": [whisper["task_dir"]]}
 
 
 def check_footage_order(ctx: Ctx, video: Path, broll: dict) -> None:
@@ -1663,25 +1768,39 @@ def check_footage_order(ctx: Ctx, video: Path, broll: dict) -> None:
 
 
 def step_visuals(ctx: Ctx, mpt: dict, timings: list[dict]) -> Path:
-    ctx.step(7, "Diagram overlays")
+    """Captions (always) and diagram panels (unless --no-visuals): Remotion draws them, ONE ffmpeg pass puts them on the video."""
+    ctx.step(7, "Captions and diagram overlays")
     needed = [k for k, line in enumerate(ctx.script["lines"]) if line.get("visual")]
-    if ctx.args.no_visuals or not needed:
+    panels_off = ctx.args.no_visuals or not needed
+    script = ctx.script
+    if panels_off:
         why = "--no-visuals" if ctx.args.no_visuals else "no line has a visual"
-        ctx.check("visuals", True, f"skipped ({why})")
-        ctx.report["visuals"] = {"skipped": why}
-        return mpt["video"]
+        script = {**ctx.script, "lines": [{**line, "visual": None} for line in ctx.script["lines"]]}
     module = load_visuals_module(needed)
+    caption_data = mpt["captions"]
+    style = caption_data["style"]
+    caption_args = {
+        "words": [{"text": w["text"], "start": w["start"], "end": w["end"]} for w in caption_data["words"]],
+        "font_size": style["font_size"], "stroke_width": style["stroke_width"], "box_height": style["box_height"],
+        "text_color": SUBTITLE_TEXT_COLOR, "stroke_color": SUBTITLE_STROKE_COLOR,
+    }
+    ok, detail = captionlib.captions_match_script([w["text"] for w in caption_args["words"]], [line["text"].strip() for line in ctx.script["lines"]])
+    ctx.check("captions match script (as drawn)", ok, detail)  # what is handed to Remotion, one last time
     out = ctx.work / "final-visuals.mp4"
     work_dir = ctx.work / "visuals"
     work_dir.mkdir(parents=True, exist_ok=True)
     try:
-        info = module.render_and_overlay(str(mpt["video"]), ctx.script, timings, str(out), str(work_dir))
+        info = module.render_and_overlay(str(mpt["video"]), script, timings, str(out), str(work_dir), captions=caption_args)
     except Exception as exc:  # the overlay code is another module: report any crash plainly
         raise GateError(f"visuals.render_and_overlay failed: {type(exc).__name__}: {exc}")
     if not out.is_file():
         raise GateError(f"visuals.render_and_overlay returned but {out} was not written.")
     ctx.report["visuals"] = info if isinstance(info, dict) else {"result": str(info)}
-    ctx.check("visuals", True, f"{len(needed)} visual line(s) rendered onto the video -> {out}")
+    if panels_off:
+        ctx.report["visuals"]["skipped"] = why
+    panels = len(needed) if not panels_off else 0
+    ctx.check("visuals", True, f"{len(caption_data['words'])} caption words" + (f" and {panels} visual line(s)" if panels else "") +
+              f" rendered onto the video in one ffmpeg pass -> {out}")
     return out
 
 
@@ -1693,20 +1812,13 @@ def step_final_checks(ctx: Ctx, final_video: Path, mpt: dict, total: float) -> P
         ctx.check(name, ok, detail)
     if abs(info["duration"] - total) > 1.5:
         ctx.warn(f"final video ({info['duration']:.1f} s) differs from the narration ({total:.1f} s) by more than 1.5 s")
-    cues = parse_srt(mpt["subtitle"].read_text(encoding="utf-8"))
-    # A zero-length word (whisper sometimes gives one) only flashes by in word-by-word captions: warn, don't fail.
-    # Overlapping or out-of-order cues still fail.
-    issues = srt_issues(cues)
-    blips = [msg for _start, msg in issues if "has zero length" in msg]
-    problems = srt_problems(cues) if not cues else [msg for _start, msg in issues if "has zero length" not in msg]
-    for msg in blips:
-        ctx.warn(f"{msg}: that word flashes by too fast to read; check it when you watch the video")
-    hint = subtitle_timing_hint([start for start, msg in issues if "has zero length" not in msg], ctx.report.get("timings") or [], ctx.work)
-    ok_detail = f"{len(cues)} cues, none overlapping or out of order" + (f" ({len(blips)} zero-length word(s), see warnings)" if blips else "")
-    ctx.check("subtitle timing", not problems, ok_detail if not problems else "; ".join(problems[:6]) + hint)
+    words = mpt["captions"]["words"]
+    problems = captionlib.caption_problems(words, total)
+    ctx.check("subtitle timing", not problems,
+              f"{len(words)} caption words, none overlapping or out of order, all inside the narration" if not problems else "; ".join(problems[:6]))
     mpt_video_duration = info["duration"] if mpt["video"] == final_video else ffprobe_info(ffprobe, mpt["video"])["duration"]
     ctx.report["durations"] = {"narration": round(total, 3), "mpt_video": round(mpt_video_duration, 3), "final": round(info["duration"], 3)}
-    ctx.report.setdefault("srt", {}).update(cues=len(cues), problems=problems, zero_length_words=len(blips))
+    ctx.report["captions"]["timing_problems"] = problems
     sheet = ctx.work / "sheet.png"
     proc = run_cmd(["node", str(ctx.media_dir / "media.mjs"), "sheet", str(final_video), str(sheet)], 300, "media.mjs sheet")
     if proc.returncode != 0 or not sheet.is_file():
@@ -1768,16 +1880,14 @@ def step_output(ctx: Ctx, final_video: Path, sheet: Path, credits: list[str], mp
     folder = REVIEW_ROOT / review_folder_name(ctx.script, datetime.date.today())
     folder.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(final_video, folder / "final.mp4")
-    cues = parse_srt(Path(mpt["subtitle"]).read_text(encoding="utf-8"))  # YouTube accepts SRT uploads
-    if cues:
-        (folder / "subtitles.srt").write_text(format_srt(cues), encoding="utf-8")  # same cues, tidied separator lines
-    else:
-        shutil.copyfile(mpt["subtitle"], folder / "subtitles.srt")
+    captions = mpt["captions"]
+    # YouTube accepts SRT uploads: the CORRECTED captions (the script's words) as readable phrases, not Whisper's raw words
+    (folder / "subtitles.srt").write_text(format_srt(captions["phrases"]), encoding="utf-8")
+    (folder / "captions-words.json").write_text(json.dumps(captions["words"], ensure_ascii=False, indent=2), encoding="utf-8")
     shutil.copyfile(sheet, folder / "sheet.png")
     (folder / "caption.txt").write_text(build_caption(ctx.script, credits), encoding="utf-8")
     # From here on the report points at the kept copies, not at the temporary files that cleanup deletes.
     kept = {
-        str(mpt["subtitle"]): str(folder / "subtitles.srt"),
         str(final_video): str(folder / "final.mp4"),
         str(sheet): str(folder / "sheet.png"),
     }
@@ -1787,12 +1897,13 @@ def step_output(ctx: Ctx, final_video: Path, sheet: Path, credits: list[str], mp
         "review_dir": str(folder),
         "final": str(folder / "final.mp4"),
         "subtitles": str(folder / "subtitles.srt"),
+        "captions_words": str(folder / "captions-words.json"),
         "sheet": str(folder / "sheet.png"),
         "caption": str(folder / "caption.txt"),
         "report": str(folder / "report.json"),
     }
     write_report(ctx, folder / "report.json", ok=True)
-    ctx.say(f"  wrote {folder}/ (final.mp4, subtitles.srt, sheet.png, caption.txt, report.json)")
+    ctx.say(f"  wrote {folder}/ (final.mp4, subtitles.srt, captions-words.json, sheet.png, caption.txt, report.json)")
     return folder
 
 
@@ -1807,12 +1918,12 @@ def step_cleanup(ctx: Ctx, mpt: dict, folder: Path) -> None:
         write_report(ctx, report_path, ok=True)
         return
     removed: list[str] = list(ctx.removed_early)
-    task_dir: Path = mpt["task_dir"]
-    if task_dir.parent == MPT_DIR / "storage" / "tasks" and task_dir.is_dir():
-        shutil.rmtree(task_dir, ignore_errors=True)
-        removed.append(str(task_dir))
+    for task_dir in [mpt["task_dir"], *mpt.get("extra_task_dirs", [])]:  # the video run and the Whisper timing run
+        if task_dir.parent == MPT_DIR / "storage" / "tasks" and task_dir.is_dir():
+            shutil.rmtree(task_dir, ignore_errors=True)
+            removed.append(str(task_dir))
     for item in sorted(ctx.work.iterdir()):
-        if item.name in ("timings.json", "mpt.log"):
+        if item.name in KEPT_WORK_FILES:
             continue
         if item.is_dir():
             shutil.rmtree(item, ignore_errors=True)
@@ -1825,12 +1936,12 @@ def step_cleanup(ctx: Ctx, mpt: dict, folder: Path) -> None:
     ctx.report["cleanup"] = {
         "performed": True,
         "removed": removed,
-        "kept": [str(ctx.work / "timings.json"), str(ctx.work / "mpt.log"), str(folder)],
-        "note": "paths in this report that pointed at removed files are null (or left out of lists); the review folder keeps final.mp4, subtitles.srt, sheet.png, caption.txt. "
+        "kept": [*(str(ctx.work / name) for name in KEPT_WORK_FILES if (ctx.work / name).exists()), str(folder)],
+        "note": "paths in this report that pointed at removed files are null (or left out of lists); the review folder keeps final.mp4, subtitles.srt, captions-words.json, sheet.png, caption.txt. "
                 "In the sentences of checks[].detail a removed file is shown as '<file name> (deleted after the run)'",
     }
     write_report(ctx, report_path, ok=True)
-    ctx.say(f"  removed MPT's task folder and the big files in {ctx.work} (kept timings.json and mpt.log); list recorded in report.json")
+    ctx.say(f"  removed MPT's task folders and the big files in {ctx.work} (kept timings.json and the MPT logs); list recorded in report.json")
 
 
 def fail(ctx: Ctx, headline: str, message: str, extra: dict | None = None) -> int:

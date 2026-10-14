@@ -8,7 +8,11 @@ Public entry point (called by make_video.py):
 For every script line that has a ``visual`` this renders one transparent 1080x1080
 panel (Remotion composition "ShortsPanel", ProRes 4444 with alpha), then puts all
 panels on the base video in ONE ffmpeg pass at x=0, y=160 (nothing below y=1250,
-that area belongs to the burned-in subtitles).
+that area belongs to the captions).
+
+The captions go through the same pass: with ``captions=...`` the one-word-at-a-time caption track
+is rendered too (Remotion composition "WordCaptions", transparent 1080x560 ProRes 4444) and overlaid
+at x=0, y=1300, so the video is re-encoded only once. The caption .mov is deleted afterwards.
 
 Python standard library only. Run ``python3 studio/visuals.py --demo`` to build a
 demo video, a contact sheet and one frame grab per panel type.
@@ -18,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import shutil
@@ -50,6 +55,14 @@ MAX_HEADING = 12
 MAX_SIDE_TEXT = 48
 
 VISUAL_TYPES = ("flow", "stat", "compare")
+
+# One-word-at-a-time caption track (Remotion composition "WordCaptions").
+CAPTION_COMPOSITION = "WordCaptions"
+CAPTION_X = 0
+CAPTION_Y = 1300  # top of the caption box; make_video.CAPTION_BOX_TOP_Y must be the same (a unit test checks it)
+CAPTION_W, CAPTION_H = 1080, 560  # canvas of the caption track; the frame below y=1300 has room for it (1300 + 560 < 1920)
+CAPTION_FPS = 30  # must match CAPTION_FPS in WordCaptions.tsx
+CAPTION_TAIL_SECONDS = 0.2  # the track runs this long after the last word (the overlay shows the video as it is after the track ends)
 
 
 class VisualError(ValueError):
@@ -203,14 +216,17 @@ def _num(x: float) -> str:
     return text if text else "0"
 
 
-def build_filter_complex(panels: list[dict], x: int = PANEL_X, y: int = PANEL_Y) -> str:
+def build_filter_complex(panels: list[dict], x: int = PANEL_X, y: int = PANEL_Y, caption: bool = False) -> str:
     """ffmpeg -filter_complex for overlaying panels (input 0 = base, input k = panel k).
 
     Each panel's timestamps are shifted to its start time and the overlay is only
-    enabled between start and end. The final video stream is labelled [vout].
+    enabled between start and end. With caption=True the caption track (the LAST input,
+    number len(panels)+1) is overlaid on top of everything at x=CAPTION_X, y=CAPTION_Y;
+    it starts at 0 and runs as one transparent video, so it needs no enable window.
+    The final video stream is labelled [vout].
     """
-    if not panels:
-        raise ValueError("build_filter_complex needs at least one panel")
+    if not panels and not caption:
+        raise ValueError("build_filter_complex needs at least one panel or a caption track")
     parts: list[str] = []
     prev = "0:v"
     for k, panel in enumerate(panels, start=1):
@@ -222,6 +238,11 @@ def build_filter_complex(panels: list[dict], x: int = PANEL_X, y: int = PANEL_Y)
             f"enable='between(t,{start},{end})'[{out}]"
         )
         prev = out
+    if caption:
+        k = len(panels) + 1
+        parts.append(f"[{k}:v]setpts=PTS-STARTPTS[cap]")
+        parts.append(f"[{prev}][cap]overlay=x={CAPTION_X}:y={CAPTION_Y}:format=auto:eof_action=pass[vcap]")
+        prev = "vcap"
     parts.append(f"[{prev}]format=yuv420p[vout]")
     return ";".join(parts)
 
@@ -233,15 +254,18 @@ def build_ffmpeg_command(
     out_mp4: str,
     duration: float | None = None,
     ffmpeg: str = FFMPEG,
+    caption_file: str | None = None,
 ) -> list[str]:
-    """Full ffmpeg argv: one pass, all panels, x264 crf 18, audio copied."""
+    """Full ffmpeg argv: one pass, all panels (and the caption track, when given), x264 crf 18, audio copied."""
     if len(panel_files) != len(panels):
         raise ValueError("panel_files and panels must have the same length")
     cmd = [ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", base_mp4]
     for path in panel_files:
         cmd += ["-i", path]
+    if caption_file:
+        cmd += ["-i", caption_file]
     cmd += [
-        "-filter_complex", build_filter_complex(panels),
+        "-filter_complex", build_filter_complex(panels, caption=bool(caption_file)),
         "-map", "[vout]", "-map", "0:a?",
         "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
         "-c:a", "copy",
@@ -253,14 +277,76 @@ def build_ffmpeg_command(
     return cmd
 
 
-def build_remotion_command(npx: str, props_json: str, out_mov: str) -> list[str]:
-    """argv for rendering one transparent panel (ProRes 4444 with alpha)."""
+def build_remotion_command(npx: str, props_json: str, out_mov: str, composition: str = "ShortsPanel") -> list[str]:
+    """argv for rendering one transparent composition (ProRes 4444 with alpha): a panel, or the caption track."""
     return [
-        npx, "remotion", "render", "src/index.ts", "ShortsPanel", out_mov,
+        npx, "remotion", "render", "src/index.ts", composition, out_mov,
         f"--props={props_json}",
         "--codec=prores", "--prores-profile=4444",
         "--pixel-format=yuva444p10le", "--image-format=png",
     ]
+
+
+def build_caption_remotion_command(npx: str, props_json: str, out_mov: str) -> list[str]:
+    """argv for rendering the whole caption track (composition WordCaptions)."""
+    return build_remotion_command(npx, props_json, out_mov, composition=CAPTION_COMPOSITION)
+
+
+# --------------------------------------------------------------------------- captions (pure)
+
+
+def validate_captions(captions) -> list[str]:
+    """Problems with the ``captions`` argument of render_and_overlay (empty list = valid).
+
+    captions = {"words": [{"text", "start", "end"}...], "font_size", "stroke_width", "box_height",
+                optional "text_color" (#FFFFFF), "stroke_color" (#000000)}; times in seconds on the video's timeline.
+    """
+    if not isinstance(captions, dict):
+        return ["captions: must be an object with words, font_size, stroke_width and box_height"]
+    errors: list[str] = []
+    words = captions.get("words")
+    if not isinstance(words, list) or not words:
+        return ["captions.words: must be a non-empty list of {text, start, end}"]
+    previous_end = 0.0
+    for k, word in enumerate(words):
+        where = f"captions.words[{k}]"
+        if not isinstance(word, dict) or not isinstance(word.get("text"), str) or not word["text"].strip():
+            errors.append(f"{where}: needs a non-empty text")
+            continue
+        try:
+            start, end = float(word["start"]), float(word["end"])
+        except (KeyError, TypeError, ValueError):
+            errors.append(f"{where} ({word['text']!r}): needs numeric start and end")
+            continue
+        if not 0 <= start < end:
+            errors.append(f"{where} ({word['text']!r}): needs 0 <= start < end, got {start} and {end}")
+        elif start < previous_end - 1e-6:
+            errors.append(f"{where} ({word['text']!r}): starts at {start} before the previous word ends ({previous_end})")
+        previous_end = max(previous_end, end)
+    for key in ("font_size", "stroke_width", "box_height"):
+        value = captions.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0 or (key == "stroke_width" and value < 1):
+            errors.append(f"captions.{key}: must be a positive number, got {value!r}")
+    if isinstance(captions.get("box_height"), (int, float)) and captions["box_height"] > CAPTION_H:
+        errors.append(f"captions.box_height: {captions['box_height']} is taller than the caption canvas ({CAPTION_H})")
+    return errors
+
+
+def build_caption_props(captions: dict) -> dict:
+    """The props (JSON) of the WordCaptions composition. The track is as long as the last word plus a short tail,
+    rounded up to whole frames; the overlay shows the plain video after it."""
+    words = [{"text": w["text"], "start": float(w["start"]), "end": float(w["end"])} for w in captions["words"]]
+    last = max(w["end"] for w in words)
+    frames = math.ceil((last + CAPTION_TAIL_SECONDS) * CAPTION_FPS - 1e-9)
+    return {
+        "words": words,
+        "fontSize": int(captions["font_size"]),
+        "strokeWidth": int(captions["stroke_width"]),
+        "boxHeight": int(captions["box_height"]),
+        "textColor": captions.get("text_color", "#FFFFFF"),
+        "strokeColor": captions.get("stroke_color", "#000000"),
+        "seconds": frames / CAPTION_FPS,
+    }
 
 
 # --------------------------------------------------------------------------- tools
@@ -326,18 +412,28 @@ def assert_has_alpha(path: str) -> None:
 # --------------------------------------------------------------------------- main API
 
 
-def render_and_overlay(base_mp4: str, script: dict, timings: list[dict], out_mp4: str, work_dir: str) -> dict:
-    """Render a panel for every line that has a visual and overlay them on base_mp4.
+def render_and_overlay(
+    base_mp4: str, script: dict, timings: list[dict], out_mp4: str, work_dir: str, captions: dict | None = None
+) -> dict:
+    """Render a panel for every line that has a visual (and the caption track, when given) and overlay them on base_mp4.
 
-    Returns {"panels": n, "render_seconds": s, "out": out_mp4}.
-    Raises VisualError for a script/timings problem (before any rendering), RuntimeError
-    if Remotion or ffmpeg fails (the work files are then kept for debugging).
+    ``captions`` (optional) is {"words": [{"text", "start", "end"}...], "font_size", "stroke_width", "box_height"};
+    see validate_captions. The words are drawn one at a time by Remotion (composition WordCaptions) into ONE
+    transparent track that is overlaid in the same ffmpeg pass as the panels, so the video is re-encoded once.
+
+    Returns {"panels": n, "render_seconds": s, "out": out_mp4} plus {"captions": {"words", "render_seconds"}}
+    when captions were drawn. Raises VisualError for a script/timings/captions problem (before any rendering),
+    RuntimeError if Remotion or ffmpeg fails (the work files are then kept for debugging).
     """
     if not os.path.isfile(base_mp4):
         raise FileNotFoundError(f"base video not found: {base_mp4}")
     lang = script.get("language", "en")
     if lang not in ("en", "de"):
         raise VisualError(f'language: must be "en" or "de", got {lang!r}')
+    if captions is not None:
+        caption_errors = validate_captions(captions)
+        if caption_errors:
+            raise VisualError("; ".join(caption_errors[:5]))
 
     duration = probe_duration(base_mp4)
     plan = plan_panels(script, timings, video_duration=duration)  # validates visuals first
@@ -350,7 +446,7 @@ def render_and_overlay(base_mp4: str, script: dict, timings: list[dict], out_mp4
         )
     Path(out_mp4).parent.mkdir(parents=True, exist_ok=True)
 
-    if not plan:
+    if not plan and captions is None:
         if os.path.abspath(base_mp4) != os.path.abspath(out_mp4):
             shutil.copyfile(base_mp4, out_mp4)
         return {"panels": 0, "render_seconds": 0.0, "out": out_mp4}
@@ -381,12 +477,36 @@ def render_and_overlay(base_mp4: str, script: dict, timings: list[dict], out_mp4
         scratch += [props_path, mov_path]
     render_seconds = time.monotonic() - t0
 
-    cmd = build_ffmpeg_command(base_mp4, panel_files, plan, out_mp4, duration=duration, ffmpeg=_find_tool("ffmpeg", FFMPEG))
+    caption_file = None
+    caption_seconds = 0.0
+    if captions is not None:
+        t1 = time.monotonic()
+        props_path = work / "captions.json"
+        mov_path = work / "captions.mov"
+        props_path.write_text(json.dumps(build_caption_props(captions), ensure_ascii=False), encoding="utf-8")
+        _run(
+            build_caption_remotion_command(npx, str(props_path), str(mov_path)),
+            cwd=REMOTION_DIR,
+            what=f"remotion render caption track ({len(captions['words'])} words)",
+        )
+        if not mov_path.is_file():
+            raise RuntimeError(f"remotion did not produce {mov_path}")
+        assert_has_alpha(str(mov_path))
+        caption_file = str(mov_path)
+        scratch += [props_path, mov_path]
+        caption_seconds = time.monotonic() - t1
+
+    cmd = build_ffmpeg_command(
+        base_mp4, panel_files, plan, out_mp4, duration=duration, ffmpeg=_find_tool("ffmpeg", FFMPEG), caption_file=caption_file
+    )
     _run(cmd, what="ffmpeg overlay")
 
-    for path in scratch:
+    for path in scratch:  # the caption .mov is big (tens of MB): never leave it behind after a good run
         path.unlink(missing_ok=True)
-    return {"panels": len(plan), "render_seconds": round(render_seconds, 2), "out": out_mp4}
+    result = {"panels": len(plan), "render_seconds": round(render_seconds, 2), "out": out_mp4}
+    if captions is not None:
+        result["captions"] = {"words": len(captions["words"]), "render_seconds": round(caption_seconds, 2)}
+    return result
 
 
 # --------------------------------------------------------------------------- demo
