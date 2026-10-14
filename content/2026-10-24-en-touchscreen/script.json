@@ -1,0 +1,129 @@
+{
+  "id": "2026-10-24-en-touchscreen",
+  "language": "en",
+  "series": "How things work",
+  "topic_noun": "touchscreen",
+  "title": "Why Touchscreens Don't Work With Gloves (But a Sausage Does)",
+  "hook": {
+    "line1": "Gloves don't work.",
+    "line2": "A sausage does. Why?",
+    "accent": "sausage"
+  },
+  "caption": "Touchscreens sense your body's electric charge, not pressure. Gloves insulate, but a salty, wet sausage conducts like a finger.",
+  "hashtags": [
+    "#howthingswork",
+    "#touchscreen",
+    "#physics",
+    "#winterhacks"
+  ],
+  "pinned_comment": "Ever tried using your phone with gloves on? 👇",
+  "video_terms": [
+    "touchscreen",
+    "smartphone",
+    "phone touch",
+    "winter",
+    "gloves"
+  ],
+  "lines": [
+    {
+      "text": "Gloves don't work on touchscreens. Sausages do.",
+      "visual": null,
+      "broll": "touchscreen"
+    },
+    {
+      "text": "That's because your screen can't feel pressure at all.",
+      "visual": null,
+      "broll": "smartphone"
+    },
+    {
+      "text": "Under the glass is a grid of tiny electrodes holding an electric field.",
+      "visual": null,
+      "broll": "circuit board"
+    },
+    {
+      "text": "Your finger is mostly salty water, so it conducts electricity.",
+      "visual": null,
+      "broll": "water drops"
+    },
+    {
+      "text": "When it touches the glass, it pulls a tiny bit of charge from the grid.",
+      "visual": {
+        "type": "flow",
+        "title": "How your screen feels you",
+        "steps": [
+          "Electric grid",
+          "Finger touches",
+          "Charge shifts",
+          "Chip finds the spot",
+          "Tap registered"
+        ]
+      },
+      "broll": "phone touch"
+    },
+    {
+      "text": "A chip spots where the charge changed and knows exactly where you tapped.",
+      "visual": null,
+      "broll": "smartphone"
+    },
+    {
+      "text": "Wool and leather don't conduct, so the screen feels nothing.",
+      "visual": {
+        "type": "compare",
+        "title": "Touchscreen in winter",
+        "left": {
+          "heading": "Myth",
+          "text": "Press harder and it works"
+        },
+        "right": {
+          "heading": "Fact",
+          "text": "It needs a conductor, not force"
+        }
+      },
+      "broll": "winter"
+    },
+    {
+      "text": "A sausage is salty and wet, just like a finger.",
+      "visual": null,
+      "broll": "sausage"
+    },
+    {
+      "text": "In two thousand ten, during a cold snap in South Korea, people used snack sausages to work their phones.",
+      "visual": null,
+      "broll": "snow"
+    },
+    {
+      "text": "One report said sales jumped by almost forty percent.",
+      "visual": {
+        "type": "stat",
+        "value": "+39%",
+        "label": "sausage sales, one report said"
+      },
+      "broll": "winter city"
+    },
+    {
+      "text": "Touchscreen gloves have conductive threads in the fingertips.",
+      "visual": null,
+      "broll": "gloves"
+    },
+    {
+      "text": "And rain on your screen? That's water too, which is why it starts tapping on its own.",
+      "visual": null,
+      "broll": "rain"
+    },
+    {
+      "text": "So this winter, skip the sausage. Or don't…",
+      "visual": null,
+      "broll": "winter"
+    }
+  ],
+  "sources": [
+    {
+      "title": "TED-Ed: Why a sausage can do what your gloves cannot",
+      "url": "https://www.ted.com/talks/charles_wallace_and_sajan_saini_why_a_sausage_can_do_what_your_gloves_cannot"
+    },
+    {
+      "title": "The Register (2010): Koreans use sausages as iPhone styluses",
+      "url": "https://www.theregister.co.uk/2010/02/12/korean_sausage_stylus"
+    }
+  ]
+}

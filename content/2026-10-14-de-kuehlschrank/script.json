@@ -1,26 +1,92 @@
 {
   "id": "2026-10-14-de-kuehlschrank",
   "language": "de",
-  "title": "Dein Kühlschrank macht keine Kälte. Das macht er wirklich",
-  "caption": "Eine offene Kühlschranktür macht die Küche wärmer, nicht kühler. Der Grund ist ein Kreislauf, der Wärme nach draußen schafft.",
+  "series": "Wie funktioniert das?",
+  "topic_noun": "refrigerator",
+  "title": "Kühlschrank offen lassen: Wird die Küche kühler? Nein!",
+  "hook": {
+    "line1": "Dein Kühlschrank",
+    "line2": "ist heimlich eine Heizung",
+    "accent": "Heizung"
+  },
+  "caption": "Ein Kühlschrank macht keine Kälte, er schafft Wärme weg. Darum heizt ein offener Kühlschrank deine Küche.",
   "hashtags": [
     "#wiefunktioniertdas",
-    "#technik",
-    "#wissen",
-    "#alltag",
-    "#erklärt"
+    "#kühlschrank",
+    "#physik",
+    "#wissen"
   ],
+  "pinned_comment": "Hättest du's gewusst? JA oder NEIN 👇",
   "video_terms": [
     "refrigerator",
     "ice cubes",
     "frost",
-    "icicle",
-    "snow",
-    "water drops"
+    "cold drinks",
+    "kitchen appliances"
   ],
   "lines": [
     {
-      "text": "Kühlschranktür auf an einem heißen Tag? Das kühlt deine Küche nicht. Es macht sie wärmer.",
+      "text": "Dein Kühlschrank ist heimlich eine Heizung.",
+      "visual": null,
+      "broll": "open refrigerator"
+    },
+    {
+      "text": "Lässt du im Sommer die Tür offen, wird deine Küche wärmer. Nicht kühler.",
+      "visual": null,
+      "broll": "summer heat"
+    },
+    {
+      "text": "Denn ein Kühlschrank macht keine Kälte. Er schafft Wärme weg.",
+      "visual": null,
+      "broll": "ice cubes"
+    },
+    {
+      "text": "Dafür fließt ein Kältemittel durch geschlossene Rohre.",
+      "visual": null,
+      "broll": "pipes"
+    },
+    {
+      "text": "In den Wänden verdampft es, weit unter null Grad.",
+      "visual": null,
+      "broll": "frost"
+    },
+    {
+      "text": "Beim Verdampfen nimmt es Wärme auf. Auch die deiner Lebensmittel.",
+      "visual": null,
+      "broll": "milk"
+    },
+    {
+      "text": "Dann presst ein Kompressor das Gas zusammen. Jetzt ist es heißer als deine Küche.",
+      "visual": null,
+      "broll": "fan"
+    },
+    {
+      "text": "Hinten gibt es die Wärme an den Raum ab. Fühl mal die Rückseite. Sie ist warm.",
+      "visual": {
+        "type": "flow",
+        "title": "Wohin die Wärme geht",
+        "steps": [
+          "Lebensmittel",
+          "Verdampfer",
+          "Kompressor",
+          "Verflüssiger",
+          "Küchenluft"
+        ]
+      },
+      "broll": "sunlight"
+    },
+    {
+      "text": "Das ist die Wärme aus deinen Lebensmitteln.",
+      "visual": null,
+      "broll": "vegetables"
+    },
+    {
+      "text": "Das Gas kühlt ab, wird wieder flüssig, und alles beginnt von vorn.",
+      "visual": null,
+      "broll": "water drops"
+    },
+    {
+      "text": "Bei offener Tür schiebt er also nur Küchenwärme im Kreis.",
       "visual": {
         "type": "compare",
         "title": "Offene Tür im Sommer",
@@ -33,77 +99,17 @@
           "text": "Der Raum wird wärmer"
         }
       },
-      "broll": "open refrigerator"
+      "broll": "refrigerator"
     },
     {
-      "text": "Ein Kühlschrank macht nämlich keine Kälte. Er schafft Wärme von innen nach außen.",
+      "text": "Und sein Motor heizt noch zusätzlich.",
       "visual": null,
-      "broll": "ice cubes"
+      "broll": "electric motor"
     },
     {
-      "text": "Der Trick ist ein Kältemittel, das in einem geschlossenen Rohrkreislauf fließt.",
+      "text": "Wenn also jemand ruft: Tür zu, die Kälte geht raus! Es ist genau andersrum. Denn…",
       "visual": null,
-      "broll": "pipes"
-    },
-    {
-      "text": "Innen fließt es durch dünne Rohre, den Verdampfer, und verdampft dort weit unter null Grad.",
-      "visual": null,
-      "broll": "frost ice crystals"
-    },
-    {
-      "text": "Beim Verdampfen nimmt es Wärme auf, auch die Wärme deiner Lebensmittel.",
-      "visual": null,
-      "broll": "milk"
-    },
-    {
-      "text": "Dann presst ein Kompressor das Gas zusammen. Dadurch wird es heißer als deine Küche.",
-      "visual": null,
-      "broll": "turbine"
-    },
-    {
-      "text": "Hinten fließt es durch den Verflüssiger und gibt die Wärme an den Raum ab.",
-      "visual": {
-        "type": "flow",
-        "title": "Wohin die Wärme geht",
-        "steps": [
-          "Lebensmittel",
-          "Verdampfer",
-          "Kompressor",
-          "Verflüssiger",
-          "Küchenluft"
-        ]
-      },
-      "broll": "fan"
-    },
-    {
-      "text": "Deshalb ist die Rückseite warm. Du spürst die Wärme aus deinen Lebensmitteln.",
-      "visual": null,
-      "broll": "steam"
-    },
-    {
-      "text": "Abgekühlt wird das Gas wieder flüssig, zwängt sich durch ein dünnes Röhrchen und wird wieder eiskalt.",
-      "visual": null,
-      "broll": "water drops"
-    },
-    {
-      "text": "Dann beginnt alles von vorn. Das Brummen ist der Kompressor, der an- und ausgeht.",
-      "visual": null,
-      "broll": "fan"
-    },
-    {
-      "text": "Bei offener Tür schiebt er also nur Küchenwärme im Kreis, und der Motor heizt noch zusätzlich.",
-      "visual": null,
-      "broll": "desert"
-    },
-    {
-      "text": "Tipp: Sauge ab und zu den Staub von diesen Kühlschlangen, dann kann die Wärme leichter entweichen.",
-      "visual": null,
-      "broll": "sweeping"
-    },
-    {
-      "text": "Folge für mehr Alltagstechnik, erklärt in einer Minute.",
-      "visual": null,
-      "broll": "city"
+      "broll": "refrigerator door"
     }
   ],
   "sources": [
@@ -115,6 +121,5 @@
       "title": "RTINGS: How Does A Refrigerator Work?",
       "url": "https://www.rtings.com/refrigerator/learn/how-refrigerators-work"
     }
-  ],
-  "series": "How things work"
+  ]
 }

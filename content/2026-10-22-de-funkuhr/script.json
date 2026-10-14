@@ -1,0 +1,129 @@
+{
+  "id": "2026-10-22-de-funkuhr",
+  "language": "de",
+  "series": "Wie funktioniert das?",
+  "topic_noun": "clock",
+  "title": "Wie funktioniert eine Funkuhr? Ein Sender bei Frankfurt stellt sie",
+  "hook": {
+    "line1": "Zeitumstellung am Sonntag",
+    "line2": "Woher weiß das deine Funkuhr?",
+    "accent": "Funkuhr"
+  },
+  "caption": "Funkuhren bekommen die Zeit per Langwelle vom Sender DCF77 bei Frankfurt. Er kündigt die Zeitumstellung sogar eine Stunde vorher an.",
+  "hashtags": [
+    "#wiefunktioniertdas",
+    "#zeitumstellung",
+    "#funkuhr",
+    "#wissen"
+  ],
+  "pinned_comment": "Stellst du noch Uhren von Hand um? 👇",
+  "video_terms": [
+    "clock",
+    "alarm clock",
+    "radio tower",
+    "antenna",
+    "calendar"
+  ],
+  "lines": [
+    {
+      "text": "Am Sonntag wird die Uhr zurückgestellt.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "Deine Funkuhr weiß das schon. Aber woher?",
+      "visual": null,
+      "broll": "alarm clock"
+    },
+    {
+      "text": "Sie bekommt die Zeit von einem Sender bei Frankfurt am Main.",
+      "visual": null,
+      "broll": "radio tower"
+    },
+    {
+      "text": "Der Sender heißt DCF siebenundsiebzig und steht in Mainflingen.",
+      "visual": {
+        "type": "stat",
+        "value": "77,5 kHz",
+        "label": "Langwelle aus Mainflingen"
+      },
+      "broll": "antenna"
+    },
+    {
+      "text": "Die Zeit dafür liefern Atomuhren in Braunschweig.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "Jede Sekunde wird das Signal kurz schwächer.",
+      "visual": null,
+      "broll": "abstract waves"
+    },
+    {
+      "text": "Eine Zehntelsekunde bedeutet null, zwei Zehntelsekunden bedeuten eins.",
+      "visual": {
+        "type": "flow",
+        "title": "So spricht der Sender",
+        "steps": [
+          "Atomuhr",
+          "Sender in Mainflingen",
+          "Kurze Pause = 0",
+          "Lange Pause = 1",
+          "Deine Uhr dekodiert"
+        ]
+      },
+      "broll": "abstract waves"
+    },
+    {
+      "text": "So schickt der Sender jede Minute die komplette Uhrzeit und das Datum.",
+      "visual": null,
+      "broll": "calendar"
+    },
+    {
+      "text": "Und eine Stunde vor der Zeitumstellung sendet er eine Ankündigung.",
+      "visual": null,
+      "broll": "alarm clock"
+    },
+    {
+      "text": "Darum springt deine Funkuhr genau richtig um, ohne dass du etwas tust.",
+      "visual": {
+        "type": "compare",
+        "title": "Wer stellt die Funkuhr um?",
+        "left": {
+          "heading": "Mythos",
+          "text": "Die Uhr rechnet es selbst aus"
+        },
+        "right": {
+          "heading": "Fakt",
+          "text": "Ein Sender sagt es ihr an"
+        }
+      },
+      "broll": "clock"
+    },
+    {
+      "text": "Das Signal reicht etwa zweitausend Kilometer weit, bis nach Spanien oder Schweden.",
+      "visual": null,
+      "broll": "map"
+    },
+    {
+      "text": "Die meisten Funkuhren gleichen sich nachts ab, wenn der Empfang am besten ist.",
+      "visual": null,
+      "broll": "night sky"
+    },
+    {
+      "text": "Also: Sonntag eine Stunde länger schlafen. Und deine Funkuhr? Die wusste es schon…",
+      "visual": null,
+      "broll": "alarm clock"
+    }
+  ],
+  "sources": [
+    {
+      "title": "Wikipedia: DCF77",
+      "url": "https://en.wikipedia.org/wiki/DCF77"
+    },
+    {
+      "title": "Friedrich Verlag: Woher wissen Funkuhren, wie spät es ist?",
+      "url": "https://www.friedrich-verlag.de/friedrich-plus/sekundarstufe/physik/alltag-technik/woher-wissen-funkuhren-wie-spaet-es-ist-2701"
+    }
+  ]
+}

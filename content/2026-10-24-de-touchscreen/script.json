@@ -1,0 +1,129 @@
+{
+  "id": "2026-10-24-de-touchscreen",
+  "language": "de",
+  "series": "Wie funktioniert das?",
+  "topic_noun": "touchscreen",
+  "title": "Warum Touchscreens mit Handschuhen nicht gehen (Würstchen schon)",
+  "hook": {
+    "line1": "Handschuhe gehen nicht.",
+    "line2": "Ein Würstchen schon. Warum?",
+    "accent": "Würstchen"
+  },
+  "caption": "Touchscreens spüren die elektrische Ladung deines Körpers, nicht den Druck. Handschuhe isolieren, ein salziges Würstchen leitet wie ein Finger.",
+  "hashtags": [
+    "#wiefunktioniertdas",
+    "#touchscreen",
+    "#physik",
+    "#wintertipps"
+  ],
+  "pinned_comment": "Schon mal mit Handschuhen getippt? 👇",
+  "video_terms": [
+    "touchscreen",
+    "smartphone",
+    "phone touch",
+    "winter",
+    "gloves"
+  ],
+  "lines": [
+    {
+      "text": "Dein Touchscreen ignoriert Handschuhe, aber ein Würstchen funktioniert.",
+      "visual": null,
+      "broll": "touchscreen"
+    },
+    {
+      "text": "Denn dein Bildschirm spürt gar keinen Druck.",
+      "visual": null,
+      "broll": "smartphone"
+    },
+    {
+      "text": "Unter dem Glas liegt ein Gitter aus winzigen Elektroden mit einem elektrischen Feld.",
+      "visual": null,
+      "broll": "circuit board"
+    },
+    {
+      "text": "Dein Finger besteht vor allem aus salzigem Wasser. Er leitet Strom.",
+      "visual": null,
+      "broll": "water drops"
+    },
+    {
+      "text": "Berührst du das Glas, zieht er ein bisschen Ladung aus dem Gitter.",
+      "visual": {
+        "type": "flow",
+        "title": "So spürt dich dein Display",
+        "steps": [
+          "Elektrisches Gitter",
+          "Finger berührt",
+          "Ladung verschiebt sich",
+          "Chip findet die Stelle",
+          "Tippen erkannt"
+        ]
+      },
+      "broll": "phone touch"
+    },
+    {
+      "text": "Ein Chip merkt, wo sich die Ladung ändert, und weiß genau, wo du tippst.",
+      "visual": null,
+      "broll": "smartphone"
+    },
+    {
+      "text": "Wolle und Leder leiten nicht, also spürt der Bildschirm nichts.",
+      "visual": {
+        "type": "compare",
+        "title": "Touchscreen im Winter",
+        "left": {
+          "heading": "Mythos",
+          "text": "Fester drücken hilft"
+        },
+        "right": {
+          "heading": "Fakt",
+          "text": "Er braucht Leitfähigkeit, keine Kraft"
+        }
+      },
+      "broll": "winter"
+    },
+    {
+      "text": "Ein Würstchen ist salzig und feucht, genau wie ein Finger.",
+      "visual": null,
+      "broll": "sausage"
+    },
+    {
+      "text": "Im Jahr zweitausendzehn, bei einer Kältewelle in Südkorea, tippten Leute mit Snack-Würstchen.",
+      "visual": null,
+      "broll": "snow"
+    },
+    {
+      "text": "Laut einem Bericht stiegen die Verkäufe um fast vierzig Prozent.",
+      "visual": {
+        "type": "stat",
+        "value": "+39 %",
+        "label": "Würstchen-Verkäufe laut einem Bericht"
+      },
+      "broll": "winter city"
+    },
+    {
+      "text": "Touchscreen-Handschuhe haben leitende Fäden in den Fingerspitzen.",
+      "visual": null,
+      "broll": "gloves"
+    },
+    {
+      "text": "Und Regen auf dem Display? Das ist auch Wasser. Darum tippt es manchmal von allein.",
+      "visual": null,
+      "broll": "rain"
+    },
+    {
+      "text": "Also diesen Winter: lass das Würstchen weg. Oder auch nicht…",
+      "visual": null,
+      "broll": "winter"
+    }
+  ],
+  "sources": [
+    {
+      "title": "TED-Ed: Why a sausage can do what your gloves cannot",
+      "url": "https://www.ted.com/talks/charles_wallace_and_sajan_saini_why_a_sausage_can_do_what_your_gloves_cannot"
+    },
+    {
+      "title": "The Register (2010): Koreans use sausages as iPhone styluses",
+      "url": "https://www.theregister.co.uk/2010/02/12/korean_sausage_stylus"
+    }
+  ]
+}

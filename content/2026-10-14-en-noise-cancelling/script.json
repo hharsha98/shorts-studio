@@ -1,41 +1,52 @@
 {
   "id": "2026-10-14-en-noise-cancelling",
   "language": "en",
-  "title": "How noise-cancelling headphones erase sound",
-  "caption": "Noise-cancelling headphones fight sound with more sound. Here's why they silence engines but not voices.",
+  "series": "How things work",
+  "topic_noun": "headphones",
+  "title": "How Do Noise Cancelling Headphones Work?",
+  "hook": {
+    "line1": "Your headphones delete",
+    "line2": "noise with more noise",
+    "accent": "delete"
+  },
+  "caption": "Noise cancelling fights sound with more sound: a mirror-image wave that cancels steady noise like engines and hums.",
   "hashtags": [
     "#howthingswork",
-    "#science",
-    "#explained",
-    "#everydaytech",
-    "#shorts"
+    "#noisecancelling",
+    "#headphones",
+    "#physics"
   ],
+  "pinned_comment": "Noise cancelling or transparency mode, which do you use? 👇",
   "video_terms": [
     "headphones",
-    "airplane cabin",
-    "train travel",
-    "city noise",
-    "music listening",
-    "sound waves"
+    "sound wave",
+    "airplane",
+    "ocean waves",
+    "music listening"
   ],
   "lines": [
     {
-      "text": "Noise-cancelling headphones fight sound with more sound.",
+      "text": "Your headphones delete noise by making more noise.",
       "visual": null,
       "broll": "headphones"
     },
     {
-      "text": "On the outside of each ear cup, a tiny microphone listens to the world around you.",
+      "text": "Here's how noise cancelling works.",
       "visual": null,
-      "broll": "ear"
+      "broll": "headphones"
     },
     {
-      "text": "A chip reads that noise and creates its exact mirror image, a wave flipped upside down.",
+      "text": "A tiny microphone on the outside listens to the world around you.",
+      "visual": null,
+      "broll": "city noise"
+    },
+    {
+      "text": "A chip creates the exact mirror image of that sound, a wave flipped upside down.",
       "visual": null,
       "broll": "sound wave"
     },
     {
-      "text": "Where a peak of the noise meets a dip of the anti-noise, they cancel out. Physicists call it destructive interference.",
+      "text": "Where a peak of the noise meets a dip of the anti-noise, they cancel out.",
       "visual": {
         "type": "flow",
         "title": "How the quiet happens",
@@ -50,17 +61,12 @@
       "broll": "vinyl record"
     },
     {
-      "text": "A second microphone inside the cup checks what still gets through, and the chip keeps correcting itself.",
+      "text": "A second microphone inside the ear cup checks what still gets through and keeps correcting.",
       "visual": null,
-      "broll": "person wearing headphones"
+      "broll": "music listening"
     },
     {
-      "text": "The whole loop runs nonstop, adjusting faster than you could ever notice.",
-      "visual": null,
-      "broll": "circuit board"
-    },
-    {
-      "text": "This works best on steady, low sounds, like airplane engines, train rumble, or an air conditioner's hum.",
+      "text": "It works best on steady, low sounds, like plane engines, train rumble, or an air conditioner's hum.",
       "visual": {
         "type": "compare",
         "title": "What noise cancelling handles",
@@ -76,34 +82,29 @@
       "broll": "airplane"
     },
     {
-      "text": "Low sounds are long, slow waves, so the anti-noise has time to line up perfectly.",
+      "text": "Low sounds are long, slow waves, so the anti-noise has time to line up.",
       "visual": null,
       "broll": "ocean waves"
     },
     {
-      "text": "High, sudden sounds change too fast. By the time the chip reacts, the wave has already moved on.",
+      "text": "Sudden, high sounds change too fast. By the time the chip reacts, the wave has moved on.",
       "visual": null,
-      "broll": "traffic"
+      "broll": "alarm clock"
     },
     {
-      "text": "That's why the ear cushions still matter. They block much of the high-pitched noise the electronics miss.",
+      "text": "That's why the engine hum fades, but the baby two rows back still gets through.",
+      "visual": null,
+      "broll": "train travel"
+    },
+    {
+      "text": "And that's why the ear cushions still matter. They block much of what the electronics miss.",
       "visual": null,
       "broll": "pillow"
     },
     {
-      "text": "Fun fact: the idea is old. A German inventor patented it in the nineteen thirties, decades before it fit inside headphones.",
+      "text": "So the next time a plane suddenly goes quiet, remember…",
       "visual": null,
-      "broll": "vintage radio"
-    },
-    {
-      "text": "And transparency mode? Same microphones, but instead of flipping the sound, they pass it through to your ears.",
-      "visual": null,
-      "broll": "walking in city"
-    },
-    {
-      "text": "Follow for more everyday things, explained in about a minute.",
-      "visual": null,
-      "broll": "night city"
+      "broll": "airplane window"
     }
   ],
   "sources": [
@@ -114,11 +115,6 @@
     {
       "title": "Mental Floss: How Do Noise-Canceling Headphones Work?",
       "url": "https://www.mentalfloss.com/article/49988/how-do-noise-canceling-headphones-work"
-    },
-    {
-      "title": "Wikipedia: Active noise control",
-      "url": "https://en.wikipedia.org/wiki/Active_noise_control"
     }
-  ],
-  "series": "How things work"
+  ]
 }

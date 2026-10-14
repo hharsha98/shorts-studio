@@ -1,0 +1,133 @@
+{
+  "id": "2026-10-20-de-gps",
+  "language": "de",
+  "series": "Wie funktioniert das?",
+  "topic_noun": "satellite",
+  "title": "Braucht GPS Internet? So findet dich dein Handy ohne Netz",
+  "hook": {
+    "line1": "Braucht GPS Internet?",
+    "line2": "Nein. Dein Handy hört nur zu",
+    "accent": "Internet"
+  },
+  "caption": "GPS funktioniert ohne Internet: Dein Handy hört nur die Satelliten ab und misst die Laufzeiten. Mobile Daten beschleunigen nur den Start und laden die Karte.",
+  "hashtags": [
+    "#wiefunktioniertdas",
+    "#gps",
+    "#physik",
+    "#einstein"
+  ],
+  "pinned_comment": "Hättest du gedacht, dass GPS ohne Internet geht? 👇",
+  "video_terms": [
+    "satellite",
+    "earth orbit",
+    "phone navigation",
+    "space",
+    "clock"
+  ],
+  "lines": [
+    {
+      "text": "Dein Handy redet nie mit GPS-Satelliten.",
+      "visual": null,
+      "broll": "satellite"
+    },
+    {
+      "text": "Es hört nur zu. Deshalb funktioniert GPS auch ohne Internet.",
+      "visual": null,
+      "broll": "phone navigation"
+    },
+    {
+      "text": "Rund dreißig GPS-Satelliten kreisen um die Erde, in zwanzigtausend Kilometern Höhe.",
+      "visual": {
+        "type": "stat",
+        "value": "20.200 km",
+        "label": "Flughöhe der GPS-Satelliten"
+      },
+      "broll": "earth orbit"
+    },
+    {
+      "text": "Jeder sendet ständig seine Position und die genaue Zeit einer Atomuhr.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "Das Signal braucht etwa sieben Hundertstelsekunden bis zu dir.",
+      "visual": null,
+      "broll": "space"
+    },
+    {
+      "text": "Dein Handy vergleicht die Ankunftszeiten von mindestens vier Satelliten.",
+      "visual": {
+        "type": "flow",
+        "title": "So findet dich dein Handy",
+        "steps": [
+          "Satelliten senden Zeit",
+          "Handy hört 4 oder mehr",
+          "Vergleicht Laufzeiten",
+          "Berechnet Abstände",
+          "Deine Position"
+        ]
+      },
+      "broll": "earth orbit"
+    },
+    {
+      "text": "Eine Millionstelsekunde Abweichung bedeutet dreihundert Meter Fehler.",
+      "visual": {
+        "type": "stat",
+        "value": "300 m",
+        "label": "Fehler pro Mikrosekunde"
+      },
+      "broll": "stopwatch"
+    },
+    {
+      "text": "Und jetzt wird es verrückt: Die Uhren der Satelliten gehen vor. Wegen Einstein.",
+      "visual": null,
+      "broll": "galaxy"
+    },
+    {
+      "text": "Die schwächere Schwerkraft lässt sie schneller laufen, ihr Tempo bremst sie.",
+      "visual": null,
+      "broll": "planet"
+    },
+    {
+      "text": "Unterm Strich gewinnen sie achtunddreißig Millionstelsekunden pro Tag.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "Deshalb stellen Ingenieure sie vor dem Start etwas langsamer ein.",
+      "visual": {
+        "type": "compare",
+        "title": "GPS und Internet",
+        "left": {
+          "heading": "Mythos",
+          "text": "GPS braucht mobile Daten"
+        },
+        "right": {
+          "heading": "Fakt",
+          "text": "Es hört nur Satelliten zu"
+        }
+      },
+      "broll": "rocket launch"
+    },
+    {
+      "text": "Das Internet hilft nur beim schnelleren Start und lädt die Karte.",
+      "visual": null,
+      "broll": "phone navigation"
+    },
+    {
+      "text": "Braucht GPS also Internet? Nein. Dein Handy redet nie mit den Satelliten…",
+      "visual": null,
+      "broll": "satellite"
+    }
+  ],
+  "sources": [
+    {
+      "title": "GPS.gov: Space Segment",
+      "url": "https://www.gps.gov/systems/gps/space"
+    },
+    {
+      "title": "Ohio State University (R. Pogge): GPS and Relativity",
+      "url": "https://www.astronomy.ohio-state.edu/pogge.1/Ast162/Unit5/gps"
+    }
+  ]
+}

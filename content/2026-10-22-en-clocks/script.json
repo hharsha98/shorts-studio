@@ -1,0 +1,129 @@
+{
+  "id": "2026-10-22-en-clocks",
+  "language": "en",
+  "series": "How things work",
+  "topic_noun": "clock",
+  "title": "Clocks Go Back: How Does Your Phone Know the Time Changed?",
+  "hook": {
+    "line1": "Clocks go back Sunday.",
+    "line2": "How does your phone know?",
+    "accent": "phone"
+  },
+  "caption": "Your phone doesn't notice the clock change. It follows the time zone database, a rulebook kept by volunteers, and applies it automatically.",
+  "hashtags": [
+    "#howthingswork",
+    "#daylightsaving",
+    "#clocksgoback",
+    "#technology"
+  ],
+  "pinned_comment": "Extra hour of sleep, or just annoying? 👇",
+  "video_terms": [
+    "clock",
+    "alarm clock",
+    "smartphone",
+    "calendar",
+    "radio tower"
+  ],
+  "lines": [
+    {
+      "text": "Clocks go back this weekend. Your phone already knows.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "But it doesn't notice anything. It follows a rulebook.",
+      "visual": null,
+      "broll": "smartphone"
+    },
+    {
+      "text": "Your phone gets the exact time from your network or from internet time servers.",
+      "visual": null,
+      "broll": "radio tower"
+    },
+    {
+      "text": "Those servers are synced to atomic clocks around the world.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "But the exact time and your local time are two different things.",
+      "visual": null,
+      "broll": "calendar"
+    },
+    {
+      "text": "The rules for every country's clock changes live in one list, the time zone database.",
+      "visual": {
+        "type": "flow",
+        "title": "How your phone knows",
+        "steps": [
+          "Atomic clocks",
+          "Time servers",
+          "Your phone",
+          "Time zone rulebook",
+          "Local time"
+        ]
+      },
+      "broll": "world map"
+    },
+    {
+      "text": "It's maintained by a small team of volunteers.",
+      "visual": {
+        "type": "stat",
+        "value": "Volunteers",
+        "label": "keep the world's time zone rules"
+      },
+      "broll": "globe"
+    },
+    {
+      "text": "Rules can change with only weeks of notice, so the list is updated several times a year.",
+      "visual": null,
+      "broll": "calendar"
+    },
+    {
+      "text": "When a government changes its rules, the new list ships with your phone's next update.",
+      "visual": null,
+      "broll": "smartphone"
+    },
+    {
+      "text": "That's why an outdated phone can show the wrong hour after a switch.",
+      "visual": {
+        "type": "compare",
+        "title": "Who changes your clock?",
+        "left": {
+          "heading": "Myth",
+          "text": "Your phone notices the change"
+        },
+        "right": {
+          "heading": "Fact",
+          "text": "It follows a time zone rulebook"
+        }
+      },
+      "broll": "alarm clock"
+    },
+    {
+      "text": "In Europe and the UK, clocks go back on the last Sunday of October.",
+      "visual": null,
+      "broll": "autumn"
+    },
+    {
+      "text": "In the US, one week later.",
+      "visual": null,
+      "broll": "night city"
+    },
+    {
+      "text": "So enjoy the extra hour of sleep on Sunday. And your phone? It knew all along…",
+      "visual": null,
+      "broll": "alarm clock"
+    }
+  ],
+  "sources": [
+    {
+      "title": "IANA: Time Zone Database (maintained by volunteers)",
+      "url": "https://www.iana.org/time-zones/contributing"
+    },
+    {
+      "title": "Wikipedia: tz database",
+      "url": "https://en.wikipedia.org/wiki/Tz_database"
+    }
+  ]
+}

@@ -1,26 +1,86 @@
 {
   "id": "2026-10-14-en-microwave",
   "language": "en",
-  "title": "Microwaves don't cook from the inside out",
-  "caption": "Your microwave twists water molecules billions of times a second. Here's why the middle of your food stays cold.",
+  "series": "How things work",
+  "topic_noun": "microwave",
+  "title": "Why Is Microwave Food Still Cold in the Middle?",
+  "hook": {
+    "line1": "Hot outside.",
+    "line2": "Frozen inside. Why?",
+    "accent": "Frozen"
+  },
+  "caption": "Microwaves don't cook from the inside out. They heat the outer few centimeters, and the middle only catches up later.",
   "hashtags": [
     "#howthingswork",
-    "#science",
-    "#explained",
-    "#everydaytech",
-    "#shorts"
+    "#microwave",
+    "#physics",
+    "#kitchenhacks"
   ],
+  "pinned_comment": "Do you stir halfway, or are you team lava-and-ice? 👇",
   "video_terms": [
-    "microwave oven",
-    "kitchen",
-    "hot food",
+    "microwave",
+    "frozen food",
     "steam",
-    "water droplets",
-    "electronics"
+    "hot food",
+    "water drops"
   ],
   "lines": [
     {
-      "text": "Microwaves don't cook food from the inside out. That's a myth.",
+      "text": "Lava on the edges, ice in the middle?",
+      "visual": null,
+      "broll": "microwave"
+    },
+    {
+      "text": "That's because a microwave doesn't cook from the inside out.",
+      "visual": null,
+      "broll": "frozen food"
+    },
+    {
+      "text": "Inside, a part called a magnetron turns electricity into radio waves.",
+      "visual": null,
+      "broll": "circuit board"
+    },
+    {
+      "text": "The waves bounce around the metal box and flip direction about two and a half billion times a second.",
+      "visual": {
+        "type": "stat",
+        "value": "2.45 GHz",
+        "label": "= 2.45 billion flips per second"
+      },
+      "broll": "abstract waves"
+    },
+    {
+      "text": "Water molecules are lopsided, slightly negative on one end, slightly positive on the other.",
+      "visual": null,
+      "broll": "water drops"
+    },
+    {
+      "text": "So every flip makes them twist back and forth, like tiny compass needles.",
+      "visual": null,
+      "broll": "compass"
+    },
+    {
+      "text": "All that twisting rubs against their neighbors and turns into heat.",
+      "visual": {
+        "type": "flow",
+        "title": "From power to heat",
+        "steps": [
+          "Electricity",
+          "Magnetron",
+          "Waves",
+          "Water twists",
+          "Heat"
+        ]
+      },
+      "broll": "steam"
+    },
+    {
+      "text": "But the waves only reach a couple of centimeters into the food.",
+      "visual": null,
+      "broll": "hot food"
+    },
+    {
+      "text": "The center only warms up later, as heat slowly spreads inward.",
       "visual": {
         "type": "compare",
         "title": "Microwave cooking",
@@ -33,64 +93,15 @@
           "text": "Heats the outer layer first"
         }
       },
-      "broll": "steam"
+      "broll": "ice"
     },
     {
-      "text": "Inside every microwave oven is a part called a magnetron. It turns electricity into radio waves.",
+      "text": "That's why big portions stay icy in the middle, and why the plate keeps turning.",
       "visual": null,
-      "broll": "electronics"
+      "broll": "plate of food"
     },
     {
-      "text": "Inside it, a magnet bends a stream of electrons into a spinning cloud, and that spin makes tiny metal chambers ring with waves.",
-      "visual": null,
-      "broll": "magnet"
-    },
-    {
-      "text": "Those waves bounce around the metal box, and they flip direction about two and a half billion times every second.",
-      "visual": {
-        "type": "stat",
-        "value": "2.45 GHz",
-        "label": "= 2.45 billion flips per second"
-      },
-      "broll": "abstract waves"
-    },
-    {
-      "text": "Water molecules are lopsided, with a slightly negative end and a slightly positive end.",
-      "visual": null,
-      "broll": "water drops"
-    },
-    {
-      "text": "So every time the waves flip, the water molecules twist to follow them, like tiny compass needles.",
-      "visual": null,
-      "broll": "compass"
-    },
-    {
-      "text": "All that twisting and bumping into neighbors turns into heat.",
-      "visual": {
-        "type": "flow",
-        "title": "From power to heat",
-        "steps": [
-          "Electricity",
-          "Magnetron",
-          "Waves",
-          "Water twists",
-          "Heat"
-        ]
-      },
-      "broll": "boiling"
-    },
-    {
-      "text": "But the waves only reach a couple of centimeters into the food. The center warms up later, as heat spreads inward.",
-      "visual": null,
-      "broll": "cooking food"
-    },
-    {
-      "text": "That's why big portions stay cold in the middle, and why the turntable spins: to even out hot and cold spots.",
-      "visual": null,
-      "broll": "frozen food"
-    },
-    {
-      "text": "And the metal mesh in the door? Its holes are smaller than the waves, so they can't get out, but light can.",
+      "text": "And the mesh in the door? Its holes are smaller than the waves, so they stay in, but light gets out.",
       "visual": {
         "type": "stat",
         "value": "12 cm",
@@ -99,14 +110,9 @@
       "broll": "fence"
     },
     {
-      "text": "Tip: stir halfway through, and let your food rest for a minute so the heat can spread evenly.",
+      "text": "So stir halfway and let it rest a minute. Otherwise it's back to…",
       "visual": null,
       "broll": "soup"
-    },
-    {
-      "text": "Follow for more everyday things, explained in about a minute.",
-      "visual": null,
-      "broll": "night city"
     }
   ],
   "sources": [
@@ -119,13 +125,8 @@
       "url": "https://hps.org/hpspublications/articles/microwaveovens.html"
     },
     {
-      "title": "ScienceABC: How Does A Microwave Oven Work?",
-      "url": "https://www.scienceabc.com/innovation/how-does-a-microwave-oven-work.html"
-    },
-    {
       "title": "everything RF: What is a Magnetron?",
       "url": "https://www.everythingrf.com/community/what-is-a-magnetron"
     }
-  ],
-  "series": "How things work"
+  ]
 }

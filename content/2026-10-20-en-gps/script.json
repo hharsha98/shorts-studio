@@ -1,0 +1,133 @@
+{
+  "id": "2026-10-20-en-gps",
+  "language": "en",
+  "series": "How things work",
+  "topic_noun": "satellite",
+  "title": "Does GPS Need Internet? How Your Phone Finds You Offline",
+  "hook": {
+    "line1": "Does GPS need",
+    "line2": "the internet? No.",
+    "accent": "internet"
+  },
+  "caption": "GPS works without internet: your phone only listens to satellites and times their signals. Mobile data just speeds up the first fix and loads the map.",
+  "hashtags": [
+    "#howthingswork",
+    "#gps",
+    "#physics",
+    "#einstein"
+  ],
+  "pinned_comment": "Did you think GPS needed mobile data? 👇",
+  "video_terms": [
+    "satellite",
+    "earth orbit",
+    "phone navigation",
+    "space",
+    "clock"
+  ],
+  "lines": [
+    {
+      "text": "Your phone never talks to GPS satellites.",
+      "visual": null,
+      "broll": "satellite"
+    },
+    {
+      "text": "It only listens. That's why GPS works without internet.",
+      "visual": null,
+      "broll": "phone navigation"
+    },
+    {
+      "text": "About thirty GPS satellites circle the Earth, twenty thousand kilometers up.",
+      "visual": {
+        "type": "stat",
+        "value": "20,200 km",
+        "label": "how high GPS satellites fly"
+      },
+      "broll": "earth orbit"
+    },
+    {
+      "text": "Each one constantly broadcasts its position and the exact time from an atomic clock.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "That signal needs about seven hundredths of a second to reach you.",
+      "visual": null,
+      "broll": "space"
+    },
+    {
+      "text": "Your phone compares the arrival times from at least four satellites.",
+      "visual": {
+        "type": "flow",
+        "title": "How your phone finds you",
+        "steps": [
+          "Satellites send time",
+          "Phone hears 4 or more",
+          "Compares the delays",
+          "Works out distances",
+          "Your position"
+        ]
+      },
+      "broll": "earth orbit"
+    },
+    {
+      "text": "A delay of one millionth of a second means an error of three hundred meters.",
+      "visual": {
+        "type": "stat",
+        "value": "300 m",
+        "label": "error per microsecond of delay"
+      },
+      "broll": "stopwatch"
+    },
+    {
+      "text": "And here's the wild part: the satellite clocks run fast because of Einstein's relativity.",
+      "visual": null,
+      "broll": "galaxy"
+    },
+    {
+      "text": "Weaker gravity speeds their clocks up, their speed slows them down.",
+      "visual": null,
+      "broll": "planet"
+    },
+    {
+      "text": "Overall, they gain thirty-eight millionths of a second a day.",
+      "visual": null,
+      "broll": "clock"
+    },
+    {
+      "text": "So engineers set them to tick slightly slower before launch.",
+      "visual": {
+        "type": "compare",
+        "title": "GPS and the internet",
+        "left": {
+          "heading": "Myth",
+          "text": "GPS needs mobile data"
+        },
+        "right": {
+          "heading": "Fact",
+          "text": "It only listens to satellites"
+        }
+      },
+      "broll": "rocket launch"
+    },
+    {
+      "text": "The internet only helps your phone start faster and load the map.",
+      "visual": null,
+      "broll": "phone navigation"
+    },
+    {
+      "text": "So, does GPS need the internet? No. Your phone never talks to the satellites…",
+      "visual": null,
+      "broll": "satellite"
+    }
+  ],
+  "sources": [
+    {
+      "title": "GPS.gov: Space Segment",
+      "url": "https://www.gps.gov/systems/gps/space"
+    },
+    {
+      "title": "Ohio State University (R. Pogge): GPS and Relativity",
+      "url": "https://www.astronomy.ohio-state.edu/pogge.1/Ast162/Unit5/gps"
+    }
+  ]
+}
