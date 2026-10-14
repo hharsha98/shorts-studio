@@ -26,12 +26,12 @@
   ],
   "lines": [
     {
-      "text": "Deine Kopfhörer löschen Lärm mit noch mehr Lärm.",
+      "text": "Kopfhörer können Lärm mit noch mehr Lärm löschen.",
       "visual": null,
       "broll": "headphones"
     },
     {
-      "text": "Bei Noise Cancelling hört ein winziges Mikrofon außen an der Muschel die Umgebung ab.",
+      "text": "Dafür hört ein winziges Mikrofon außen an der Muschel die Umgebung ab.",
       "visual": null,
       "broll": "city noise"
     },
@@ -41,7 +41,7 @@
       "broll": "sound wave"
     },
     {
-      "text": "Trifft ein Wellenberg auf ein Wellental, löschen sie sich aus.",
+      "text": "Wo ein Wellenberg auf ein Wellental trifft, löschen sich beide aus.",
       "visual": {
         "type": "flow",
         "title": "So entsteht Ruhe",
@@ -56,7 +56,7 @@
       "broll": "vinyl record"
     },
     {
-      "text": "Ein zweites Mikrofon innen prüft, was noch durchkommt, und der Chip korrigiert ständig nach.",
+      "text": "Ein zweites Mikrofon in der Muschel prüft, was noch durchkommt. Der Chip korrigiert ständig nach.",
       "visual": null,
       "broll": "music listening"
     },

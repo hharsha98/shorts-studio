@@ -99,22 +99,22 @@
           "text": "Der Raum wird wärmer"
         }
       },
-      "broll": "refrigerator"
+      "broll": "cold drinks"
     },
     {
       "text": "Und sein Motor heizt noch zusätzlich.",
       "visual": null,
-      "broll": "electric motor"
+      "broll": "machine"
     },
     {
       "text": "Tipp: Sauge ab und zu den Staub von den Kühlschlangen.",
       "visual": null,
-      "broll": "vacuum cleaner"
+      "broll": "cleaning"
     },
     {
       "text": "Wenn also jemand ruft: Tür zu, die Kälte geht raus! Es ist genau andersrum. Denn…",
       "visual": null,
-      "broll": "refrigerator door"
+      "broll": "ice"
     }
   ],
   "sources": [

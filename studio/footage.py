@@ -1229,12 +1229,26 @@ def frame_signature(ffmpeg: str, video: Path, seconds: float, run=subprocess.run
     return band_signature(ffmpeg, video, seconds, SIGNATURE_CROP, SIGNATURE_W, SIGNATURE_H, run)
 
 
-def check_order(ffmpeg: str, assembled: Path, broll: Path, times: list[float], limit: float = 20.0, run=subprocess.run) -> list[dict]:
+ORDER_SLACK_S = 0.2  # fast motion (a spinning fan) can sit a few frames off; a real shuffle matches nowhere nearby
+ORDER_STEP_S = 1 / 30
+
+
+def check_order(ffmpeg: str, assembled: Path, broll: Path, times: list[float], limit: float = 20.0, run=subprocess.run,
+                slack: float = ORDER_SLACK_S) -> list[dict]:
     """Compare the assembled video with broll.mp4 at the given seconds. [{seconds, diff, same}]: same = the picture
-    is the one we cut (mean grey difference below `limit`)."""
+    is the one we cut (mean grey difference below `limit`). When the same-time frames differ, B-roll frames up to
+    `slack` seconds earlier/later are tried too (measured 2026-10-14: a fan clip differed by 36 at the same time but
+    by 3.5 one to six frames away), so a few frames of timing jitter in fast footage is not mistaken for a shuffle."""
     results = []
+    steps = int(round(slack / ORDER_STEP_S))
     for t in times:
-        diff = mean_abs_diff(frame_signature(ffmpeg, assembled, t, run), frame_signature(ffmpeg, broll, t, run))
+        picture = frame_signature(ffmpeg, assembled, t, run)
+        diff = mean_abs_diff(picture, frame_signature(ffmpeg, broll, t, run))
+        if diff >= limit and steps:
+            for k in [k for n in range(1, steps + 1) for k in (-n, n)]:
+                diff = min(diff, mean_abs_diff(picture, frame_signature(ffmpeg, broll, max(0.0, t + k * ORDER_STEP_S), run)))
+                if diff < limit:
+                    break
         results.append({"seconds": round(t, 2), "diff": round(diff, 2), "same": diff < limit})
     return results
 

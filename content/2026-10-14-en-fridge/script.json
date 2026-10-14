@@ -99,17 +99,17 @@
           "text": "It makes the room warmer"
         }
       },
-      "broll": "refrigerator"
+      "broll": "cold drinks"
     },
     {
       "text": "And its motor adds even more heat on top.",
       "visual": null,
-      "broll": "electric motor"
+      "broll": "machine"
     },
     {
       "text": "So when someone yells, close the fridge, you're letting the cold out, it's the other way around. Because…",
       "visual": null,
-      "broll": "refrigerator door"
+      "broll": "ice"
     }
   ],
   "sources": [

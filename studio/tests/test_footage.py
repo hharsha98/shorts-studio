@@ -1024,12 +1024,25 @@ class OrderCheckTests(unittest.TestCase):
         self.assertEqual(ft.mean_abs_diff(b"", b""), 255.0)
         self.assertEqual(ft.mean_abs_diff(b"\x00", b"\x00\x00"), 255.0)
 
-    def fake_run(self, pictures):
+    def fake_run(self, pictures, default=bytes([0])):
         def run(cmd, capture_output=True, timeout=None, **_):
             video = cmd[cmd.index("-i") + 1]
             t = float(cmd[cmd.index("-ss") + 1])
-            return mock.Mock(returncode=0, stdout=pictures[(video, round(t, 1))], stderr=b"")
+            return mock.Mock(returncode=0, stdout=pictures.get((video, round(t, 1)), default * self.SIZE), stderr=b"")
         return run
+
+    def test_a_few_frames_of_jitter_in_fast_footage_is_not_a_shuffle(self):
+        # same time: a spinning fan looks different; 0.1 s later the B-roll shows the identical picture
+        pictures = {("mpt.mp4", 6.0): bytes([20]) * self.SIZE, ("broll.mp4", 6.0): bytes([220]) * self.SIZE,
+                    ("broll.mp4", 6.1): bytes([22]) * self.SIZE}
+        results = ft.check_order("ffmpeg", Path("mpt.mp4"), Path("broll.mp4"), [6.0], limit=20, run=self.fake_run(pictures, bytes([220])))
+        self.assertEqual([r["same"] for r in results], [True])
+        self.assertEqual(results[0]["diff"], 2.0)
+
+    def test_a_shuffle_matches_nowhere_nearby_and_still_fails(self):
+        pictures = {("mpt.mp4", 6.0): bytes([20]) * self.SIZE}
+        results = ft.check_order("ffmpeg", Path("mpt.mp4"), Path("broll.mp4"), [6.0], limit=20, run=self.fake_run(pictures, bytes([220])))
+        self.assertEqual([r["same"] for r in results], [False])
 
     def test_same_pictures_pass_and_different_pictures_are_flagged(self):
         pictures = {("mpt.mp4", 2.0): bytes([100]) * self.SIZE, ("broll.mp4", 2.0): bytes([104]) * self.SIZE,  # re-encoding noise

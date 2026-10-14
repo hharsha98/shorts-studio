@@ -75,7 +75,7 @@
       "broll": "abstract waves"
     },
     {
-      "text": "So schickt der Sender jede Minute die komplette Uhrzeit und das Datum.",
+      "text": "So schickt der Sender jede Minute die genaue Uhrzeit. Auch das Datum ist dabei.",
       "visual": null,
       "broll": "calendar"
     },
@@ -85,7 +85,7 @@
       "broll": "alarm clock"
     },
     {
-      "text": "Darum springt deine Funkuhr genau richtig um, ohne dass du etwas tust.",
+      "text": "Darum springt deine Uhr genau richtig um, ohne dass du etwas tust.",
       "visual": {
         "type": "compare",
         "title": "Wer stellt die Funkuhr um?",
@@ -106,12 +106,12 @@
       "broll": "map"
     },
     {
-      "text": "Die meisten Funkuhren gleichen sich nachts ab, wenn der Empfang am besten ist.",
+      "text": "Die meisten dieser Uhren gleichen sich nachts ab, wenn der Empfang am besten ist.",
       "visual": null,
       "broll": "night sky"
     },
     {
-      "text": "Also: Sonntag eine Stunde länger schlafen. Und deine Funkuhr? Die wusste es schon…",
+      "text": "Also: Sonntag eine Stunde länger schlafen. Und deine Uhr? Die wusste es schon…",
       "visual": null,
       "broll": "alarm clock"
     }
