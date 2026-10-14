@@ -14,12 +14,13 @@ import { FONT_CSS, FONT_FAMILY, useBeVietnamPro } from "./ShortsPanel";
  * Bold, centred, spring pop-in), so the words are now the script's own words but nothing else changes.
  */
 
-export type CaptionWord = { text: string; start: number; end: number };
+/** `fontSize` (optional): a word that is too wide at the base size gets its own, smaller size (the other words keep the base size). */
+export type CaptionWord = { text: string; start: number; end: number; fontSize?: number };
 
 export type WordCaptionsProps = {
   /** The script's words with their time on the narration timeline, in seconds. Never overlapping. */
   words: CaptionWord[];
-  /** Pixels, as picked by make_video.pick_caption_style (it makes the widest word of the script fit). */
+  /** Pixels, as picked by make_video.pick_caption_style (from the 90th-percentile word width; a wider word brings its own `fontSize`). */
   fontSize: number;
   /** Outline width in pixels, drawn OUTSIDE the letters (like the old burned-in captions). */
   strokeWidth: number;
@@ -124,19 +125,24 @@ export const WordCaptions: React.FC<WordCaptionsProps> = ({
   const t = frame / fps;
   const word = fontReady ? activeWord(words, t) : null;
 
-  // Shrink a word that is too wide for the frame (never grow): a safety net, make_video already sized the font.
+  // A word may bring its own (smaller) size; its outline shrinks with it. Shrink a word that is still too wide for the
+  // frame (never grow): a safety net, make_video already sized the font.
   const layout = useMemo(() => {
-    if (!word) return { size: fontSize, baseline: 0 };
-    let size = fontSize;
+    if (!word) return { size: fontSize, stroke: strokeWidth, baseline: 0 };
+    const own = word.fontSize && word.fontSize > 0 ? Math.min(word.fontSize, fontSize) : fontSize;
+    const strokeFor = (s: number) => (s === fontSize ? strokeWidth : Math.max(3, Math.round((strokeWidth * s) / fontSize)));
+    let size = own;
+    let stroke = strokeFor(size);
     let ink = measureInk(word.text, size);
-    if (ink.width + 2 * strokeWidth > MAX_TEXT_W) {
-      size = Math.floor((fontSize * MAX_TEXT_W) / (ink.width + 2 * strokeWidth));
+    if (ink.width + 2 * stroke > MAX_TEXT_W) {
+      size = Math.floor((size * (MAX_TEXT_W - 2 * stroke)) / ink.width);
+      stroke = strokeFor(size);
       ink = measureInk(word.text, size);
     }
-    const inkHeight = Math.trunc(ink.ascent + ink.descent + 2 * strokeWidth);
-    return { size, baseline: (boxHeight - inkHeight) / 2 + size * ASCENT_EM + strokeWidth };
+    const inkHeight = Math.trunc(ink.ascent + ink.descent + 2 * stroke);
+    return { size, stroke, baseline: (boxHeight - inkHeight) / 2 + size * ASCENT_EM + stroke };
   }, [word, fontSize, strokeWidth, boxHeight]);
-  const { size, baseline } = layout;
+  const { size, stroke, baseline } = layout;
 
   const cx = CAPTION_W / 2;
   const cy = boxHeight / 2; // the pop scales around the centre of the caption box
@@ -157,7 +163,7 @@ export const WordCaptions: React.FC<WordCaptionsProps> = ({
               fontSize={size}
               fill={textColor}
               stroke={strokeColor}
-              strokeWidth={strokeWidth * 2}
+              strokeWidth={stroke * 2}
               strokeLinejoin="round"
               paintOrder="stroke"
               style={{ fontKerning: "none" }}

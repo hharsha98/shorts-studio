@@ -1263,6 +1263,180 @@ class BuildBrollTests(NoNetworkTestCase):
         with self.assertRaises(ft.FootageError):
             self.build(self.table())
 
+    # --- what is on screen at 0 s (the topic) ---
+
+    def test_the_report_names_the_topic_and_the_clip(self):
+        self.script["topic_noun"] = "refrigerator"
+        topic = self.build(self.table())["report"]["topic"]
+        self.assertEqual((topic["noun"], topic["noun_is_default"], topic["clip_id"], topic["ok"]), ("refrigerator", False, 1, True))
+        self.assertFalse(topic["found_by_topic_search"])
+        self.assertIn("refrigerator", topic["first_tags"])
+
+    def test_the_default_noun_is_the_first_video_term(self):
+        topic = self.build(self.table())["report"]["topic"]
+        self.assertEqual((topic["noun"], topic["noun_is_default"]), ("kitchen", True))  # video_terms[0] of this script
+
+    def test_a_topic_without_any_clip_fails_the_build_naming_the_noun(self):
+        self.script["topic_noun"] = "microwave"
+        with self.assertRaises(ft.FootageError) as raised:
+            self.build(self.table())
+        self.assertIn("'microwave'", str(raised.exception))
+        self.assertEqual(self.downloads, [])  # nothing is downloaded for a clip that cannot be used
+
+    def test_the_noun_is_found_by_a_direct_search_and_the_report_says_so(self):
+        self.script["topic_noun"] = "microwave"
+        table = self.table()
+        table["microwave"] = [make_hit(1, PORTRAIT_HD, tags="microwave, kitchen", user="Dee")]
+        report = self.build(table)["report"]
+        self.assertTrue(report["topic"]["found_by_topic_search"])
+        self.assertEqual(report["segments"][0]["searched_phrase"], "microwave")
+        self.assertFalse(report["segments"][0]["fallback"])
+        self.assertEqual(report["unrelated_fallbacks"], 0)
+
+
+# ---- topic on screen at 0 s ---------------------------------------------------------------------------------
+
+
+class TopicNounTests(unittest.TestCase):
+    def test_the_scripts_own_noun_wins(self):
+        self.assertEqual(ft.topic_noun_for({"topic_noun": "microwave", "video_terms": ["frozen food"]}), ("microwave", False))
+        self.assertEqual(ft.topic_noun_for({"topic_noun": "  washing   machine "}), ("washing machine", False))
+
+    def test_without_one_the_first_video_term_is_used(self):
+        self.assertEqual(ft.topic_noun_for({"video_terms": ["refrigerator interior", "kitchen"]}), ("refrigerator interior", True))
+        self.assertEqual(ft.topic_noun_for({"topic_noun": "", "video_terms": ["", "  ice  cubes "]}), ("ice cubes", True))
+        self.assertEqual(ft.topic_noun_for({}), ("", True))
+
+    def test_the_first_eight_tags_must_show_the_noun(self):
+        tags = "kitchen, cooking, food, home, steam, hot, plate, bowl, microwave"  # microwave is only the 9th tag
+        self.assertFalse(ft.tags_show_topic(tags, "microwave"))
+        self.assertTrue(ft.tags_show_topic("microwave, kitchen, cooking", "microwave"))
+        self.assertTrue(ft.tags_show_topic("kitchen, cooking, food, home, steam, hot, plate, microwave, bowl", "microwave"))  # the 8th still counts
+
+    def test_plural_singular_and_synonyms(self):
+        self.assertTrue(ft.tags_show_topic("microwaves, kitchen", "microwave"))
+        self.assertTrue(ft.tags_show_topic("microwave, kitchen", "microwaves"))
+        self.assertTrue(ft.tags_show_topic("fridge, kitchen", "refrigerator"))
+        self.assertTrue(ft.tags_show_topic("refrigerator, kitchen", "fridge"))
+
+    def test_a_word_of_a_multi_word_tag_counts(self):
+        self.assertTrue(ft.tags_show_topic("microwave oven, kitchen", "microwave"))
+
+    def test_every_specific_word_of_the_noun_is_needed_but_generic_words_are_not(self):
+        self.assertTrue(ft.tags_show_topic("washing machine, laundry", "washing machine"))
+        self.assertFalse(ft.tags_show_topic("machine, factory", "washing machine"))
+        self.assertTrue(ft.tags_show_topic("refrigerator, kitchen", "refrigerator interior"))  # 'interior' is generic
+
+    def test_nothing_to_look_for_is_not_a_match(self):
+        self.assertFalse(ft.tags_show_topic("microwave", ""))
+        self.assertFalse(ft.tags_show_topic("", "microwave"))
+        self.assertFalse(ft.tags_show_topic(None, "microwave"))
+
+
+class TopicChoiceTests(unittest.TestCase):
+    """choose_clips: the picture on screen at 0 s must show the topic (Pixabay is a fake table, nothing is downloaded)."""
+
+    TERMS = ["kitchen", "ice cubes"]
+
+    def test_the_first_segments_own_phrase_is_used_when_it_already_shows_the_topic(self):
+        search = search_from({"frozen food": [make_hit(1, PORTRAIT_HD, tags="microwave, frozen food, kitchen")]})
+        chosen = ft.choose_clips([seg(0, 4, "frozen food")], self.TERMS, search, topic_noun="microwave")
+        self.assertEqual((chosen[0]["id"], chosen[0]["fallback"], chosen[0].get("topic_search")), (1, False, False))
+        self.assertEqual(chosen[0]["topic_noun"], "microwave")
+        self.assertNotIn("microwave", search.calls)  # no extra search
+
+    def test_the_noun_is_searched_directly_when_the_phrase_delivers_no_such_clip(self):
+        search = search_from({"frozen food": [make_hit(1, PORTRAIT_HD, tags="frozen food, ice, kitchen")],
+                              "microwave": [make_hit(2, PORTRAIT_HD, tags="microwave, kitchen, cooking")]})
+        messages = []
+        chosen = ft.choose_clips([seg(0, 4, "frozen food")], self.TERMS, search, topic_noun="microwave", log=messages.append)
+        self.assertEqual(chosen[0]["id"], 2)
+        self.assertTrue(chosen[0]["topic_search"])
+        self.assertFalse(chosen[0]["fallback"])  # not a stand-in: the topic picture is what the first segment is for
+        self.assertTrue(chosen[0]["fallback_related"])
+        self.assertEqual(chosen[0]["phrase_searched"], "microwave")
+        self.assertIn("topic search", messages[0])
+
+    def test_the_topic_search_may_show_cooking_pictures(self):
+        # 'cooking' would be refused as a misleading stand-in, but a microwave clip is tagged exactly that way
+        search = search_from({"microwave": [make_hit(2, PORTRAIT_HD, tags="microwave, cooking, kitchen")]})
+        chosen = ft.choose_clips([seg(0, 4, "something else")], self.TERMS, search, topic_noun="microwave")
+        self.assertEqual(chosen[0]["id"], 2)
+
+    def test_a_clip_of_the_phrase_search_that_lacks_the_topic_is_never_taken_for_segment_zero(self):
+        search = search_from({"frozen food": [make_hit(1, PORTRAIT_HD, tags="frozen food, ice"), make_hit(3, PORTRAIT_HD, tags="frozen food, microwave")]})
+        chosen = ft.choose_clips([seg(0, 4, "frozen food")], self.TERMS, search, topic_noun="microwave")
+        self.assertEqual(chosen[0]["id"], 3)  # the second-best clip of the phrase search that does show it
+
+    def test_later_segments_do_not_need_the_topic(self):
+        search = search_from({"frozen food": [make_hit(1, PORTRAIT_HD, tags="microwave, frozen food"), make_hit(5, PORTRAIT_HD, tags="frozen food, ice")]})
+        chosen = ft.choose_clips([seg(0, 4, "frozen food"), seg(4, 8, "frozen food")], self.TERMS, search, topic_noun="microwave")
+        self.assertEqual([c["id"] for c in chosen], [1, 5])
+        self.assertNotIn("topic_noun", chosen[1])
+
+    def test_no_clip_at_all_is_a_plain_error_that_names_the_noun(self):
+        search = search_from({"frozen food": [make_hit(1, PORTRAIT_HD, tags="frozen food, ice")], "microwave": [], "kitchen": [make_hit(4, PORTRAIT_HD, tags="kitchen")]})
+        with self.assertRaises(ft.FootageError) as raised:
+            ft.choose_clips([seg(0, 4, "frozen food")], self.TERMS, search, topic_noun="microwave")
+        message = str(raised.exception)
+        self.assertIn("'microwave'", message)
+        self.assertIn("topic_noun", message)
+        self.assertIn(f"first {ft.LEAD_TAGS} tags", message)
+        self.assertIn("4K", message)  # why a landscape clip is not enough
+        self.assertIn("'frozen food': 1 hits", message)  # what the phrase search found ...
+        self.assertNotIn("'kitchen':", message)  # ... but not the noise of the stand-in video terms
+        self.assertIn("video terms were tried too", message)
+
+    def test_when_the_noun_is_the_phrase_only_that_one_search_is_listed(self):
+        search = search_from({"microwave": [make_hit(1, LANDSCAPE_HD, tags="microwave, kitchen")], "kitchen": [make_hit(4, PORTRAIT_HD, tags="kitchen")]})
+        with self.assertRaises(ft.FootageError) as raised:
+            ft.choose_clips([seg(0, 4, "microwave")], self.TERMS, search, topic_noun="microwave")
+        message = str(raised.exception)
+        self.assertIn("'microwave': 1 hits", message)
+        self.assertIn("picture too small", message)  # the real reason: a landscape HD clip is not sharp enough as 9:16
+        self.assertNotIn("'kitchen':", message)
+
+    def test_without_a_noun_nothing_changes(self):
+        search = search_from({"frozen food": [make_hit(1, PORTRAIT_HD, tags="frozen food, ice")]})
+        chosen = ft.choose_clips([seg(0, 4, "frozen food")], self.TERMS, search)
+        self.assertEqual(chosen[0]["id"], 1)
+        self.assertNotIn("topic_noun", chosen[0])
+
+    def test_a_noun_that_equals_the_phrase_is_not_searched_twice(self):
+        search = search_from({"microwave": [make_hit(2, PORTRAIT_HD, tags="microwave, kitchen")]})
+        chosen = ft.choose_clips([seg(0, 4, "microwave")], self.TERMS, search, topic_noun="Microwave")
+        self.assertEqual(chosen[0]["id"], 2)
+        self.assertEqual(search.calls.count("microwave"), 1)
+
+
+class BandSignatureTests(unittest.TestCase):
+    def test_the_requested_band_is_cropped_and_scaled(self):
+        seen = {}
+
+        def fake_run(cmd, capture_output=True, timeout=None):
+            seen["cmd"] = cmd
+            return mock.Mock(returncode=0, stdout=bytes(108 * 45))
+
+        data = ft.band_signature("ffmpeg", Path("v.mp4"), 1.5, "crop=1080:450:0:250", 108, 45, run=fake_run)
+        self.assertEqual(len(data), 108 * 45)
+        vf = seen["cmd"][seen["cmd"].index("-vf") + 1]
+        self.assertEqual(vf, "crop=1080:450:0:250,scale=108:45:flags=area,format=gray")
+        self.assertEqual(seen["cmd"][seen["cmd"].index("-ss") + 1], "1.500")
+
+    def test_a_wrong_answer_is_a_plain_error(self):
+        with self.assertRaises(ft.FootageError):
+            ft.band_signature("ffmpeg", Path("v.mp4"), 0.0, "crop=10:10:0:0", 4, 4, run=lambda *a, **k: mock.Mock(returncode=0, stdout=b"xx"))
+
+    def test_the_old_frame_signature_is_unchanged(self):
+        calls = []
+
+        def fake_run(cmd, capture_output=True, timeout=None):
+            calls.append(cmd)
+            return mock.Mock(returncode=0, stdout=bytes(ft.SIGNATURE_W * ft.SIGNATURE_H))
+
+        ft.frame_signature("ffmpeg", Path("v.mp4"), 2.0, run=fake_run)
+        self.assertEqual(calls[0][calls[0].index("-vf") + 1], f"{ft.SIGNATURE_CROP},scale=54:60:flags=area,format=gray")
+
 
 if __name__ == "__main__":
     unittest.main()

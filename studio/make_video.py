@@ -3,18 +3,23 @@
 
 Usage (from /Users/harsha/shorts-studio):
     python3 studio/make_video.py content/<id>/script.json [--local-materials DIR]
-        [--min-seconds 61] [--max-seconds 75] [--keep-work] [--no-visuals]
-        [--stage voice|all] [--footage auto|own|mpt]
+        [--min-seconds 45] [--max-seconds 75] [--keep-work] [--no-visuals]
+        [--stage voice|all] [--footage auto|own|mpt] [--voice-seed N] [--no-voice-cache]
 
 What it does, in order (every gate fails LOUDLY: non-zero exit + a plain-English message):
      1. validate script.json against the contract
      2. preflight (VoiceStudio health + the right TTS engine, tools, MoneyPrinterTurbo config)
-     3. voice every line with VoiceStudio, transcribe it back, check the word error rate
-     4. join the lines (0.25 s gaps) into work/<id>/narration.wav + work/<id>/timings.json
-     5. length gate (default 61-75 s)           <- --stage voice stops here
+     3. voice the WHOLE script in ONE VoiceStudio request (studio/voice_take.py), find the line boundaries in the take,
+        shorten pauses over 0.45 s to 0.35 s, check every line by transcription (word/letter error rate; a number Whisper
+        writes as digits equals the spoken number word, see studio/number_words.py), patch a failed line alone, and
+        accept the take only if pitch and loudness are steady from line to line and close to the channel's reference
+        voice (a take that is not steady is re-rolled with the next seed, up to 6 times)
+     4. write work/<id>/narration.wav + work/<id>/timings.json (first/last sound of every line)
+     5. length gate (default 45-75 s)           <- --stage voice stops here
      6. captions and video:
         a. MoneyPrinterTurbo (MPT) runs once with --stop-at subtitle: Whisper hears the narration and writes one cue
-           per word (the TIMING; its spelling is sometimes wrong). Word error rate gate: a voice-quality signal.
+           per word (the TIMING; its spelling is sometimes wrong). Word error rate gate: a voice-quality signal
+           (numbers compared as one <num>, like the per-line check).
         b. studio/captions.py aligns those cues with the SCRIPT: one caption per script word, spelled exactly as in
            the script, timed from Whisper. Gate "captions match script".
         c. stock footage: studio/footage.py picks one Pixabay clip per script line (lines[].broll), cuts them to
@@ -22,12 +27,16 @@ What it does, in order (every gate fails LOUDLY: non-zero exit + a plain-English
            --footage mpt lets MoneyPrinterTurbo search by itself)
         d. MPT builds the video from our B-roll and the narration WITHOUT captions (--no-subtitle-enabled)
      7. Remotion draws the captions (ONE word at a time, white with black outline, pop animation, top edge at y=1300:
-        below the diagram panels, above the YouTube Shorts title/channel overlay) and, unless --no-visuals, the diagram
-        panels; studio/visuals.py puts both on the video in ONE ffmpeg pass
-     8. final checks (duration, 1080x1920, audio, caption timing) + contact sheet
+        below the diagram panels, above the YouTube Shorts title/channel overlay), the hook card (script "hook": two big
+        lines in the top third, on screen from frame 0 until the end of line 0 (2.5 to 3.5 s), then a 0.25 s fade; the
+        captions are hidden while it is up) and, unless --no-visuals, the diagram panels; studio/visuals.py puts all of
+        them on the video in ONE ffmpeg pass. Last, the audio is finished: high-pass, gentle compressor and two-pass
+        loudnorm to -14 LUFS / -1.5 dBTP (video stream copied), then measured
+     8. final checks (duration, 1080x1920, audio, caption timing, hook visible at 0 s) + contact sheet + cover.jpg (frame 0.0 s)
      9. credits for the stock footage that was really used (own footage: exactly the clips in the video)
-    10. review/<date>-<language>-<slug>/ : final.mp4, subtitles.srt (the corrected captions as readable phrases),
-        captions-words.json (the per-word captions), sheet.png, caption.txt, report.json
+    10. review/<date>-<language>-<slug>/ : final.mp4, cover.jpg (the first frame, for the TikTok/Instagram/YouTube cover),
+        subtitles.srt (the corrected captions as readable phrases), captions-words.json (the per-word captions), sheet.png,
+        caption.txt, report.json
     11. cleanup of the big temporary files (skipped with --keep-work); report.json records what was deleted
 
 Python standard library only. The pure helper functions (validation, WER, SRT sanity,
@@ -66,7 +75,9 @@ if str(STUDIO_DIR) not in sys.path:  # `import footage` must work however this f
     sys.path.insert(0, str(STUDIO_DIR))
 import footage  # noqa: E402  (studio/footage.py: our own stock-footage choice)
 import captions as captionlib  # noqa: E402  (studio/captions.py: the script's words with Whisper's timing)
+import voice_take  # noqa: E402  (studio/voice_take.py: the whole script in one take, steadiness gate, patching, cache)
 from captions import normalize_words  # noqa: E402,F401  (one normalisation for the WER and the caption alignment)
+import number_words  # noqa: E402  (studio/number_words.py: "thirty" and "30" are the same <num> in the VOICE checks, nowhere else)
 MPT_DIR = ROOT / "MoneyPrinterTurbo"
 VOICES_FILE = STUDIO_DIR / "voices.json"
 WORK_ROOT = ROOT / "work"
@@ -76,9 +87,6 @@ VOICESTUDIO_URL = os.environ.get("VOICESTUDIO_URL", "http://127.0.0.1:3900").rst
 REQUIRED_TTS_ENGINE = "mlx-audio"
 REQUIRED_TTS_MODEL = "Qwen3-TTS-12Hz-1.7B-CustomVoice"
 
-SAMPLE_RATE = 24000
-GAP_SECONDS = 0.25
-MAX_ATTEMPTS = 3
 WER_LIMIT_LONG = 0.15  # lines with >= 5 words
 WER_LIMIT_SHORT = 0.34  # shorter lines (one wrong word is a big share)
 CER_LIMIT = 0.06  # letter error rate (spaces/dashes ignored); a line passes if its WER OR its CER is inside the limit
@@ -95,6 +103,18 @@ SUBTITLE_STROKE_COLOR = "#000000"
 CAPTION_MAX_WORD_PX = 860  # widest word incl. its punctuation; MPT wraps above 972 px and the pop overshoots by ~12%
 CAPTION_FONT_MIN = 64
 CAPTION_FONT_MAX = 120
+CAPTION_BASE_PERCENTILE = 0.9  # the base size fits the word that is wider than 90% of all words; the wider 10% get their OWN smaller size
+HOOK_MAX_WIDTH_PX = 1000  # the widest hook line plus its outline must fit into this
+HOOK_FONT_MAX = 132
+HOOK_FONT_TARGET = 96  # big enough to be read in a glance; below this the hook still shows but gets a warning
+HOOK_FONT_MIN = 64  # below this the card would be too small to work as a hook: the run stops and says which line to shorten
+HOOK_STROKE_SHARE = 0.095  # outline width as a share of the font size (the dark outline that keeps white letters readable on any footage)
+HOOK_BAND_CROP = "crop=1080:450:0:250"  # where the hook card sits (studio/visuals.py HOOK_Y/HOOK_H; a unit test keeps them equal)
+HOOK_SEEN_LIMIT = 6.0  # mean grey difference (0-255) between the finished video and the footage underneath it inside that band:
+#                        re-encoding noise is below 3, a card full of white letters with a dark outline is far above this
+TITLE_MAX = 70  # YouTube title: longer titles are cut off in the Shorts feed
+PINNED_COMMENT_MAX = 150  # TikTok comments are limited to 150 characters
+COVER_QUALITY = "3"  # ffmpeg -q:v for the cover JPEG (2 = best ... 31 = worst); 3 is about JPEG quality 90
 CAPTION_TOP_LIMIT_Y = 1250  # diagram panels cover y 160-1240, captions must stay below this
 FRAME_HEIGHT = 1920
 SRT_WER_LIMIT = 0.10  # whole-script word error rate of the subtitle file against the script
@@ -209,7 +229,7 @@ def validate_script(data) -> tuple[list[str], list[str]]:
         errors.append(f"language must be \"en\" or \"de\" (got {language!r})")
 
     _check_text(data.get("series"), "series", errors)
-    _check_text(data.get("title"), "title", errors, 90)
+    _check_text(data.get("title"), "title", errors, TITLE_MAX)
 
     caption = data.get("caption")
     _check_text(caption, "caption", errors)
@@ -257,6 +277,18 @@ def validate_script(data) -> tuple[list[str], list[str]]:
             if line.get("broll") is not None:
                 validate_broll(line.get("broll"), f"{where}.broll", errors, warnings)
 
+    if data.get("hook") is not None:
+        errors.extend(captionlib.hook_problems(data["hook"]))
+        if isinstance(lines, list) and lines and isinstance(lines[0], dict) and lines[0].get("visual"):
+            errors.append("lines[0].visual must be empty when the script has a hook: the hook card is on screen over the first seconds "
+                          "and no diagram panel may start before it is done and faded out (put the visual on a later line)")
+    topic_noun = data.get("topic_noun")
+    if topic_noun is not None:
+        validate_broll(topic_noun, "topic_noun", errors, warnings)
+    pinned = data.get("pinned_comment")
+    if pinned is not None:
+        _check_text(pinned, "pinned_comment", errors, PINNED_COMMENT_MAX)
+
     sources = data.get("sources")
     if not isinstance(sources, list) or len(sources) < 2:
         errors.append("sources must list at least 2 sources, each with a title and an https:// url")
@@ -291,24 +323,34 @@ def levenshtein(a: list, b: list) -> int:
     return previous[-1]
 
 
-def word_error_rate(reference: str, hypothesis: str) -> float:
-    ref = normalize_words(reference)
-    hyp = normalize_words(hypothesis)
+# The four helpers below split the texts into words with `words`. The default is the caption normalisation; the voice-quality
+# checks (grade_line, check_srt_accuracy) pass number_words.spoken_words, which also turns every run of number tokens
+# ("thirty", "30", "20,000", "40", "siebenundsiebzig") into one "<num>" on both sides: the voice said the number, Whisper
+# only wrote it with digits (the unit next to it stays a word, in one standard spelling). Captions never use that, they show
+# the script's own words.
+
+
+def word_error_rate(reference: str, hypothesis: str, words=normalize_words) -> float:
+    ref = words(reference)
+    hyp = words(hypothesis)
     if not ref:
         return 0.0 if not hyp else 1.0
     return levenshtein(ref, hyp) / len(ref)
 
 
-def wer_threshold(reference: str) -> float:
-    return WER_LIMIT_LONG if len(normalize_words(reference)) >= 5 else WER_LIMIT_SHORT
+def wer_threshold(reference: str, words=normalize_words) -> float:
+    """The word-error limit of a line: the long-line limit from 5 words on. grade_line counts the words of the script line as it
+    is written (normalize_words), NOT after the numbers are collapsed: a line must not get the lenient short-line limit
+    only because "two thousand" became one <num>."""
+    return WER_LIMIT_LONG if len(words(reference)) >= 5 else WER_LIMIT_SHORT
 
 
-def char_error_rate(reference: str, hypothesis: str) -> float:
+def char_error_rate(reference: str, hypothesis: str, words=normalize_words) -> float:
     """Edit distance over the letters only (spaces, dashes and punctuation removed), so spelling variants such as
     'non-stop'/'nonstop', 'ear cup'/'earcup' or 'zu grattern'/'Zugrattern' count as equal. A real mishearing
     ('Noise Cancelling' heard as 'Neuskänzeling') still changes letters."""
-    ref = "".join(normalize_words(reference))
-    hyp = "".join(normalize_words(hypothesis))
+    ref = "".join(words(reference))
+    hyp = "".join(words(hypothesis))
     if not ref:
         return 0.0 if not hyp else 1.0
     return levenshtein(list(ref), list(hyp)) / len(ref)
@@ -319,10 +361,23 @@ def line_error_score(wer: float, cer: float, wer_limit: float) -> float:
     return min(wer / wer_limit, cer / CER_LIMIT)
 
 
-def word_differences(reference: str, hypothesis: str, limit: int = 30) -> list[str]:
+def grade_line(text: str, heard: str) -> dict:
+    """The per-line voice check: the line passes when its word error rate OR its letter error rate is inside its limit.
+    Numbers are compared as one "<num>" per run on both sides (studio/number_words.py), so "twenty thousand" heard as "20,000"
+    is not an error; the unit next to a number stays a word (km vs kilometers is the same, seconds vs minutes is not).
+    studio/voice_take.py calls this on every line it cuts out of the take and on every patch candidate."""
+    words = number_words.spoken_words
+    limit = wer_threshold(text)  # the band comes from the written words, the error rates from the collapsed ones
+    wer, cer = word_error_rate(text, heard, words), char_error_rate(text, heard, words)
+    score = line_error_score(wer, cer, limit)
+    return {"wer": round(wer, 4), "cer": round(cer, 4), "threshold": limit, "cer_limit": CER_LIMIT, "score": round(score, 4),
+            "ok": score <= 1.0, "words": len(text.split())}
+
+
+def word_differences(reference: str, hypothesis: str, limit: int = 30, words=normalize_words) -> list[str]:
     """Plain-English list of where the two texts differ (after the same normalisation as the WER)."""
-    ref = normalize_words(reference)
-    hyp = normalize_words(hypothesis)
+    ref = words(reference)
+    hyp = words(hypothesis)
     out = []
     for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(a=ref, b=hyp, autojunk=False).get_opcodes():
         if tag == "equal":
@@ -340,20 +395,8 @@ def word_differences(reference: str, hypothesis: str, limit: int = 30) -> list[s
 
 
 # --------------------------------------------------------------------------------------
-# 4/5. Timings and length gate (pure)
+# 4/5. Length gate (pure; the line timings come out of studio/voice_take.py)
 # --------------------------------------------------------------------------------------
-
-
-def build_timings(texts: list[str], durations: list[float], gap: float = GAP_SECONDS) -> list[dict]:
-    """Start/end seconds of each line on the final narration timeline (gap between lines only)."""
-    timings = []
-    cursor = 0.0
-    for index, (text, duration) in enumerate(zip(texts, durations)):
-        start = cursor
-        end = start + duration
-        timings.append({"index": index, "start": round(start, 3), "end": round(end, 3), "text": text})
-        cursor = end + gap
-    return timings
 
 
 def length_gate(duration: float, words: int, min_s: float, max_s: float) -> tuple[bool, str]:
@@ -485,12 +528,15 @@ def check_srt_accuracy(cues: list[dict], script_texts: list[str], limit: float =
 
     This is a VOICE-quality signal: if Whisper often hears something else than the script, the voice probably
     mispronounces those words. The captions themselves do not suffer (they show the script's own words, see
-    studio/captions.py), but the listener does. Returns (ok, wer, message, differing words).
+    studio/captions.py), but the listener does. Numbers count as one "<num>" per run on both sides (studio/number_words.py):
+    Whisper writes "20,000" where the script says "twenty thousand", and the voice said it right. Returns (ok, wer, message,
+    differing words).
     """
     reference = " ".join(script_texts)
     heard = " ".join(c["text"] for c in cues)
-    wer = word_error_rate(reference, heard)
-    diffs = word_differences(reference, heard)
+    words = number_words.spoken_words
+    wer = word_error_rate(reference, heard, words)
+    diffs = word_differences(reference, heard, words=words)
     if wer <= limit:
         return True, wer, f"word error rate {wer:.3f} (limit {limit:.2f}), {len(diffs)} differing spot(s) (fixed in the captions)", diffs
     shown = "\n      ".join(diffs)
@@ -617,33 +663,54 @@ def caption_box_top_y(box_height: int, position_percent: float) -> int:
     return int(max(10, min(y, FRAME_HEIGHT - box_height - 10)))
 
 
-def pick_caption_style(texts: list[str], font_path: Path) -> dict:
-    """Biggest font size (<= CAPTION_FONT_MAX) at which the widest word of THIS script still fits.
+def percentile(values: list[float], share: float) -> float:
+    """Nearest-rank percentile: the smallest value that is at least as big as `share` of all the values (0 for an empty list)."""
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    return ordered[min(len(ordered) - 1, max(0, math.ceil(share * len(ordered)) - 1))]
 
-    MPT wraps (cuts a word in two) above 90% of the frame width = 972 px, and the pop animation
-    overshoots to about 112%, so CAPTION_MAX_WORD_PX leaves room for both.
-    """
-    tokens = caption_tokens(texts)
+
+def measure_texts(texts: list[str], font_path: Path) -> tuple[dict, object, str | None]:
+    """({text: width in em (a font size of 1 px)}, line_height(size) function, note). Without a readable font: a safe over-estimate."""
     try:
         measure = FontMeasure(font_path.read_bytes())
-        per_px = {token: measure.text_width(token, 1000) / 1000 for token in tokens}
-        height_of = measure.line_height
+        return {t: measure.text_width(t, 1000) / 1000 for t in texts}, measure.line_height, None
     except (OSError, ValueError, KeyError, struct.error) as exc:
-        per_px = {token: 0.65 * len(token) for token in tokens}  # safe over-estimate if the font cannot be read
-        height_of = lambda size: math.ceil(1.35 * size)  # noqa: E731
-        note = f"font file could not be measured ({exc}); used a safe estimate"
-    else:
-        note = None
-    widest = max(per_px, key=per_px.get) if per_px else ""
-    em = per_px.get(widest, 0.0)
-    fit = math.floor(CAPTION_MAX_WORD_PX / em) if em else CAPTION_FONT_MAX
+        return ({t: 0.65 * len(t) for t in texts}, lambda size: math.ceil(1.35 * size),  # noqa: E731
+                f"font file could not be measured ({exc}); used a safe estimate")
+
+
+def pick_caption_style(texts: list[str], font_path: Path) -> dict:
+    """The caption size of THIS script: a base size for most words and a smaller size of their own for the few wider ones.
+
+    Base size = the biggest size (<= CAPTION_FONT_MAX) at which the word that is wider than 90% of all the script's words
+    (CAPTION_BASE_PERCENTILE, counted word by word as the viewer sees them) still fits. A word that is wider than the limit
+    at that size gets its own smaller size (`word_sizes`, never below CAPTION_FONT_MIN): ONE long word never shrinks the
+    whole video. MPT wrapped (cut a word in two) above 90% of the frame width = 972 px, and the pop animation
+    overshoots to about 112%, so CAPTION_MAX_WORD_PX leaves room for both.
+    """
+    units = captionlib.script_units(texts)  # one caption word each, exactly as drawn
+    per_px, height_of, note = measure_texts(sorted(set(units)), font_path)
+    p90 = percentile([per_px[u] for u in units], CAPTION_BASE_PERCENTILE)
+    fit = math.floor(CAPTION_MAX_WORD_PX / p90) if p90 else CAPTION_FONT_MAX
     size = max(CAPTION_FONT_MIN, min(CAPTION_FONT_MAX, fit))
+    word_sizes = {}
+    for unit, em in per_px.items():
+        if em * size > CAPTION_MAX_WORD_PX:
+            own = max(CAPTION_FONT_MIN, math.floor(CAPTION_MAX_WORD_PX / em))
+            if own < size:
+                word_sizes[unit] = own
+    drawn_px = {unit: em * word_sizes.get(unit, size) for unit, em in per_px.items()}  # width of every word as it will be drawn
+    widest = max(drawn_px, key=drawn_px.get) if drawn_px else ""
     stroke = caption_stroke_width(size)
     box_height = caption_box_height(size, stroke, height_of(size))
     percent = caption_position_percent(box_height)
     style = {
         "font": SUBTITLE_FONT, "font_size": size, "stroke_width": stroke,
-        "widest_word": widest, "widest_word_px": round(em * size),
+        "widest_word": widest, "widest_word_px": round(drawn_px.get(widest, 0.0)),
+        "p90_word_px": round(p90 * size), "base_percentile": CAPTION_BASE_PERCENTILE,
+        "word_sizes": dict(sorted(word_sizes.items())),
         "box_height": box_height, "position_percent": percent, "box_top_y": caption_box_top_y(box_height, percent),
         "size_limited_by_word": fit < CAPTION_FONT_MAX,
     }
@@ -653,7 +720,7 @@ def pick_caption_style(texts: list[str], font_path: Path) -> dict:
 
 
 def caption_word_problem(caption: dict) -> str | None:
-    """None when the widest word fits on one caption line; else a plain message (the word would be cut in two)."""
+    """None when every word fits on one caption line (at its own size); else a plain message (the word would be cut in two)."""
     if caption["widest_word_px"] <= CAPTION_MAX_WORD_PX:
         return None
     return (
@@ -661,6 +728,52 @@ def caption_word_problem(caption: dict) -> str | None:
         f"even at the smallest caption size ({CAPTION_FONT_MIN} px), and the limit is {CAPTION_MAX_WORD_PX} px, so it would be cut in two "
         "on screen. Split or hyphenate it in the script (for example 'Lebensmittel-Verschwendung'), or use a shorter word."
     )
+
+
+def caption_size_summary(caption: dict) -> str:
+    """One sentence for the check line: base size, how many words have their own size, the widest word."""
+    own = caption.get("word_sizes") or {}
+    shrunk = (f"; {len(own)} word(s) wider than {CAPTION_MAX_WORD_PX} px at that size get their own smaller size "
+              f"({', '.join(f'{w!r} {n} px' for w, n in list(own.items())[:4])}{', ...' if len(own) > 4 else ''})") if own else ""
+    return (f"{caption['font_size']} px for most words (fits the word wider than {int(caption.get('base_percentile', 1) * 100)}% of all words, "
+            f"{caption.get('p90_word_px', '?')} px wide), outline {caption['stroke_width']} px{shrunk}; widest word {caption['widest_word']!r} "
+            f"is about {caption['widest_word_px']} px wide on screen")
+
+
+def hook_stroke_width(font_size: int) -> int:
+    return max(4, round(font_size * HOOK_STROKE_SHARE))
+
+
+def pick_hook_style(hook: dict, font_path: Path) -> dict:
+    """Font size and outline of the hook card: ONE size for both lines, the biggest (<= HOOK_FONT_MAX) at which the wider line
+    plus its two outlines fits HOOK_MAX_WIDTH_PX. `too_small` = even that is below HOOK_FONT_MIN (see hook_size_problem)."""
+    lines = captionlib.hook_lines(hook)
+    per_px, _height, note = measure_texts(lines, font_path)
+    widest = max(lines, key=lambda line: per_px[line])
+    em = per_px[widest]
+    fit = math.floor(HOOK_MAX_WIDTH_PX / (em + 2 * HOOK_STROKE_SHARE)) if em else HOOK_FONT_MAX
+    size = max(1, min(HOOK_FONT_MAX, fit))
+    while size > 1 and em * size + 2 * hook_stroke_width(size) > HOOK_MAX_WIDTH_PX:  # the outline is rounded up: make sure it still fits
+        size -= 1
+    stroke = hook_stroke_width(size)
+    style = {
+        "font_size": size, "stroke_width": stroke, "widest_line": widest, "widest_px": round(em * size + 2 * stroke),
+        "line_px": [round(per_px[line] * size + 2 * stroke) for line in lines], "limit_px": HOOK_MAX_WIDTH_PX,
+        "target_size": HOOK_FONT_TARGET, "below_target": size < HOOK_FONT_TARGET, "too_small": size < HOOK_FONT_MIN,
+        "characters_for_target": math.floor(len(widest) * (HOOK_MAX_WIDTH_PX / HOOK_FONT_TARGET - 2 * HOOK_STROKE_SHARE) / em) if em else None,
+    }
+    if note:
+        style["note"] = note
+    return style
+
+
+def hook_size_problem(style: dict) -> str | None:
+    """None when the hook text can be shown big enough; else a plain message that names the line to shorten."""
+    if not style["too_small"]:
+        return None
+    return (f"The hook line {style['widest_line']!r} is too long for a big title card: it would need letters of only {style['font_size']} px "
+            f"to fit the {style['limit_px']} px width, and the smallest allowed size is {HOOK_FONT_MIN} px. Shorten it "
+            f"(about {style['characters_for_target']} characters of this kind fit at {style['target_size']} px).")
 
 
 def pick_footage_source(app_cfg: dict) -> str | None:
@@ -890,6 +1003,55 @@ def check_final_info(info: dict, min_seconds: float) -> list[tuple[str, bool, st
     results.append(("final size", size == (1080, 1920), f"{size[0]}x{size[1]} (needs exactly 1080x1920)"))
     results.append(("final audio", bool(info.get("has_audio")), "audio stream present" if info.get("has_audio") else "no audio stream"))
     return results
+
+
+# Final audio: a gentle speech chain, then two-pass EBU R128 loudnorm. Platforms normalise loudness themselves; arriving at
+# -14 LUFS with a true peak below -1 dBTP stops them from turning a quiet narration up or squashing a loud one.
+LOUDNESS_TARGET_LUFS = -14.0
+LOUDNESS_TRUE_PEAK_TARGETS = (-1.5, -2.5)  # the second one is the retry when the AAC encode pushes the first above the limit
+LOUDNESS_LRA = 11
+LOUDNESS_TOLERANCE_LU = 1.0  # integrated loudness must land within +-1 LU of the target
+LOUDNESS_MAX_TRUE_PEAK = -1.0
+SPEECH_CHAIN = "highpass=f=70,acompressor=threshold=0.1:ratio=2.5:attack=5:release=90:knee=4:makeup=1.5"
+LOUDNORM_JSON_RE = re.compile(r"\{[^{}]*\"input_i\"[^{}]*\}", re.S)
+
+
+def parse_loudnorm_json(stderr_text: str) -> dict | None:
+    """The measurement block that ffmpeg's loudnorm filter prints (print_format=json) as floats, or None if there is none.
+    Keys: input_i (LUFS), input_tp (dBTP), input_lra (LU), input_thresh, target_offset."""
+    found = LOUDNORM_JSON_RE.findall(strip_ansi(stderr_text or ""))
+    if not found:
+        return None
+    try:
+        raw = json.loads(found[-1])
+        return {key: float(raw[key]) for key in ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")}
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
+def loudnorm_filter(true_peak: float, measured: dict | None = None) -> str:
+    """The -af chain: speech chain + loudnorm. Without `measured` it is the analysis pass (prints JSON); with the first
+    pass's numbers it is the second pass (linear=true: one fixed gain, no pumping)."""
+    base = f"loudnorm=I={LOUDNESS_TARGET_LUFS:g}:TP={true_peak:g}:LRA={LOUDNESS_LRA}"
+    if measured is None:
+        return f"{SPEECH_CHAIN},{base}:print_format=json"
+    return (f"{SPEECH_CHAIN},{base}:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}"
+            f":measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true")
+
+
+def loudness_analysis_filter() -> str:
+    """Measure a finished file as it is (no speech chain in front, it would change what is measured)."""
+    return f"loudnorm=I={LOUDNESS_TARGET_LUFS:g}:TP={LOUDNESS_TRUE_PEAK_TARGETS[0]:g}:LRA={LOUDNESS_LRA}:print_format=json"
+
+
+def loudness_problems(measured: dict) -> list[str]:
+    """Why a measured file (parse_loudnorm_json of its analysis) misses the target; empty when it is inside both limits."""
+    problems = []
+    if not math.isfinite(measured["input_i"]) or abs(measured["input_i"] - LOUDNESS_TARGET_LUFS) > LOUDNESS_TOLERANCE_LU:
+        problems.append(f"integrated loudness {measured['input_i']:.1f} LUFS is not within {LOUDNESS_TOLERANCE_LU:g} LU of {LOUDNESS_TARGET_LUFS:g} LUFS")
+    if not measured["input_tp"] <= LOUDNESS_MAX_TRUE_PEAK:
+        problems.append(f"true peak {measured['input_tp']:.1f} dBTP is above {LOUDNESS_MAX_TRUE_PEAK:g} dBTP")
+    return problems
 
 
 def build_credits(material_sources: list[dict]) -> tuple[list[str], list[str]]:
@@ -1136,24 +1298,6 @@ def voicestudio_info(path: str, what: str) -> dict:
     return info
 
 
-def transcribe_wav(wav: Path, model: str, language: str | None) -> str:
-    """Ask VoiceStudio to transcribe a wav; returns the text (one retry on network trouble)."""
-    fields = {"model": model, "response_format": "json"}
-    if language:
-        fields["language"] = language
-    body, ctype = build_multipart(fields, "file", wav.name, wav.read_bytes(), "audio/wav")
-    last = None
-    for _ in range(2):
-        req = urllib.request.Request(VOICESTUDIO_URL + "/v1/audio/transcriptions", data=body, headers={"Content-Type": ctype})
-        try:
-            with urllib.request.urlopen(req, timeout=300) as resp:
-                return str(json.loads(resp.read().decode("utf-8")).get("text", "")).strip()
-        except HTTP_ERRORS as exc:
-            last = exc
-            time.sleep(1)
-    raise GateError(f"VoiceStudio could not transcribe {wav.name}: {last}. Is VoiceStudio still running?")
-
-
 def ffprobe_info(ffprobe: str, path: Path) -> dict:
     proc = run_cmd([ffprobe, "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)], 120, "ffprobe")
     if proc.returncode != 0:
@@ -1193,6 +1337,9 @@ class Ctx:
         self.report: dict = {"inputs": {"script": str(self.script_path)}}
         self.started = time.time()
         self.removed_early: list[str] = []  # files deleted before the cleanup step (MPT's copies of local materials)
+        self.hook_style: dict | None = None  # font size / outline of the hook card (step_preflight; None = the script has no hook)
+        self.hook_end: float | None = None  # when the hook card starts to fade out (step_hook; None = no hook)
+        self.cover: Path | None = None  # work/<id>/cover.jpg, the first frame of the final video (step_final_checks)
 
     def say(self, msg: str = "") -> None:
         print(msg, flush=True)
@@ -1218,8 +1365,10 @@ def parse_args(argv=None) -> argparse.Namespace:
     )
     p.add_argument("script", help="path to content/<id>/script.json")
     p.add_argument("--local-materials", metavar="DIR", help="use the video/image files in DIR instead of downloading stock footage (Pexels or Pixabay)")
-    p.add_argument("--min-seconds", type=float, default=61.0, help="shortest allowed narration (default 61); 0 also skips the final minimum-duration check")
-    p.add_argument("--max-seconds", type=float, default=75.0, help="longest allowed narration (default 75)")
+    p.add_argument("--min-seconds", type=float, default=45.0,
+                   help="shortest allowed narration in seconds (default 45). Shorts do not have to reach 60 s: TikTok's 60-second rule "
+                        "(for its creator rewards) only matters after 10,000 followers. 0 also skips the final minimum-duration check")
+    p.add_argument("--max-seconds", type=float, default=75.0, help="longest allowed narration in seconds (default 75)")
     p.add_argument("--keep-work", action="store_true", help="keep work/<id> and MoneyPrinterTurbo's task folder for debugging")
     p.add_argument("--no-visuals", action="store_true", help="skip the diagram overlays (studio/visuals.py)")
     p.add_argument("--stage", choices=("voice", "all"), default="all", help="'voice' stops after the narration + length gate")
@@ -1227,9 +1376,17 @@ def parse_args(argv=None) -> argparse.Namespace:
                    help="where the stock footage comes from: 'own' = studio/footage.py picks and cuts Pixabay clips per line (needs a Pixabay key), "
                         "'mpt' = MoneyPrinterTurbo searches by itself (old behaviour), 'auto' (default) = own when a Pixabay key is set "
                         "and --local-materials is not used")
+    p.add_argument("--voice-seed", type=int, default=None, metavar="N",
+                   help="first seed to try for the one-take voice (default: 'seed' in studio/voices.json, else 1). The pitch register of a take "
+                        "comes from its seed; a take that is not steady is re-rolled with the next seed, 6 takes at most. "
+                        "Use a higher N when all 6 seeds were rejected; the take accepted that way is remembered for the script")
+    p.add_argument("--no-voice-cache", action="store_true",
+                   help="do not reuse (or store) accepted takes in work/_voice_cache; voice the script again")
     args = p.parse_args(argv)
     if args.min_seconds < 0 or args.max_seconds <= 0 or args.min_seconds > args.max_seconds:
         p.error("--min-seconds must be >= 0 and not larger than --max-seconds")
+    if args.voice_seed is not None and args.voice_seed < 0:
+        p.error("--voice-seed must be 0 or larger")
     return args
 
 
@@ -1306,8 +1463,20 @@ def step_preflight(ctx: Ctx) -> dict:
     if not isinstance(voices, dict):
         raise GateError(f"{VOICES_FILE} must hold one JSON object with an \"en\" and a \"de\" entry.")
     voice_cfg = voices.get(script["language"])
-    if not isinstance(voice_cfg, dict) or not voice_cfg.get("voice") or not voice_cfg.get("instructions"):
-        raise GateError(f"studio/voices.json has no complete \"{script['language']}\" entry (it needs \"voice\" and \"instructions\").")
+    if not isinstance(voice_cfg, dict) or not voice_cfg.get("voice"):
+        raise GateError(f"studio/voices.json has no complete \"{script['language']}\" entry (it needs a \"voice\"; the \"instructions\" text is "
+                        "optional because this engine ignores it).")
+    ref_f0 = voice_cfg.get("ref_f0_hz")
+    if ref_f0 is not None and (isinstance(ref_f0, bool) or not isinstance(ref_f0, (int, float)) or ref_f0 <= 0):
+        raise GateError(f"studio/voices.json: \"{script['language']}\".ref_f0_hz must be a positive number of Hz (got {ref_f0!r}). "
+                        "Run `python3 studio/voice_take.py refs` to measure it from the voice sample.")
+    if ref_f0 is None:
+        ctx.warn(f"studio/voices.json has no ref_f0_hz for \"{script['language']}\", so the take is not compared with the channel's reference voice. "
+                 "Run `python3 studio/voice_take.py refs` to measure it from studio/voice-tests/.")
+    try:
+        voice_take.pitch_command(MPT_DIR)  # pitch needs numpy, which only MoneyPrinterTurbo's virtual environment has
+    except voice_take.VoiceTakeError as exc:
+        raise GateError(str(exc)) from None
 
     cli = MPT_DIR / "cli.py"
     config = MPT_DIR / "config.toml"
@@ -1349,84 +1518,34 @@ def step_preflight(ctx: Ctx) -> dict:
 
     caption = pick_caption_style([line["text"].strip() for line in script["lines"]], font_path)
     ctx.check("caption size", caption["box_top_y"] >= CAPTION_TOP_LIMIT_Y,
-              f"{caption['font_size']} px, outline {caption['stroke_width']} px; widest word {caption['widest_word']!r} is about "
-              f"{caption['widest_word_px']} px wide; caption top at y={caption['box_top_y']}, under the diagram area that ends at y={CAPTION_TOP_LIMIT_Y}")
+              f"{caption_size_summary(caption)}; caption top at y={caption['box_top_y']}, under the diagram area that ends at y={CAPTION_TOP_LIMIT_Y}")
     word_problem = caption_word_problem(caption)
     ctx.check("caption word fits", word_problem is None,
               word_problem or f"the widest word fits on one caption line ({caption['widest_word_px']} of {CAPTION_MAX_WORD_PX} px)")
+    if script.get("hook"):
+        hook_style = pick_hook_style(script["hook"], font_path)
+        hook_problem = hook_size_problem(hook_style)
+        ctx.check("hook size", hook_problem is None,
+                  hook_problem or f"hook card letters {hook_style['font_size']} px, outline {hook_style['stroke_width']} px; widest line "
+                                  f"{hook_style['widest_line']!r} is {hook_style['widest_px']} of {hook_style['limit_px']} px wide")
+        if hook_style["below_target"]:
+            ctx.warn(f"hook text is only {hook_style['font_size']} px tall (target {HOOK_FONT_TARGET}+): the line {hook_style['widest_line']!r} is long. "
+                     f"About {hook_style['characters_for_target']} characters per line would give {HOOK_FONT_TARGET} px letters.")
+        ctx.hook_style = hook_style
+        ctx.report["hook"] = {"line1": script["hook"]["line1"], "line2": script["hook"]["line2"], "accent": script["hook"]["accent"], **hook_style}
+    topic_noun, topic_default = footage.topic_noun_for(script)
+    ctx.report["inputs"]["topic_noun"] = {"noun": topic_noun, "default": topic_default}
     ctx.report["inputs"]["local_materials"] = [str(f) for f in local_files]
     ctx.report["captions"] = {"mode": SUBTITLE_DISPLAY_MODE, "animation": SUBTITLE_ANIMATION, "position": SUBTITLE_POSITION, **caption}
     ctx.report["voice"] = {
         "engine": tts.get("active"), "model": tts.get("active_model"), "voice": voice_cfg["voice"],
-        "instructions": voice_cfg["instructions"], "transcription_engine": asr_model,
+        "instructions": voice_cfg.get("instructions"), "ref_f0_hz": ref_f0, "transcription_engine": asr_model,
     }
     ctx.report["inputs"]["footage_source"] = {"local": "local", "own": "pixabay (own selection)"}.get(mode, source)
     ctx.report["inputs"]["footage_mode"] = mode
     ctx.report["footage"] = {"mode": mode, "provider": {"local": "local files", "own": "pixabay", "mpt": source}[mode]}
-    return {"voice_cfg": voice_cfg, "asr_model": asr_model, "tts_model": str(tts.get("active_model")),
+    return {"voice_cfg": voice_cfg, "ref_f0": ref_f0, "asr_model": asr_model, "tts_model": str(tts.get("active_model")),
             "local_files": local_files, "caption": caption, "source": source, "footage": mode}
-
-
-def speak_once(ctx: Ctx, text: str, out_wav: Path, voice_cfg: dict) -> None:
-    """One speak.mjs call (always --voice and --instructions, never --language)."""
-    txt = out_wav.with_suffix(".txt")
-    txt.write_text(text, encoding="utf-8")
-    cmd = ["node", str(ctx.media_dir / "speak.mjs"), str(out_wav), "--file", str(txt),
-           "--voice", voice_cfg["voice"], "--instructions", voice_cfg["instructions"]]
-    proc = run_cmd(cmd, 660, "speak.mjs")
-    txt.unlink(missing_ok=True)
-    if proc.returncode != 0 or not out_wav.is_file():
-        raise RuntimeError((proc.stderr or proc.stdout or "speak.mjs failed").strip()[-400:])
-
-
-def voice_one_line(ctx: Ctx, index: int, text: str, setup: dict) -> dict:
-    lines_dir = ctx.work / "lines"
-    wav = lines_dir / f"{index:02d}.wav"
-    meta_path = lines_dir / f"{index:02d}.json"
-    voice_cfg = setup["voice_cfg"]
-    limit = wer_threshold(text)
-    ident = {"text": text, "voice": voice_cfg["voice"], "instructions": voice_cfg["instructions"], "model": setup["tts_model"]}
-
-    try:  # reuse a line that already passed with the same text/voice/model (after an earlier failed run)
-        cached = json.loads(meta_path.read_text(encoding="utf-8"))
-        if wav.is_file() and all(cached.get(k) == v for k, v in ident.items()) and cached.get("ok"):
-            cached["reused"] = True
-            return cached
-    except (OSError, ValueError, KeyError):
-        pass
-
-    best = None
-    attempts = []
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        candidate = lines_dir / f"{index:02d}.try{attempt}.wav"
-        try:
-            speak_once(ctx, text, candidate, voice_cfg)
-            heard = transcribe_wav(candidate, setup["asr_model"], ctx.script["language"])
-        except RuntimeError as exc:
-            attempts.append({"attempt": attempt, "error": str(exc)})
-            continue
-        wer = word_error_rate(text, heard)
-        cer = char_error_rate(text, heard)
-        score = line_error_score(wer, cer, limit)
-        attempts.append({"attempt": attempt, "wer": round(wer, 4), "cer": round(cer, 4), "heard": heard})
-        if best is None or score < best["score"]:
-            best = {"wer": wer, "cer": cer, "score": score, "heard": heard, "path": candidate}
-        if score <= 1.0:
-            break
-    result = {**ident, "index": index, "threshold": limit, "words": len(text.split()), "attempts": attempts,
-              "attempt_count": len(attempts), "reused": False}
-    if best is None:
-        last_error = next((a["error"] for a in reversed(attempts) if a.get("error")), "no error text")
-        result.update(ok=False, wer=None, heard="", error=f"speak.mjs made no audio in any of {MAX_ATTEMPTS} attempts: {last_error}")
-        return result
-    shutil.copyfile(best["path"], wav)
-    result.update(wer=round(best["wer"], 4), cer=round(best["cer"], 4), cer_limit=CER_LIMIT, heard=best["heard"],
-                  ok=best["score"] <= 1.0)
-    if result["ok"]:
-        meta_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-    for leftover in lines_dir.glob(f"{index:02d}.try*.wav"):
-        leftover.unlink(missing_ok=True)
-    return result
 
 
 def voice_failure_message(bad: list[dict], max_attempts: int) -> str:
@@ -1453,68 +1572,67 @@ def voice_failure_message(bad: list[dict], max_attempts: int) -> str:
     return "\n".join(parts)
 
 
-def step_voice(ctx: Ctx, setup: dict) -> list[dict]:
-    ctx.step(3, "Voicing each line and checking it by transcription")
-    (ctx.work / "lines").mkdir(parents=True, exist_ok=True)
-    results = []
-    for index, line in enumerate(ctx.script["lines"]):
-        text = line["text"].strip()
-        res = voice_one_line(ctx, index, text, setup)
-        results.append(res)
-        shown = "n/a" if res.get("wer") is None else f"{res['wer']:.2f}"
-        letters = "" if res.get("cer") is None else f", letters {res['cer']:.2f} (limit {CER_LIMIT:.2f})"
-        tag = "ok" if res.get("ok") else "FAIL"
-        extra = " (reused from an earlier run)" if res.get("reused") else f" after {res['attempt_count']} attempt(s)"
-        ctx.say(f"  [{tag}] line {index}: WER {shown} (limit {res['threshold']:.2f}){letters}{extra}: {text[:60]}")
-    ctx.report["voice"]["lines"] = results
-    bad = [r for r in results if not r.get("ok")]
-    if bad:
-        ctx.checks.append({"name": "voice accuracy", "ok": False, "detail": [r["index"] for r in bad]})
-        raise GateError(voice_failure_message(bad, MAX_ATTEMPTS))
-    worst = max(r["wer"] for r in results)
-    ctx.check("voice accuracy", True, f"all {len(results)} lines inside their WER limit (worst {worst:.2f})")
-    return results
-
-
-def step_join(ctx: Ctx, results: list[dict]) -> tuple[Path, list[dict], float]:
-    ctx.step(4, "Joining the lines into one narration")
-    ffmpeg, ffprobe = find_tool("ffmpeg"), find_tool("ffprobe")
-    lines_dir = ctx.work / "lines"
-    norm_files = []
-    durations = []
-    for r in results:
-        src = lines_dir / f"{r['index']:02d}.wav"
-        dst = lines_dir / f"{r['index']:02d}.norm.wav"
-        proc = run_cmd([ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", str(src), "-ar", str(SAMPLE_RATE), "-ac", "1",
-                        "-c:a", "pcm_s16le", str(dst)], 120, "ffmpeg (convert line)")
-        if proc.returncode != 0:
-            raise GateError(f"ffmpeg could not convert line {r['index']}: {proc.stderr.strip()[:300]}")
-        norm_files.append(dst)
-        durations.append(ffprobe_info(ffprobe, dst)["duration"])
-    silence = lines_dir / "silence.wav"
-    proc = run_cmd([ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", f"anullsrc=r={SAMPLE_RATE}:cl=mono",
-                    "-t", str(GAP_SECONDS), "-c:a", "pcm_s16le", str(silence)], 60, "ffmpeg (silence)")
-    if proc.returncode != 0:
-        raise GateError(f"ffmpeg could not make the gap: {proc.stderr.strip()[:300]}")
-    entries = []
-    for k, f in enumerate(norm_files):
-        if k:
-            entries.append(silence)
-        entries.append(f)
-    listing = ctx.work / "concat.txt"
-    listing.write_text("".join("file '{}'\n".format(str(e).replace("'", "'\\''")) for e in entries), encoding="utf-8")
-    narration = ctx.work / "narration.wav"
-    proc = run_cmd([ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
-                    "-c", "copy", str(narration)], 300, "ffmpeg (join)")
-    if proc.returncode != 0:
-        raise GateError(f"ffmpeg could not join the lines: {proc.stderr.strip()[:300]}")
-    total = ffprobe_info(ffprobe, narration)["duration"]
+def step_voice(ctx: Ctx, setup: dict) -> dict:
+    """Step 3: the whole script in ONE take (studio/voice_take.py): one request, line boundaries snapped to real silences,
+    long pauses shortened, every line checked by transcription, failed lines patched, the take's pitch and loudness gated."""
+    ctx.step(3, "Voicing the whole script in one take and checking it")
     texts = [line["text"].strip() for line in ctx.script["lines"]]
-    timings = build_timings(texts, durations)
+    cfg, language = setup["voice_cfg"], ctx.script["language"]
+    instructions = cfg.get("instructions") or ""
+    backend = voice_take.VoiceStudioBackend(VOICESTUDIO_URL, cfg["voice"], setup["asr_model"], language, instructions,
+                                            ffmpeg=find_tool("ffmpeg"), mpt_dir=MPT_DIR)
+    seed = ctx.args.voice_seed if ctx.args.voice_seed is not None else int(cfg.get("seed", 1))
+    ctx.work.mkdir(parents=True, exist_ok=True)
+    try:
+        probe = voice_take.probe_instructions(backend, cfg["voice"], setup["tts_model"], WORK_ROOT / "_voice_probe.json", instructions, log=ctx.say)
+        take = voice_take.produce_narration(
+            texts, backend=backend, grade=grade_line, voice=cfg["voice"], model=setup["tts_model"], asr_model=setup["asr_model"],
+            ref_f0=setup.get("ref_f0"), work_dir=ctx.work, cache_root=WORK_ROOT / "_voice_cache", start_seed=seed,
+            instructions_in_key="" if probe.get("instructions_ignored") is True else instructions,
+            use_cache=not ctx.args.no_voice_cache, log=ctx.say)
+    except voice_take.VoiceTakeError as exc:
+        ctx.report["voice"].update(mode="one take", start_seed=seed, attempts=getattr(exc, "attempts", None))
+        ctx.checks.append({"name": "voice take", "ok": False, "detail": str(exc)})
+        raise GateError(str(exc)) from None
+    lines, gate = take["lines"], take["continuity"]
+    for g in lines:
+        extra = f", patched with seed {g['patched_seed']}" if g.get("patched_seed") else ""
+        loudness = "n/a" if g.get("loudness_db") is None else f"{g['loudness_db']:.1f} dB"
+        ctx.say(f"  [ok] line {g['index']}: WER {g['wer']:.2f} (limit {g['threshold']:.2f}), letters {g['cer']:.2f} (limit {CER_LIMIT:.2f})"
+                f", pitch {g['f0_hz']:.0f} Hz, loudness {loudness}{extra}: {g['text'][:50]}")
+    ctx.report["voice"].update(
+        mode="one take", seed=take["seed"], start_seed=seed, instructions_ignored=probe.get("instructions_ignored"),
+        attempts=take["attempts"], cache=take["cache"], lines=lines, patches=take["patches"], continuity=gate,
+        take={"raw_seconds": take["raw_seconds"], "boundaries_snapped": f"{sum(take['snapped'])}/{len(take['snapped'])}",
+              "pauses_shortened": take["pauses_shortened"], "pause_seconds_saved": take["pause_seconds_saved"],
+              "pause_rule": f"silences over {voice_take.PAUSE_MAX_S:g} s shortened to {voice_take.PAUSE_TARGET_S:g} s"})
+    bad = [g for g in lines if not g.get("ok")]  # voice_take only returns takes whose lines all pass; checked again here
+    if bad:
+        ctx.checks.append({"name": "voice accuracy", "ok": False, "detail": [g["index"] for g in bad]})
+        raise GateError(voice_failure_message(bad, voice_take.PATCH_SEEDS))
+    worst = max(g["wer"] for g in lines)
+    ctx.check("voice accuracy", True, f"all {len(lines)} lines inside their WER limit (worst {worst:.2f})"
+              + (f"; {len(take['patches'])} line(s) patched" if take["patches"] else ""))
+    reference = (f"; reference voice {gate['ref_f0_hz']:.0f} Hz ({gate['ref_offset_st']:+.1f} st)" if gate.get("ref_f0_hz") else "")
+    ctx.check("voice continuity", gate["ok"],
+              f"seed {take['seed']}: take median {gate['take_median_hz']} Hz, spread {gate['sd_st']} st, farthest line {gate['max_line_offset_st']} st, "
+              f"largest neighbour jump {gate['max_adjacent_jump_st']} st / {gate['max_adjacent_jump_db']} dB{reference}"
+              if gate["ok"] else "; ".join(gate["reasons"]))
+    return take
+
+
+def step_join(ctx: Ctx, take: dict) -> tuple[Path, list[dict], float]:
+    """Step 4: the take's narration is already work/<id>/narration.wav; write timings.json and the narration part of the report."""
+    ctx.step(4, "Narration and line timings")
+    narration, timings = take["narration"], take["timings"]
+    total = ffprobe_info(find_tool("ffprobe"), narration)["duration"]
     (ctx.work / "timings.json").write_text(json.dumps(timings, ensure_ascii=False, indent=2), encoding="utf-8")
+    bounds, sr = take["bounds"], take["sr"]
     ctx.report["timings"] = timings
-    ctx.report["narration"] = {"path": str(narration), "duration": round(total, 3), "line_durations": [round(d, 3) for d in durations]}
-    ctx.check("narration joined", True, f"{total:.1f} s, {len(texts)} lines, {GAP_SECONDS} s gaps; timings in {ctx.work / 'timings.json'}")
+    ctx.report["narration"] = {"path": str(narration), "duration": round(total, 3), "mode": "one take",
+                               "line_durations": [round((b - a) / sr, 3) for a, b in zip(bounds, bounds[1:])]}
+    ctx.check("narration ready", True, f"{total:.1f} s, {len(timings)} lines (seed {take['seed']}); timings = first to last sound of each line, "
+                                      f"in {ctx.work / 'timings.json'}")
     return narration, timings, total
 
 
@@ -1524,6 +1642,36 @@ def step_length(ctx: Ctx, total: float) -> None:
     ok, message = length_gate(total, words, ctx.args.min_seconds, ctx.args.max_seconds)
     ctx.report["narration"].update(words=words, words_per_second=round(words / total, 3) if total else 0)
     ctx.check("narration length", ok, message)
+
+
+def step_hook(ctx: Ctx, timings: list[dict]) -> float | None:
+    """The hook card's timing, once the line timings are known: it is on screen from 0 until hook_end = the end of line 0, but at
+    least 2.5 s and at most 3.5 s, then fades out for 0.25 s. No diagram panel may start before hook_end + 0.25 s (the card sits in
+    the same area and is still on screen, half see-through, while it fades), and the captions are not drawn before hook_end.
+    Returns hook_end, or None when the script has no hook."""
+    hook = ctx.script.get("hook")
+    if not hook:
+        ctx.hook_end = None
+        return None
+    try:
+        hook_end = captionlib.hook_end_seconds(timings)
+    except captionlib.CaptionError as exc:
+        raise GateError(f"The hook card cannot be timed: {exc}") from None
+    lines = ctx.script["lines"]
+    if ctx.args.no_visuals:  # the panels are not drawn at all, so they cannot collide with the card
+        lines = [{**line, "visual": None} for line in lines]
+    problems = captionlib.hook_panel_problems(lines, timings, hook_end)
+    ctx.hook_end = hook_end
+    ctx.report.setdefault("hook", {}).update(
+        hook_end=hook_end, fade_seconds=captionlib.HOOK_FADE_SECONDS, line0_end=round(float(timings[0]["end"]), 3),
+        panels_free_from=round(captionlib.hook_panel_free_from(hook_end), 3),
+        card_visible=f"0.00-{hook_end + captionlib.HOOK_FADE_SECONDS:.2f} s (fully visible until {hook_end:.2f} s)")
+    ctx.check("hook timing", not problems,
+              f"hook card fully visible from 0.00 s until {hook_end:.2f} s (line 0 ends at {float(timings[0]['end']):.2f} s; "
+              f"at least {captionlib.HOOK_MIN_SECONDS:g} s, at most {captionlib.HOOK_MAX_SECONDS:g} s), then a {captionlib.HOOK_FADE_SECONDS:g} s fade-out; "
+              f"the captions start after {hook_end:.2f} s and no diagram panel starts before {captionlib.hook_panel_free_from(hook_end):.2f} s "
+              "(the fade is over)" if not problems else "; ".join(problems))
+    return hook_end
 
 
 def snapshot_local_copies() -> set[str]:
@@ -1565,6 +1713,13 @@ def step_own_footage(ctx: Ctx, timings: list[dict], total: float) -> dict:
               f"{len(report['segments'])} picture segments from {report['clips_used']} Pixabay clips ({report['downloads']} downloaded, "
               f"{report['clip_cache_hits']} reused from disk; {report['search_requests']} searches sent, {report['search_cache_hits']} from the 24 h cache) "
               f"-> {result['path']} ({report['broll_seconds']:.2f} s)")
+    topic = report.get("topic")
+    if topic:
+        ctx.check("topic on screen at 0 s", topic["ok"],
+                  f"the first picture (pixabay {topic['clip_id']}, on screen from 0.0 s) lists '{topic['noun']}' among its first {footage.LEAD_TAGS} tags: "
+                  f"{', '.join(topic['first_tags'])}"
+                  + (" (the noun was searched directly because line 0's own phrase found no such clip)" if topic["found_by_topic_search"] else "")
+                  + (" [the noun is the script's first video term: set \"topic_noun\" to choose it yourself]" if topic["noun_is_default"] else ""))
     return result
 
 
@@ -1684,7 +1839,8 @@ def step_captions(ctx: Ctx, whisper: dict, setup: dict, total: float) -> dict:
         script_words=len(words), alignment=stats, fixed_in_captions=whisper["differences"], phrases=len(phrases),
     )
     return {"words": words, "phrases": phrases, "stats": stats,
-            "style": {"font_size": style["font_size"], "stroke_width": style["stroke_width"], "box_height": style["box_height"]}}
+            "style": {"font_size": style["font_size"], "stroke_width": style["stroke_width"], "box_height": style["box_height"],
+                      "word_sizes": dict(style.get("word_sizes") or {})}}
 
 
 def step_mpt(ctx: Ctx, narration: Path, setup: dict, timings: list[dict] | None = None, total: float | None = None) -> dict:
@@ -1702,6 +1858,9 @@ def step_mpt(ctx: Ctx, narration: Path, setup: dict, timings: list[dict] | None 
         if timings is None:
             raise GateError("Own footage needs the narration timings (internal error: step_mpt was called without them).")
         broll = step_own_footage(ctx, timings, total)
+    else:
+        ctx.warn("topic on screen at 0 s was NOT checked: that check needs --footage own (the first picture of local or MoneyPrinterTurbo footage "
+                 "is not chosen by studio/footage.py). Look at the first frame yourself.")
     local_files = [broll["path"].resolve()] if broll else setup["local_files"]
 
     ctx.say("  d) MoneyPrinterTurbo video WITHOUT captions (our captions are drawn in step 7)")
@@ -1769,9 +1928,22 @@ def check_footage_order(ctx: Ctx, video: Path, broll: dict) -> None:
     ctx.check("footage order kept", not bad, detail)
 
 
+def caption_payload(words: list[dict], word_sizes: dict, base_size: int) -> list[dict]:
+    """The words as Remotion gets them: text and time, plus the word's OWN font size when it is smaller than the base size."""
+    out = []
+    for w in words:
+        item = {"text": w["text"], "start": w["start"], "end": w["end"]}
+        own = word_sizes.get(w["text"])
+        if own is not None and own < base_size:
+            item["font_size"] = own
+        out.append(item)
+    return out
+
+
 def step_visuals(ctx: Ctx, mpt: dict, timings: list[dict]) -> Path:
-    """Captions (always) and diagram panels (unless --no-visuals): Remotion draws them, ONE ffmpeg pass puts them on the video."""
-    ctx.step(7, "Captions and diagram overlays")
+    """Captions (always), the hook card (when the script has a hook) and diagram panels (unless --no-visuals): Remotion draws
+    them, ONE ffmpeg pass puts them on the video. While the hook card is up the captions are not drawn."""
+    ctx.step(7, "Captions, hook card, diagram overlays and loudness")
     needed = [k for k, line in enumerate(ctx.script["lines"]) if line.get("visual")]
     panels_off = ctx.args.no_visuals or not needed
     script = ctx.script
@@ -1781,18 +1953,35 @@ def step_visuals(ctx: Ctx, mpt: dict, timings: list[dict]) -> Path:
     module = load_visuals_module(needed)
     caption_data = mpt["captions"]
     style = caption_data["style"]
+    script_texts = [line["text"].strip() for line in ctx.script["lines"]]
+    drawn, hidden_pieces = caption_data["words"], 0
+    hook_args = None
+    if ctx.hook_end is not None and ctx.hook_style is not None and ctx.script.get("hook"):
+        drawn, hidden_pieces = captionlib.hide_until(caption_data["words"], ctx.hook_end)
+        hook_args = {**{k: ctx.script["hook"][k] for k in ("line1", "line2", "accent")},
+                     "font_size": ctx.hook_style["font_size"], "stroke_width": ctx.hook_style["stroke_width"], "hook_end": ctx.hook_end}
+        hidden_words = len(caption_data["words"]) - len(drawn)  # the hidden words are always the first ones
+        started_late = sum(1 for before, after in zip(caption_data["words"][hidden_words:], drawn) if after["start"] - before["start"] > 1e-9)
+        ctx.report.setdefault("captions", {})["hidden_under_hook"] = {
+            "until": ctx.hook_end, "words_hidden": hidden_words, "words_started_late": started_late, "script_words_not_drawn": hidden_pieces}
+        ctx.say(f"  hook card until {ctx.hook_end:.2f} s: {hidden_words} caption word(s) are not drawn under it"
+                + (f", {started_late} one(s) start when it ends" if started_late else ""))
     caption_args = {
-        "words": [{"text": w["text"], "start": w["start"], "end": w["end"]} for w in caption_data["words"]],
+        "words": caption_payload(drawn, style.get("word_sizes") or {}, style["font_size"]),
         "font_size": style["font_size"], "stroke_width": style["stroke_width"], "box_height": style["box_height"],
         "text_color": SUBTITLE_TEXT_COLOR, "stroke_color": SUBTITLE_STROKE_COLOR,
     }
-    ok, detail = captionlib.captions_match_script([w["text"] for w in caption_args["words"]], [line["text"].strip() for line in ctx.script["lines"]])
+    own_sizes = sum(1 for w in caption_args["words"] if "font_size" in w)
+    ok, detail = captionlib.captions_match_script([w["text"] for w in caption_args["words"]], script_texts, skip=hidden_pieces)
     ctx.check("captions match script (as drawn)", ok, detail)  # what is handed to Remotion, one last time
     out = ctx.work / "final-visuals.mp4"
     work_dir = ctx.work / "visuals"
     work_dir.mkdir(parents=True, exist_ok=True)
+    kwargs = {"captions": caption_args}
+    if hook_args:
+        kwargs["hook"] = hook_args
     try:
-        info = module.render_and_overlay(str(mpt["video"]), script, timings, str(out), str(work_dir), captions=caption_args)
+        info = module.render_and_overlay(str(mpt["video"]), script, timings, str(out), str(work_dir), **kwargs)
     except Exception as exc:  # the overlay code is another module: report any crash plainly
         raise GateError(f"visuals.render_and_overlay failed: {type(exc).__name__}: {exc}")
     if not out.is_file():
@@ -1801,9 +1990,91 @@ def step_visuals(ctx: Ctx, mpt: dict, timings: list[dict]) -> Path:
     if panels_off:
         ctx.report["visuals"]["skipped"] = why
     panels = len(needed) if not panels_off else 0
-    ctx.check("visuals", True, f"{len(caption_data['words'])} caption words" + (f" and {panels} visual line(s)" if panels else "") +
+    ctx.check("visuals", True, f"{len(caption_args['words'])} caption words" + (f" ({own_sizes} with their own smaller size)" if own_sizes else "")
+              + (" and the hook card" if hook_args else "") + (f" and {panels} visual line(s)" if panels else "") +
               f" rendered onto the video in one ffmpeg pass -> {out}")
     return out
+
+
+def measure_loudness(ffmpeg: str, path: Path, audio_filter: str) -> dict:
+    proc = run_cmd([ffmpeg, "-hide_banner", "-nostats", "-i", str(path), "-vn", "-af", audio_filter, "-f", "null", "-"], 900, "ffmpeg (loudness measurement)")
+    found = parse_loudnorm_json(proc.stderr)
+    if proc.returncode != 0 or found is None:
+        raise GateError(f"ffmpeg could not measure the loudness of {path.name}: {proc.stderr.strip()[-300:]}")
+    return found
+
+
+def step_loudness(ctx: Ctx, video: Path) -> Path:
+    """The last thing done to the picture-and-sound file: speech chain + two-pass loudnorm to -14 LUFS / -1.5 dBTP, video stream
+    copied (not re-encoded), audio AAC 192k at 48 kHz; then the OUTPUT is measured and must be -14 +-1 LUFS with a true peak
+    of at most -1 dBTP (one retry with a lower true-peak target when the AAC encode overshoots)."""
+    ffmpeg = find_tool("ffmpeg")
+    out = ctx.work / "final-loudness.mp4"
+    tries = []
+    for true_peak in LOUDNESS_TRUE_PEAK_TARGETS:
+        first = measure_loudness(ffmpeg, video, loudnorm_filter(true_peak))
+        proc = run_cmd([ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", str(video), "-map", "0:v:0", "-map", "0:a:0",
+                        "-c:v", "copy", "-af", loudnorm_filter(true_peak, first), "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
+                        "-movflags", "+faststart", str(out)], 1800, "ffmpeg (loudness)")
+        if proc.returncode != 0 or not out.is_file():
+            raise GateError(f"ffmpeg could not finish the loudness step: {proc.stderr.strip()[-300:]}")
+        after = measure_loudness(ffmpeg, out, loudness_analysis_filter())
+        problems = loudness_problems(after)
+        tries.append({"true_peak_target": true_peak, "measured_before": first, "problems": problems,
+                      "measured_after": {"integrated_lufs": after["input_i"], "true_peak_dbtp": after["input_tp"], "lra": after["input_lra"]}})
+        if not problems:
+            break
+    final = tries[-1]
+    ctx.report["loudness"] = {
+        "target_lufs": LOUDNESS_TARGET_LUFS, "true_peak_target_dbtp": final["true_peak_target"], "speech_chain": SPEECH_CHAIN,
+        "video": "copied, not re-encoded", "audio": "aac 192k, 48 kHz", "measured_before": final["measured_before"],
+        "integrated_lufs": final["measured_after"]["integrated_lufs"], "true_peak_dbtp": final["measured_after"]["true_peak_dbtp"],
+        "lra": final["measured_after"]["lra"], "ok": not final["problems"], "tries": tries,
+    }
+    after = final["measured_after"]
+    ctx.check("final loudness", not final["problems"],
+              f"{after['integrated_lufs']:.1f} LUFS (target {LOUDNESS_TARGET_LUFS:g} +-{LOUDNESS_TOLERANCE_LU:g}), true peak {after['true_peak_dbtp']:.1f} dBTP "
+              f"(limit {LOUDNESS_MAX_TRUE_PEAK:g}), loudness range {after['lra']:.1f} LU"
+              + ("" if not final["problems"] else "; " + "; ".join(final["problems"])))
+    return out
+
+
+def cover_command(ffmpeg: str, video: Path, out: Path) -> list[str]:
+    """ffmpeg command that saves the frame at 0.0 s of the finished video as a JPEG (the cover for TikTok, Instagram and YouTube)."""
+    return [ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-ss", "0", "-i", str(video), "-frames:v", "1", "-q:v", COVER_QUALITY, str(out)]
+
+
+def write_cover(ffmpeg: str, video: Path, out: Path) -> dict:
+    """Write the cover and return its ffprobe summary; a plain GateError when ffmpeg cannot do it."""
+    proc = run_cmd(cover_command(ffmpeg, video, out), 120, "ffmpeg (cover frame)")
+    if proc.returncode != 0 or not out.is_file() or out.stat().st_size == 0:
+        raise GateError(f"The cover frame could not be saved: {proc.stderr.strip()[-300:]}")
+    return ffprobe_info(find_tool("ffprobe"), out)
+
+
+def hook_visibility(ffmpeg: str, final: Path, base: Path, hook_end: float, limit: float = HOOK_SEEN_LIMIT) -> list[dict]:
+    """Is the hook card really in the finished video? Compare the card's band (HOOK_BAND_CROP) of the finished video with the same band
+    of the video WITHOUT overlays (MoneyPrinterTurbo's), at 0.0 s (the cover frame) and just before the card fades out.
+    [{seconds, diff, seen}]; seen = the two differ by at least `limit` (mean grey difference 0-255)."""
+    results = []
+    for t in (0.0, round(max(0.0, hook_end - 0.1), 3)):
+        a = footage.band_signature(ffmpeg, final, t, HOOK_BAND_CROP, 108, 45)
+        b = footage.band_signature(ffmpeg, base, t, HOOK_BAND_CROP, 108, 45)
+        diff = footage.mean_abs_diff(a, b)
+        results.append({"seconds": t, "diff": round(diff, 2), "seen": diff >= limit})
+    return results
+
+
+def publish_info(script: dict, final_seconds: float | None) -> dict:
+    """What the upload pack needs besides caption.txt: the YouTube title, the comment to pin, the hook text and the runtime."""
+    hook = script.get("hook")
+    return {
+        "youtube_title": script["title"], "title_length": len(script["title"]), "title_limit": TITLE_MAX,
+        "pinned_comment": script.get("pinned_comment"),
+        "hook": {k: hook[k] for k in ("line1", "line2", "accent")} if hook else None,
+        "topic_noun": footage.topic_noun_for(script)[0] or None,
+        "runtime_seconds": final_seconds,
+    }
 
 
 def step_final_checks(ctx: Ctx, final_video: Path, mpt: dict, total: float) -> Path:
@@ -1826,6 +2097,22 @@ def step_final_checks(ctx: Ctx, final_video: Path, mpt: dict, total: float) -> P
     if proc.returncode != 0 or not sheet.is_file():
         raise GateError(f"Contact sheet failed: {(proc.stderr or proc.stdout).strip()[-300:]} (browser missing? run /media-studio:setup)")
     ctx.check("contact sheet", True, str(sheet))
+    ffmpeg = find_tool("ffmpeg")
+    cover = ctx.work / "cover.jpg"
+    cover_info = write_cover(ffmpeg, final_video, cover)
+    size = (cover_info.get("width"), cover_info.get("height"))
+    ctx.report["cover"] = {"path": str(cover), "frame_seconds": 0.0, "size": f"{size[0]}x{size[1]}", "jpeg_quality": "about 90 (ffmpeg -q:v " + COVER_QUALITY + ")"}
+    ctx.check("cover frame", size == (1080, 1920), f"cover.jpg = the frame at 0.0 s of the final video, {size[0]}x{size[1]} (needs exactly 1080x1920)"
+              + (" - it shows the hook card" if ctx.hook_end is not None else ""))
+    ctx.cover = cover
+    if ctx.hook_end is not None:
+        seen = hook_visibility(ffmpeg, final_video, mpt["video"], ctx.hook_end)
+        ctx.report.setdefault("hook", {})["visibility_check"] = {"band": HOOK_BAND_CROP, "limit": HOOK_SEEN_LIMIT, "frames": seen}
+        ctx.check("hook visible at 0 s", all(r["seen"] for r in seen),
+                  "the hook card is in the picture at " + " and ".join(f"{r['seconds']:g} s" for r in seen) +
+                  f" (difference to the footage underneath {', '.join(str(r['diff']) for r in seen)} of at least {HOOK_SEEN_LIMIT:g})"
+                  if all(r["seen"] for r in seen) else
+                  "the hook card is NOT visible where it should be: " + ", ".join(f"{r['seconds']:g} s (difference {r['diff']}, needs {HOOK_SEEN_LIMIT:g})" for r in seen if not r["seen"]))
     return sheet
 
 
@@ -1868,7 +2155,7 @@ def write_report(ctx: Ctx, path: Path, ok: bool, error: str | None = None) -> No
         "seconds_taken": round(time.time() - ctx.started),
         "settings": {"min_seconds": ctx.args.min_seconds, "max_seconds": ctx.args.max_seconds, "stage": ctx.args.stage,
                      "no_visuals": ctx.args.no_visuals, "local_materials": bool(ctx.args.local_materials),
-                     "footage": ctx.args.footage},
+                     "footage": ctx.args.footage, "voice_seed": ctx.args.voice_seed, "voice_cache": not ctx.args.no_voice_cache},
         "checks": ctx.checks,
         "warnings": ctx.warnings,
         **ctx.report,
@@ -1893,6 +2180,9 @@ def step_output(ctx: Ctx, final_video: Path, sheet: Path, credits: list[str], mp
         str(final_video): str(folder / "final.mp4"),
         str(sheet): str(folder / "sheet.png"),
     }
+    if ctx.cover is not None and ctx.cover.is_file():
+        shutil.copyfile(ctx.cover, folder / "cover.jpg")
+        kept[str(ctx.cover)] = str(folder / "cover.jpg")
     ctx.report = repoint_paths(ctx.report, kept)
     ctx.checks = replace_in_strings(ctx.checks, kept)  # also the paths written inside the check sentences
     ctx.report["outputs"] = {
@@ -1904,8 +2194,11 @@ def step_output(ctx: Ctx, final_video: Path, sheet: Path, credits: list[str], mp
         "caption": str(folder / "caption.txt"),
         "report": str(folder / "report.json"),
     }
+    if ctx.cover is not None and ctx.cover.is_file():
+        ctx.report["outputs"]["cover"] = str(folder / "cover.jpg")
+    ctx.report["publish"] = publish_info(ctx.script, (ctx.report.get("durations") or {}).get("final"))
     write_report(ctx, folder / "report.json", ok=True)
-    ctx.say(f"  wrote {folder}/ (final.mp4, subtitles.srt, captions-words.json, sheet.png, caption.txt, report.json)")
+    ctx.say(f"  wrote {folder}/ (final.mp4, {'cover.jpg, ' if ctx.report['outputs'].get('cover') else ''}subtitles.srt, captions-words.json, sheet.png, caption.txt, report.json)")
     return folder
 
 
@@ -1939,7 +2232,7 @@ def step_cleanup(ctx: Ctx, mpt: dict, folder: Path) -> None:
         "performed": True,
         "removed": removed,
         "kept": [*(str(ctx.work / name) for name in KEPT_WORK_FILES if (ctx.work / name).exists()), str(folder)],
-        "note": "paths in this report that pointed at removed files are null (or left out of lists); the review folder keeps final.mp4, subtitles.srt, captions-words.json, sheet.png, caption.txt. "
+        "note": "paths in this report that pointed at removed files are null (or left out of lists); the review folder keeps final.mp4, cover.jpg, subtitles.srt, captions-words.json, sheet.png, caption.txt. "
                 "In the sentences of checks[].detail a removed file is shown as '<file name> (deleted after the run)'",
     }
     write_report(ctx, report_path, ok=True)
@@ -1966,14 +2259,15 @@ def run(args: argparse.Namespace) -> int:
     try:
         step_validate(ctx)
         setup = step_preflight(ctx)
-        results = step_voice(ctx, setup)
-        narration, timings, total = step_join(ctx, results)
+        take = step_voice(ctx, setup)
+        narration, timings, total = step_join(ctx, take)
         step_length(ctx, total)
+        step_hook(ctx, timings)
         if args.stage == "voice":
             ctx.say(f"\nStage 'voice' done. Narration: {narration} ({total:.1f} s). Timings: {ctx.work / 'timings.json'}")
             return 0
         mpt = step_mpt(ctx, narration, setup, timings, total)
-        final_video = step_visuals(ctx, mpt, timings)
+        final_video = step_loudness(ctx, step_visuals(ctx, mpt, timings))
         sheet = step_final_checks(ctx, final_video, mpt, total)
         credits = step_credits(ctx, mpt, local=bool(setup["local_files"]))
         folder = step_output(ctx, final_video, sheet, credits, mpt)

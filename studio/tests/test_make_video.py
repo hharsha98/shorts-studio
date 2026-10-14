@@ -79,12 +79,13 @@ class ValidateScriptTests(unittest.TestCase):
         s["language"] = "fr"
         self.assertTrue(any("language" in e for e in errors_of(s)))
 
-    def test_title_limit_90(self):
+    def test_title_limit_70(self):
+        # YouTube cuts longer titles off in the Shorts feed (the upload pack shows the title)
         s = good_script()
-        s["title"] = "x" * 90
+        s["title"] = "x" * 70
         self.assertEqual(errors_of(s), [])
-        s["title"] = "x" * 91
-        self.assertTrue(any("title" in e for e in errors_of(s)))
+        s["title"] = "x" * 71
+        self.assertTrue(any("title" in e and "70" in e for e in errors_of(s)))
 
     def test_long_caption_only_warns(self):
         s = good_script()
@@ -271,15 +272,6 @@ class WerTests(unittest.TestCase):
     def test_five_words_one_wrong_exceeds_limit(self):
         wer = mv.word_error_rate("one two three four five", "one two three four six")
         self.assertGreater(wer, mv.wer_threshold("one two three four five"))
-
-
-class TimingsTests(unittest.TestCase):
-    def test_gap_between_lines_only(self):
-        t = mv.build_timings(["a", "b", "c"], [1.0, 2.0, 3.5])
-        self.assertEqual([x["index"] for x in t], [0, 1, 2])
-        self.assertEqual([x["start"] for x in t], [0.0, 1.25, 3.5])
-        self.assertEqual([x["end"] for x in t], [1.0, 3.25, 7.0])
-        self.assertEqual(t[2]["text"], "c")
 
 
 class LengthGateTests(unittest.TestCase):
@@ -686,19 +678,20 @@ class SrtAccuracyTests(unittest.TestCase):
         self.assertIn("0.000", msg)
 
     def test_wer_above_limit_fails_and_lists_the_words(self):
-        script = ["one two three four five six seven eight nine ten"]
-        cues = self.cues("one", "two", "free", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven")  # 2 errors in 10
+        # colours, not number words: numbers are one "<num>" in this check (see NumberToleranceTests)
+        script = ["red blue green yellow pink black white brown grey gold"]
+        cues = self.cues("red", "blue", "screen", "yellow", "pink", "black", "white", "brown", "grey", "gold", "silver")  # 2 errors in 10
         ok, wer, msg, diffs = mv.check_srt_accuracy(cues, script)
         self.assertFalse(ok)
         self.assertAlmostEqual(wer, 0.2)
-        self.assertIn('script "three" -> subtitle "free"', msg)
-        self.assertIn('extra word(s) in the subtitle: "eleven"', msg)
+        self.assertIn('script "green" -> subtitle "screen"', msg)
+        self.assertIn('extra word(s) in the subtitle: "silver"', msg)
         self.assertEqual(len(diffs), 2)
 
     def test_limit_is_inclusive_and_default_is_ten_percent(self):
         self.assertEqual(mv.SRT_WER_LIMIT, 0.10)
-        script = ["one two three four five six seven eight nine ten"]
-        cues = self.cues("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "tin")  # exactly 0.1
+        script = ["red blue green yellow pink black white brown grey gold"]
+        cues = self.cues("red", "blue", "green", "yellow", "pink", "black", "white", "brown", "grey", "gild")  # exactly 0.1
         ok, wer, _, _ = mv.check_srt_accuracy(cues, script)
         self.assertAlmostEqual(wer, 0.1)
         self.assertTrue(ok)
@@ -1137,8 +1130,8 @@ class FixedInCaptionsNoteTests(unittest.TestCase):
         self.assertIn("zwingt", mv.fixed_in_captions_note(diffs))  # ... and the user can still see what Whisper heard
 
     def test_the_voice_gate_message_talks_about_the_voice(self):
-        script = ["one two three four five six seven eight nine ten"]
-        cues = [{"index": 1, "start": 0, "end": 1, "text": "one two free four five six seven eight nine ten eleven"}]
+        script = ["red blue green yellow pink black white brown grey gold"]
+        cues = [{"index": 1, "start": 0, "end": 1, "text": "red blue screen yellow pink black white brown grey gold silver"}]
         ok, _wer, msg, _diffs = mv.check_srt_accuracy(cues, script)
         self.assertFalse(ok)
         self.assertIn("voice", msg)
@@ -1428,7 +1421,7 @@ class CaptionStepTests(unittest.TestCase):
                          "Trifft ein Wellenberg auf ein Wellental, löschen sie sich aus. Das heißt destruktive Interferenz.")
         self.assertEqual(result["words"][0]["start"], 0.0)  # the time of "rift"
         self.assertEqual(result["words"][0]["end"], 0.4)
-        self.assertEqual(result["style"], {"font_size": 69, "stroke_width": 6, "box_height": 141})
+        self.assertEqual(result["style"], {"font_size": 69, "stroke_width": 6, "box_height": 141, "word_sizes": {}})
         self.assertTrue(result["phrases"])
         names = {c["name"]: c for c in ctx.checks}
         self.assertTrue(names["captions match script"]["ok"])
@@ -1437,6 +1430,15 @@ class CaptionStepTests(unittest.TestCase):
         self.assertEqual(ctx.report["captions"]["alignment"]["words"], 14)
         self.assertEqual(ctx.report["captions"]["script_words"], 14)
         self.assertIn("Remotion", ctx.report["captions"]["renderer"])
+
+    def test_words_with_their_own_size_are_handed_on_to_the_drawing_step(self):
+        ctx, setup = self.make()
+        setup["caption"]["word_sizes"] = {"Wellenberg": 52}
+        heard = ["Trifft", "ein", "Wellenberg", "auf", "ein", "Wellental", "löschen", "sie", "sich", "aus", "Das", "heißt", "destruktive", "Interferenz"]
+        result = self.run_step(ctx, setup, self.whisper(heard))
+        self.assertEqual(result["style"]["word_sizes"], {"Wellenberg": 52})
+        self.assertEqual(result["style"]["font_size"], 69)  # the base size is not touched
+        self.assertIsNot(result["style"]["word_sizes"], setup["caption"]["word_sizes"])  # a copy
 
     def test_the_gate_fails_loudly_when_a_caption_word_is_not_the_script_word(self):
         ctx, setup = self.make()
@@ -1800,6 +1802,591 @@ class OwnFootageStepTests(unittest.TestCase):
             with mock.patch.object(mv, "WORK_ROOT", tmp), contextlib.redirect_stderr(io.StringIO()):
                 mv.fail(ctx, "FAILED", f"Pixabay broke: ?key={self.KEY}&q=x", extra={"traceback": f"Traceback ... ?key={self.KEY}&q=x"})
             self.assertNotIn(self.KEY, (tmp / "failed-report.json").read_text(encoding="utf-8"))
+
+
+# --------------------------------------------------------------------------------------
+# Hook card, cover, topic on screen, per-word caption size, publish info
+# --------------------------------------------------------------------------------------
+
+
+def hook_script(**hook_over):
+    script = good_script()
+    script["hook"] = {"line1": "Your fridge is", "line2": "secretly a heater", "accent": "heater", **hook_over}
+    script["topic_noun"] = "refrigerator"
+    script["pinned_comment"] = "Did you know? Yes or no 👇"
+    return script
+
+
+class NewScriptFieldTests(unittest.TestCase):
+    def test_a_script_with_hook_topic_noun_and_pinned_comment_is_valid(self):
+        errors, warnings = mv.validate_script(hook_script())
+        self.assertEqual((errors, warnings), ([], []))
+
+    def test_scripts_without_the_new_fields_still_pass(self):
+        s = good_script()
+        self.assertTrue(all(k not in s for k in ("hook", "topic_noun", "pinned_comment")))
+        self.assertEqual(errors_of(s), [])
+
+    def test_null_fields_count_as_absent(self):
+        s = good_script()
+        s.update(hook=None, topic_noun=None, pinned_comment=None)
+        self.assertEqual(errors_of(s), [])
+
+    def test_hook_problems_are_listed_with_their_field_names(self):
+        for over, needle in (({"line1": "x" * 27}, "hook.line1"), ({"line2": "y" * 31}, "hook.line2"), ({"accent": "fridge now"}, "ONE word"),
+                             ({"accent": "banana"}, "not a word of"), ({"line1": ""}, "hook.line1")):
+            errors = errors_of(hook_script(**over))
+            self.assertTrue(any(needle in e for e in errors), (over, errors))
+
+    def test_a_hook_must_be_an_object(self):
+        s = good_script()
+        s["hook"] = "Your fridge"
+        self.assertTrue(any("hook must be an object" in e for e in errors_of(s)))
+
+    def test_line_zero_may_not_have_a_panel_when_there_is_a_hook(self):
+        s = hook_script()
+        s["lines"][0]["visual"] = {"type": "stat", "value": "5", "label": "five"}
+        errors = errors_of(s)
+        self.assertTrue(any("lines[0].visual must be empty" in e for e in errors), errors)
+        del s["hook"]
+        self.assertEqual(errors_of(s), [])  # without a hook line 0 may have one, as before
+
+    def test_topic_noun_is_a_short_english_phrase(self):
+        for bad in ("Kühlschrank", "", "x", "a" * 41, 5):
+            s = good_script()
+            s["topic_noun"] = bad
+            self.assertTrue(any("topic_noun" in e for e in errors_of(s)), bad)
+        s = good_script()
+        s["topic_noun"] = "washing machine"
+        self.assertEqual(errors_of(s), [])
+
+    def test_pinned_comment_limit_150(self):
+        s = good_script()
+        s["pinned_comment"] = "x" * 150
+        self.assertEqual(errors_of(s), [])
+        s["pinned_comment"] = "x" * 151
+        self.assertTrue(any("pinned_comment" in e for e in errors_of(s)))
+        s["pinned_comment"] = "  "
+        self.assertTrue(any("pinned_comment" in e for e in errors_of(s)))
+
+
+@unittest.skipUnless(FONT_FILE.is_file(), "MoneyPrinterTurbo font not found")
+class PerWordCaptionSizeTests(unittest.TestCase):
+    NORMAL = "The fridge moves heat out of the box and the cold air stays in because the door is closed."  # 19 short words
+
+    def style(self, *extra, repeat=6):
+        return mv.pick_caption_style([self.NORMAL] * repeat + list(extra), FONT_FILE)
+
+    def test_the_percentile_is_nearest_rank(self):
+        self.assertEqual(mv.percentile([5, 1, 3, 2, 4], 0.9), 5)
+        self.assertEqual(mv.percentile(list(range(1, 11)), 0.9), 9)
+        self.assertEqual(mv.percentile(list(range(1, 101)), 0.9), 90)
+        self.assertEqual(mv.percentile([7], 0.9), 7)
+        self.assertEqual(mv.percentile([], 0.9), 0.0)
+
+    def test_one_long_word_does_not_shrink_the_whole_video(self):
+        before = self.style()
+        style = self.style("Das ist Kühlschrankkompressor.")
+        self.assertEqual(before["font_size"], mv.CAPTION_FONT_MAX)
+        self.assertEqual(style["font_size"], mv.CAPTION_FONT_MAX)  # the base size is what it was without the long word
+        self.assertEqual(list(style["word_sizes"]), ["Kühlschrankkompressor."])
+        own = style["word_sizes"]["Kühlschrankkompressor."]
+        self.assertLess(own, mv.CAPTION_FONT_MAX)
+        self.assertGreaterEqual(own, mv.CAPTION_FONT_MIN)
+        self.assertLessEqual(style["widest_word_px"], mv.CAPTION_MAX_WORD_PX)  # it fits at ITS size ...
+        self.assertIsNone(mv.caption_word_problem(style))  # ... so there is nothing to report
+
+    def test_the_base_size_comes_from_the_ninetieth_percentile_word(self):
+        # 10 words: nine short ones and one 21-letter word: the 90th-percentile word is the 9th of 10 = a short one
+        text = "Dein Kühlschrank ist ein Gerät, das Wärme nach draußen schiebt, Kühlschrankkompressor."
+        style = mv.pick_caption_style([text], FONT_FILE)
+        words = text.split()
+        self.assertEqual(len(words), 11)
+        self.assertEqual(style["font_size"], mv.CAPTION_FONT_MAX)
+        self.assertEqual(list(style["word_sizes"]), ["Kühlschrankkompressor."])
+
+    def test_when_many_words_are_wide_the_base_size_shrinks_too(self):
+        # every word of the script is long: the 90th-percentile word is long, so the base size must come down
+        text = "Kühlschrankkompressor Flugzeugtriebwerken Wärmepumpenanlage Gefrierschrank."
+        style = mv.pick_caption_style([text], FONT_FILE)
+        self.assertLess(style["font_size"], mv.CAPTION_FONT_MAX)
+        self.assertLessEqual(style["widest_word_px"], mv.CAPTION_MAX_WORD_PX + 2)
+
+    def test_words_that_fit_at_the_base_size_get_no_size_of_their_own(self):
+        style = self.style()
+        self.assertEqual(style["word_sizes"], {})
+        self.assertFalse(style["size_limited_by_word"])
+
+    def test_a_word_too_wide_even_at_the_smallest_size_is_still_reported(self):
+        style = self.style("Das ist Donaudampfschifffahrtsgesellschaftskapitaensmuetze.")
+        self.assertEqual(style["font_size"], mv.CAPTION_FONT_MAX)
+        problem = mv.caption_word_problem(style)
+        self.assertIsNotNone(problem)
+        self.assertIn("Donaudampfschifffahrtsgesellschaftskapitaensmuetze", problem)
+
+    def test_the_summary_sentence_names_the_words_with_their_own_size(self):
+        text = mv.caption_size_summary(self.style("Das ist Kühlschrankkompressor."))
+        self.assertIn("Kühlschrankkompressor.", text)
+        self.assertIn("own smaller size", text)
+        self.assertNotIn("own smaller size", mv.caption_size_summary(self.style()))
+
+    def test_the_payload_carries_the_own_size_only_for_those_words(self):
+        words = [{"text": "Das", "start": 0.0, "end": 0.3, "timing": "heard"}, {"text": "Kühlschrankkompressor.", "start": 0.3, "end": 1.0}]
+        payload = mv.caption_payload(words, {"Kühlschrankkompressor.": 70}, 120)
+        self.assertEqual(payload, [{"text": "Das", "start": 0.0, "end": 0.3}, {"text": "Kühlschrankkompressor.", "start": 0.3, "end": 1.0, "font_size": 70}])
+        self.assertEqual(mv.caption_payload(words, {"Kühlschrankkompressor.": 120}, 120)[1], {"text": "Kühlschrankkompressor.", "start": 0.3, "end": 1.0})  # not smaller: none
+
+    def test_a_caption_unit_with_a_lone_dash_is_measured_as_shown(self):
+        style = mv.pick_caption_style(["Tom - Jerry"], FONT_FILE)  # the dash is shown together with 'Tom'
+        self.assertEqual(style["font_size"], mv.CAPTION_FONT_MAX)
+
+
+@unittest.skipUnless(FONT_FILE.is_file(), "MoneyPrinterTurbo font not found")
+class HookStyleTests(unittest.TestCase):
+    def hook(self, line1, line2, accent="Why"):
+        return {"line1": line1, "line2": line2, "accent": accent}
+
+    def test_short_lines_get_big_letters_up_to_the_maximum(self):
+        style = mv.pick_hook_style(self.hook("Hot", "Cold", "Hot"), FONT_FILE)
+        self.assertEqual(style["font_size"], mv.HOOK_FONT_MAX)
+        self.assertFalse(style["below_target"])
+        self.assertFalse(style["too_small"])
+
+    def test_the_widest_line_with_its_outline_fits_the_width_for_all_sizes(self):
+        for line1, line2 in (("Your fridge is", "secretly a heater"), ("How does a microwave", "actually heat food?"), ("Dein Kühlschrank", "ist heimlich eine Heizung"),
+                             ("Does GPS need", "the internet? No.")):
+            style = mv.pick_hook_style(self.hook(line1, line2, line1.split()[0]), FONT_FILE)
+            self.assertLessEqual(style["widest_px"], mv.HOOK_MAX_WIDTH_PX, (line1, line2))
+            self.assertLessEqual(max(style["line_px"]), mv.HOOK_MAX_WIDTH_PX)
+            self.assertEqual(style["stroke_width"], mv.hook_stroke_width(style["font_size"]))
+            # the biggest size that fits: one more pixel of font would be too wide
+            measure = mv.FontMeasure(FONT_FILE.read_bytes())
+            wide = max(measure.text_width(line1, 1000), measure.text_width(line2, 1000)) / 1000
+            bigger = style["font_size"] + 1
+            if style["font_size"] < mv.HOOK_FONT_MAX:
+                self.assertGreater(wide * bigger + 2 * mv.hook_stroke_width(bigger), mv.HOOK_MAX_WIDTH_PX, (line1, line2))
+
+    def test_both_lines_share_one_size(self):
+        style = mv.pick_hook_style(self.hook("Hot outside.", "Frozen inside. Why?"), FONT_FILE)
+        self.assertEqual(style["widest_line"], "Frozen inside. Why?")
+        self.assertLess(style["line_px"][0], style["line_px"][1])
+
+    def test_the_microwave_example_is_below_96_px_and_says_so(self):
+        # "How does a microwave" is 1129 px wide at 96 px: no size >= 96 px can fit into 1000 px. The card still works (a warning, not a stop).
+        style = mv.pick_hook_style(self.hook("How does a microwave", "actually heat food?", "microwave"), FONT_FILE)
+        self.assertLess(style["font_size"], mv.HOOK_FONT_TARGET)
+        self.assertGreaterEqual(style["font_size"], mv.HOOK_FONT_MIN)
+        self.assertTrue(style["below_target"])
+        self.assertIsNone(mv.hook_size_problem(style))
+
+    def test_a_line_that_would_need_tiny_letters_stops_the_run_and_names_the_line(self):
+        style = mv.pick_hook_style(self.hook("Woher weiß das deine Funkuhr?", "Zeitumstellung am Sonntag", "Funkuhr?"), FONT_FILE)
+        self.assertTrue(style["too_small"])
+        problem = mv.hook_size_problem(style)
+        self.assertIn("Woher weiß das deine Funkuhr?", problem)
+        self.assertIn(f"{mv.HOOK_FONT_MIN} px", problem)
+        self.assertIn("Shorten", problem)
+
+    def test_an_unreadable_font_falls_back_to_a_safe_estimate(self):
+        style = mv.pick_hook_style(self.hook("Your fridge is", "secretly a heater", "heater"), Path("/nonexistent/font.ttf"))
+        self.assertIn("safe estimate", style["note"])
+        self.assertLessEqual(style["widest_px"], mv.HOOK_MAX_WIDTH_PX)
+
+    def test_the_card_sits_where_the_overlay_puts_it(self):
+        visuals = importlib_visuals()
+        self.assertEqual(mv.HOOK_BAND_CROP, f"crop={visuals.HOOK_W}:{visuals.HOOK_H}:{visuals.HOOK_X}:{visuals.HOOK_Y}")
+
+
+def importlib_visuals():
+    import importlib
+    return importlib.import_module("visuals")
+
+
+class HookStepTests(unittest.TestCase):
+    TIMINGS = [{"index": 0, "start": 0.1, "end": 2.0}, {"index": 1, "start": 2.4, "end": 6.0}]
+
+    def make(self, script=None, extra=()):
+        ctx = mv.Ctx(mv.parse_args(["x.json", *extra]))
+        ctx.script = script or hook_script()
+        return ctx
+
+    def run_step(self, ctx, timings=None):
+        with contextlib.redirect_stdout(io.StringIO()):
+            return mv.step_hook(ctx, timings or self.TIMINGS)
+
+    def test_no_hook_no_hook_end(self):
+        ctx = self.make(good_script())
+        self.assertIsNone(self.run_step(ctx))
+        self.assertIsNone(ctx.hook_end)
+        self.assertEqual(ctx.checks, [])
+
+    def test_a_short_line_zero_keeps_the_card_up_for_2_5_seconds(self):
+        ctx = self.make(hook_script())
+        ctx.script["lines"][1]["visual"] = None  # a panel at 2.4 s would clash: see the next test
+        self.assertEqual(self.run_step(ctx), 2.5)
+        self.assertEqual(ctx.hook_end, 2.5)
+        self.assertEqual(ctx.report["hook"]["hook_end"], 2.5)
+        self.assertEqual(ctx.report["hook"]["fade_seconds"], 0.25)
+        self.assertTrue(ctx.checks[-1]["ok"])
+        self.assertIn("2.50 s", ctx.checks[-1]["detail"])
+
+    def test_a_panel_that_would_start_under_the_card_stops_the_run(self):
+        ctx = self.make(hook_script())  # good_script's line 1 has a visual and starts at 2.4 s, the card is up until 2.5 s
+        with self.assertRaises(mv.GateError) as raised:
+            self.run_step(ctx)
+        self.assertIn("hook timing failed", str(raised.exception))
+        self.assertIn("line 1", str(raised.exception))
+
+    def test_a_panel_that_starts_while_the_card_fades_out_stops_the_run(self):
+        ctx = self.make(hook_script())
+        # line 0 ends at 3.0 s: the card is fully visible until 3.0 s and fades out until 3.25 s; the panel of line 1 starts at 3.1 s
+        timings = [{"index": 0, "start": 0.0, "end": 3.0}, {"index": 1, "start": 3.1, "end": 7.0}]
+        with self.assertRaises(mv.GateError) as raised:
+            self.run_step(ctx, timings)
+        self.assertIn("hook timing failed", str(raised.exception))
+        self.assertIn("3.10 s", str(raised.exception))
+        self.assertIn("fades out until 3.25 s", str(raised.exception))
+
+    def test_a_panel_that_starts_when_the_fade_is_over_is_fine(self):
+        ctx = self.make(hook_script())
+        timings = [{"index": 0, "start": 0.0, "end": 3.0}, {"index": 1, "start": 3.25, "end": 7.0}]
+        self.assertEqual(self.run_step(ctx, timings), 3.0)
+        self.assertTrue(ctx.checks[-1]["ok"])
+        self.assertIn("before 3.25 s", ctx.checks[-1]["detail"])
+        self.assertEqual(ctx.report["hook"]["panels_free_from"], 3.25)
+
+    def test_without_panels_there_is_no_clash(self):
+        ctx = self.make(hook_script(), extra=["--no-visuals"])
+        self.assertEqual(self.run_step(ctx), 2.5)
+
+    def test_a_long_line_zero_is_capped_at_3_5_seconds(self):
+        ctx = self.make(hook_script())
+        timings = [{"index": 0, "start": 0.0, "end": 5.0}, {"index": 1, "start": 5.3, "end": 8.0}]
+        self.assertEqual(self.run_step(ctx, timings), 3.5)
+
+    def test_the_end_of_line_zero_in_between(self):
+        ctx = self.make(hook_script())
+        timings = [{"index": 0, "start": 0.0, "end": 3.2}, {"index": 1, "start": 3.5, "end": 8.0}]
+        self.assertEqual(self.run_step(ctx, timings), 3.2)
+
+
+class HookVisualsStepTests(unittest.TestCase):
+    """step_visuals with a hook: the captions under the card are not drawn, the card goes to render_and_overlay."""
+
+    def make(self, tmp, script=None):
+        ctx = mv.Ctx(mv.parse_args(["x.json"]))
+        ctx.script = script or hook_script()
+        ctx.work = tmp
+        ctx.hook_end = 2.5
+        ctx.hook_style = {"font_size": 100, "stroke_width": 9}
+        words = [{"text": w, "start": 0.3 * k, "end": 0.3 * (k + 1), "timing": "heard"}
+                 for k, w in enumerate(" ".join(line["text"] for line in ctx.script["lines"]).split())]
+        mpt = {"video": tmp / "mpt.mp4", "captions": {"words": words, "phrases": [], "stats": {},
+                                                      "style": {"font_size": 69, "stroke_width": 6, "box_height": 141,
+                                                                "word_sizes": {"box.": 50}}}}
+        return ctx, mpt
+
+    def run_step(self, ctx, mpt):
+        calls = []
+
+        def fake_render(base, script, timings, out, work, captions=None, hook=None):
+            calls.append({"captions": captions, "hook": hook})
+            Path(out).write_text("video")
+            return {"panels": 1, "render_seconds": 1.0, "out": out}
+
+        fake = type(sys)("visuals")
+        fake.render_and_overlay = fake_render
+        with mock.patch.object(mv, "load_visuals_module", return_value=fake), contextlib.redirect_stdout(io.StringIO()):
+            mv.step_visuals(ctx, mpt, [])
+        return calls
+
+    def test_the_words_under_the_card_are_not_drawn_and_the_rest_is_checked_against_the_script(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            calls = self.run_step(ctx, mpt)
+        drawn = calls[0]["captions"]["words"]
+        self.assertEqual([w["text"] for w in drawn], ["heat", "out", "of", "the", "box."])
+        self.assertEqual(drawn[0]["start"], 2.5)  # "heat" is spoken 2.4-2.7 s: it starts when the card ends
+        self.assertTrue(all(w["start"] >= 2.5 for w in drawn))
+        check = next(c for c in ctx.checks if c["name"] == "captions match script (as drawn)")
+        self.assertTrue(check["ok"])
+        self.assertIn("hook card", check["detail"])
+        self.assertEqual(ctx.report["captions"]["hidden_under_hook"],
+                         {"until": 2.5, "words_hidden": 8, "words_started_late": 1, "script_words_not_drawn": 8})
+
+    def test_the_card_goes_to_the_overlay_with_its_size_and_end(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            calls = self.run_step(ctx, mpt)
+        self.assertEqual(calls[0]["hook"], {"line1": "Your fridge is", "line2": "secretly a heater", "accent": "heater",
+                                            "font_size": 100, "stroke_width": 9, "hook_end": 2.5})
+        self.assertIn("and the hook card", ctx.checks[-1]["detail"])
+
+    def test_a_word_with_its_own_size_carries_it(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            drawn = self.run_step(ctx, mpt)[0]["captions"]["words"]
+        self.assertEqual([w.get("font_size") for w in drawn], [None, None, None, None, 50])
+        self.assertIn("1 with their own smaller size", ctx.checks[-1]["detail"])
+
+    def test_without_a_hook_nothing_is_hidden_and_no_hook_argument_is_passed(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw), good_script())
+            ctx.hook_end = None
+            calls = self.run_step(ctx, mpt)
+        self.assertIsNone(calls[0]["hook"])
+        self.assertEqual(len(calls[0]["captions"]["words"]), 13)
+        self.assertNotIn("hidden_under_hook", ctx.report.get("captions", {}))
+
+    def test_a_changed_word_after_the_hidden_start_is_still_caught(self):
+        with tempfile.TemporaryDirectory() as raw:
+            ctx, mpt = self.make(Path(raw))
+            mpt["captions"]["words"][-1]["text"] = "BOX."
+            with self.assertRaises(mv.GateError) as raised:
+                self.run_step(ctx, mpt)
+        self.assertIn("captions match script (as drawn) failed", str(raised.exception))
+
+
+class CoverTests(unittest.TestCase):
+    def test_the_command_takes_frame_zero_as_a_jpeg_at_about_quality_90(self):
+        cmd = mv.cover_command("ffmpeg", Path("/w/final.mp4"), Path("/w/cover.jpg"))
+        self.assertEqual(cmd[cmd.index("-ss") + 1], "0")
+        self.assertEqual(cmd[cmd.index("-frames:v") + 1], "1")
+        self.assertEqual(cmd[cmd.index("-q:v") + 1], mv.COVER_QUALITY)
+        self.assertEqual(cmd[-1], "/w/cover.jpg")
+        self.assertEqual(cmd[cmd.index("-i") + 1], "/w/final.mp4")
+
+    def test_write_cover_returns_the_probe_and_fails_plainly(self):
+        with tempfile.TemporaryDirectory() as raw:
+            out = Path(raw) / "cover.jpg"
+
+            def fake_run(cmd, timeout, what, cwd=None):
+                Path(cmd[-1]).write_bytes(b"jpeg")
+                return mock.Mock(returncode=0, stderr="")
+
+            with mock.patch.object(mv, "run_cmd", side_effect=fake_run), mock.patch.object(mv, "find_tool", return_value="/bin/ffprobe"), \
+                    mock.patch.object(mv, "ffprobe_info", return_value={"width": 1080, "height": 1920}):
+                self.assertEqual(mv.write_cover("ffmpeg", Path("/w/f.mp4"), out), {"width": 1080, "height": 1920})
+            self.assertTrue(out.is_file())
+            out.unlink()
+            with mock.patch.object(mv, "run_cmd", return_value=mock.Mock(returncode=1, stderr="no such file")):
+                with self.assertRaises(mv.GateError) as raised:
+                    mv.write_cover("ffmpeg", Path("/w/f.mp4"), out)
+            self.assertIn("cover frame could not be saved", str(raised.exception))
+
+    def test_the_final_checks_write_the_cover_and_check_that_the_hook_is_in_it(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            ctx = mv.Ctx(mv.parse_args(["x.json"]))
+            ctx.script, ctx.work, ctx.hook_end = hook_script(), tmp, 2.5
+            ctx.media_dir = tmp
+            ctx.report["captions"] = {}
+            (tmp / "sheet.png").write_text("sheet")
+            words = [{"text": "a", "start": 0.0, "end": 0.5}]
+            mpt = {"video": tmp / "mpt.mp4", "captions": {"words": words}}
+            final = tmp / "final.mp4"
+            final.write_text("v")
+            info = {"duration": 60.0, "width": 1080, "height": 1920, "has_audio": True, "has_video": True}
+            with mock.patch.object(mv, "find_tool", side_effect=lambda n: f"/bin/{n}"), mock.patch.object(mv, "ffprobe_info", return_value=info), \
+                    mock.patch.object(mv, "run_cmd", return_value=mock.Mock(returncode=0, stderr="", stdout="")), \
+                    mock.patch.object(mv, "write_cover", return_value={"width": 1080, "height": 1920}) as write, \
+                    mock.patch.object(mv, "hook_visibility", return_value=[{"seconds": 0.0, "diff": 31.0, "seen": True}, {"seconds": 2.4, "diff": 30.0, "seen": True}]), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                mv.step_final_checks(ctx, final, mpt, 60.0)
+            names = {c["name"]: c for c in ctx.checks}
+            self.assertTrue(names["cover frame"]["ok"])
+            self.assertIn("hook card", names["cover frame"]["detail"])
+            self.assertTrue(names["hook visible at 0 s"]["ok"])
+            self.assertEqual(ctx.cover, tmp / "cover.jpg")
+            self.assertEqual(write.call_args[0][2], tmp / "cover.jpg")
+            self.assertEqual(ctx.report["hook"]["visibility_check"]["frames"][0]["diff"], 31.0)
+            self.assertEqual(ctx.report["cover"]["size"], "1080x1920")
+
+    def test_a_hook_that_is_not_in_the_picture_fails_the_run(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            ctx = mv.Ctx(mv.parse_args(["x.json"]))
+            ctx.script, ctx.work, ctx.hook_end, ctx.media_dir = hook_script(), tmp, 2.5, tmp
+            ctx.report["captions"] = {}
+            (tmp / "sheet.png").write_text("sheet")
+            mpt = {"video": tmp / "mpt.mp4", "captions": {"words": [{"text": "a", "start": 0.0, "end": 0.5}]}}
+            final = tmp / "final.mp4"
+            final.write_text("v")
+            info = {"duration": 60.0, "width": 1080, "height": 1920, "has_audio": True, "has_video": True}
+            with mock.patch.object(mv, "find_tool", side_effect=lambda n: f"/bin/{n}"), mock.patch.object(mv, "ffprobe_info", return_value=info), \
+                    mock.patch.object(mv, "run_cmd", return_value=mock.Mock(returncode=0, stderr="", stdout="")), \
+                    mock.patch.object(mv, "write_cover", return_value={"width": 1080, "height": 1920}), \
+                    mock.patch.object(mv, "hook_visibility", return_value=[{"seconds": 0.0, "diff": 0.4, "seen": False}, {"seconds": 2.4, "diff": 0.5, "seen": False}]), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(mv.GateError) as raised:
+                    mv.step_final_checks(ctx, final, mpt, 60.0)
+            self.assertIn("hook visible at 0 s failed", str(raised.exception))
+
+    def test_a_cover_of_the_wrong_size_fails(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            ctx = mv.Ctx(mv.parse_args(["x.json"]))
+            ctx.script, ctx.work, ctx.media_dir = good_script(), tmp, tmp
+            ctx.report["captions"] = {}
+            (tmp / "sheet.png").write_text("sheet")
+            mpt = {"video": tmp / "mpt.mp4", "captions": {"words": [{"text": "a", "start": 0.0, "end": 0.5}]}}
+            final = tmp / "final.mp4"
+            final.write_text("v")
+            info = {"duration": 60.0, "width": 1080, "height": 1920, "has_audio": True, "has_video": True}
+            with mock.patch.object(mv, "find_tool", side_effect=lambda n: f"/bin/{n}"), mock.patch.object(mv, "ffprobe_info", return_value=info), \
+                    mock.patch.object(mv, "run_cmd", return_value=mock.Mock(returncode=0, stderr="", stdout="")), \
+                    mock.patch.object(mv, "write_cover", return_value={"width": 720, "height": 1280}), contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(mv.GateError) as raised:
+                    mv.step_final_checks(ctx, final, mpt, 60.0)
+            self.assertIn("cover frame failed", str(raised.exception))
+
+    def test_hook_visibility_compares_the_card_band_of_the_final_with_the_video_underneath(self):
+        calls = []
+
+        def fake_band(ffmpeg, video, seconds, crop, w, h, run=None):
+            calls.append((Path(video).name, seconds, crop, w, h))
+            return bytes([200 if Path(video).name == "final.mp4" else 20]) * (w * h)
+
+        with mock.patch.object(mv.footage, "band_signature", side_effect=fake_band):
+            results = mv.hook_visibility("ffmpeg", Path("/w/final.mp4"), Path("/w/mpt.mp4"), 2.5)
+        self.assertEqual([r["seconds"] for r in results], [0.0, 2.4])
+        self.assertTrue(all(r["seen"] and r["diff"] == 180.0 for r in results))
+        self.assertTrue(all(c[2] == mv.HOOK_BAND_CROP for c in calls))
+        with mock.patch.object(mv.footage, "band_signature", return_value=bytes(108 * 45)):  # identical pictures = no card in the video
+            self.assertFalse(any(r["seen"] for r in mv.hook_visibility("ffmpeg", Path("/w/final.mp4"), Path("/w/mpt.mp4"), 2.5)))
+
+
+class PublishInfoTests(unittest.TestCase):
+    def test_title_comment_hook_and_runtime(self):
+        info = mv.publish_info(hook_script(), 58.4)
+        self.assertEqual(info["youtube_title"], "How your fridge really works")
+        self.assertEqual((info["title_length"], info["title_limit"]), (28, 70))
+        self.assertEqual(info["pinned_comment"], "Did you know? Yes or no 👇")
+        self.assertEqual(info["hook"], {"line1": "Your fridge is", "line2": "secretly a heater", "accent": "heater"})
+        self.assertEqual((info["topic_noun"], info["runtime_seconds"]), ("refrigerator", 58.4))
+
+    def test_a_script_without_the_new_fields(self):
+        info = mv.publish_info(good_script(), None)
+        self.assertEqual((info["pinned_comment"], info["hook"], info["runtime_seconds"]), (None, None, None))
+        self.assertEqual(info["topic_noun"], "refrigerator")  # the first video term is the default noun
+
+
+class OutputWithCoverTests(unittest.TestCase):
+    """step_output with a cover: it is copied into the review folder, listed in the report and survives the cleanup."""
+
+    WORDS, PHRASES = OutputAndCleanupTests.WORDS, OutputAndCleanupTests.PHRASES
+    make_ctx = OutputAndCleanupTests.make_ctx  # the same fake tree as the plain output tests
+
+    def run_steps(self, keep_work):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            ctx, mpt = self.make_ctx(tmp, keep_work)
+            (ctx.work / "cover.jpg").write_bytes(b"jpegdata")
+            ctx.cover = ctx.work / "cover.jpg"
+            ctx.script = hook_script()
+            ctx.report["durations"] = {"final": 61.5}
+            with mock.patch.object(mv, "REVIEW_ROOT", tmp / "review"), mock.patch.object(mv, "MPT_DIR", tmp / "mpt"), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                folder = mv.step_output(ctx, ctx.work / "final-visuals.mp4", ctx.work / "sheet.png", ["credit"], mpt)
+                report = json.loads((folder / "report.json").read_text(encoding="utf-8"))
+                mv.step_cleanup(ctx, mpt, folder)
+                after_cleanup = json.loads((folder / "report.json").read_text(encoding="utf-8"))
+            return {"files": sorted(p.name for p in folder.iterdir()), "report": report, "after_cleanup": after_cleanup,
+                    "cover": (folder / "cover.jpg").read_bytes(), "folder": str(folder)}
+
+    def test_the_cover_is_in_the_review_folder_and_in_the_report(self):
+        r = self.run_steps(keep_work=False)
+        self.assertEqual(r["files"], ["caption.txt", "captions-words.json", "cover.jpg", "final.mp4", "report.json", "sheet.png", "subtitles.srt"])
+        self.assertEqual(r["cover"], b"jpegdata")
+        self.assertEqual(r["report"]["outputs"]["cover"], r["folder"] + "/cover.jpg")
+        self.assertEqual(r["after_cleanup"]["outputs"]["cover"], r["folder"] + "/cover.jpg")
+
+    def test_the_report_carries_what_the_upload_pack_needs(self):
+        r = self.run_steps(keep_work=False)
+        publish = r["after_cleanup"]["publish"]
+        self.assertEqual(publish["youtube_title"], "How your fridge really works")
+        self.assertEqual(publish["pinned_comment"], "Did you know? Yes or no 👇")
+        self.assertEqual(publish["hook"]["line1"], "Your fridge is")
+        self.assertEqual(publish["runtime_seconds"], 61.5)
+
+    def test_no_cover_no_cover_file(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp = Path(raw)
+            ctx, mpt = self.make_ctx(tmp, False)  # ctx.cover stays None
+            with mock.patch.object(mv, "REVIEW_ROOT", tmp / "review"), mock.patch.object(mv, "MPT_DIR", tmp / "mpt"), contextlib.redirect_stdout(io.StringIO()):
+                folder = mv.step_output(ctx, ctx.work / "final-visuals.mp4", ctx.work / "sheet.png", ["credit"], mpt)
+            self.assertFalse((folder / "cover.jpg").exists())
+            self.assertNotIn("cover", json.loads((folder / "report.json").read_text(encoding="utf-8"))["outputs"])
+
+
+class TopicStepTests(unittest.TestCase):
+    """The topic check in step_own_footage."""
+
+    KEY = OwnFootageStepTests.KEY
+    make_ctx, fake_result = OwnFootageStepTests.make_ctx, OwnFootageStepTests.fake_result
+
+    def with_topic(self, **over):
+        result = self.fake_result()
+        result["report"]["topic"] = {"noun": "refrigerator", "noun_is_default": False, "clip_id": 5, "searched_phrase": "refrigerator",
+                                     "found_by_topic_search": False, "first_tags": ["refrigerator", "kitchen"], "lead_tag_words": [], "ok": True, **over}
+        return result
+
+    def run_with(self, ctx, result):
+        with mock.patch.object(mv, "find_tool", side_effect=lambda name: f"/bin/{name}"), \
+                mock.patch.object(mv.footage, "load_pixabay_key", return_value=self.KEY), \
+                mock.patch.object(mv.footage, "build_broll", return_value=result), contextlib.redirect_stdout(io.StringIO()):
+            return mv.step_own_footage(ctx, [{"index": 0, "start": 0.0, "end": 4.0}], 4.0)
+
+    def test_the_topic_check_is_in_the_report_checks(self):
+        ctx = self.make_ctx()
+        self.run_with(ctx, self.with_topic())
+        check = next(c for c in ctx.checks if c["name"] == "topic on screen at 0 s")
+        self.assertTrue(check["ok"])
+        self.assertIn("pixabay 5", check["detail"])
+        self.assertIn("refrigerator, kitchen", check["detail"])
+        self.assertEqual(ctx.report["footage"]["topic"]["noun"], "refrigerator")
+
+    def test_a_noun_found_by_a_direct_search_and_a_default_noun_are_both_said(self):
+        ctx = self.make_ctx()
+        self.run_with(ctx, self.with_topic(found_by_topic_search=True, noun_is_default=True))
+        detail = next(c for c in ctx.checks if c["name"] == "topic on screen at 0 s")["detail"]
+        self.assertIn("searched directly", detail)
+        self.assertIn("topic_noun", detail)
+
+    def test_a_failed_topic_check_stops_the_run(self):
+        ctx = self.make_ctx()
+        with self.assertRaises(mv.GateError) as raised:
+            self.run_with(ctx, self.with_topic(ok=False))
+        self.assertIn("topic on screen at 0 s failed", str(raised.exception))
+
+    def test_a_footage_report_without_a_topic_adds_no_check(self):
+        ctx = self.make_ctx()
+        self.run_with(ctx, self.fake_result())
+        self.assertFalse(any(c["name"] == "topic on screen at 0 s" for c in ctx.checks))
+
+
+class StepOrderWithHookTests(unittest.TestCase):
+    def test_the_hook_is_timed_right_after_the_length_gate_and_before_the_stage_stops(self):
+        events = []
+        with tempfile.TemporaryDirectory() as raw:
+            script_path = Path(raw) / "script.json"
+            script_path.write_text(json.dumps(hook_script()), encoding="utf-8")
+
+            def rec(name, result=None):
+                def fn(*a, **k):
+                    events.append(name)
+                    return result
+                return fn
+
+            take = {"x": 1}
+            with mock.patch.object(mv, "WORK_ROOT", Path(raw) / "work"), mock.patch.object(mv, "step_preflight", side_effect=rec("preflight", {})), \
+                    mock.patch.object(mv, "step_voice", side_effect=rec("voice", take)), \
+                    mock.patch.object(mv, "step_join", side_effect=rec("join", (Path("/n.wav"), [{"index": 0, "start": 0, "end": 3}], 60.0))), \
+                    mock.patch.object(mv, "step_length", side_effect=rec("length")), mock.patch.object(mv, "step_hook", side_effect=rec("hook")), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                code = mv.main([str(script_path), "--stage", "voice"])
+        self.assertEqual(code, 0)
+        self.assertEqual(events, ["preflight", "voice", "join", "length", "hook"])
 
 
 if __name__ == "__main__":

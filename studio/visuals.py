@@ -14,6 +14,10 @@ The captions go through the same pass: with ``captions=...`` the one-word-at-a-t
 is rendered too (Remotion composition "WordCaptions", transparent 1080x560 ProRes 4444) and overlaid
 at x=0, y=1300, so the video is re-encoded only once. The caption .mov is deleted afterwards.
 
+The hook card too: with ``hook=...`` a two-line title card (Remotion composition "HookCard", transparent 1080x450)
+sits over the first seconds at x=0, y=250: fully visible from frame 0 (it is the cover frame) until ``hook_end``,
+then a 0.25 s fade-out. No panel may start before hook_end + 0.25 s (the fade is over) and no caption word may be drawn before hook_end.
+
 Python standard library only. Run ``python3 studio/visuals.py --demo`` to build a
 demo video, a contact sheet and one frame grab per panel type.
 """
@@ -31,6 +35,8 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+
+import captions as captionlib  # studio/captions.py: the hook card's text rules and timing (pure functions)
 
 # --------------------------------------------------------------------------- constants
 
@@ -63,6 +69,15 @@ CAPTION_Y = 1300  # top of the caption box; make_video.CAPTION_BOX_TOP_Y must be
 CAPTION_W, CAPTION_H = 1080, 560  # canvas of the caption track; the frame below y=1300 has room for it (1300 + 560 < 1920)
 CAPTION_FPS = 30  # must match CAPTION_FPS in WordCaptions.tsx
 CAPTION_TAIL_SECONDS = 0.2  # the track runs this long after the last word (the overlay shows the video as it is after the track ends)
+
+# Hook card (Remotion composition "HookCard"): two big lines in the top third of the frame.
+HOOK_COMPOSITION = "HookCard"
+HOOK_X = 0
+HOOK_Y = 250  # top of the card's canvas; the canvas covers y 250..700
+HOOK_W, HOOK_H = 1080, 450
+HOOK_FPS = 30  # must match HOOK_FPS in HookCard.tsx
+HOOK_FADE_SECONDS = captionlib.HOOK_FADE_SECONDS
+HOOK_ACCENT_COLOR = "#FFB000"  # the same amber as the diagram panels
 
 
 class VisualError(ValueError):
@@ -210,25 +225,43 @@ def plan_panels(script: dict, timings: list[dict], video_duration: float | None 
     return kept
 
 
+def hook_panel_conflicts(plan: list[dict], hook_end: float) -> list[str]:
+    """Planned panels that would start before the hook card is gone (empty list = fine): the card is fully visible until
+    hook_end and fades out for HOOK_FADE_SECONDS after it, so a panel may start from hook_end + HOOK_FADE_SECONDS."""
+    free_from = captionlib.hook_panel_free_from(hook_end)
+    return [
+        f"the panel for lines[{p['index']}] starts at {p['start']:.2f} s, but the hook card is on screen until {hook_end:.2f} s "
+        f"and fades out until {free_from:.2f} s"
+        for p in plan if p["start"] < free_from - 1e-6
+    ]
+
+
 def _num(x: float) -> str:
     """Compact, stable number for ffmpeg expressions (no scientific notation)."""
     text = f"{x:.3f}".rstrip("0").rstrip(".")
     return text if text else "0"
 
 
-def build_filter_complex(panels: list[dict], x: int = PANEL_X, y: int = PANEL_Y, caption: bool = False) -> str:
+def build_filter_complex(panels: list[dict], x: int = PANEL_X, y: int = PANEL_Y, caption: bool = False, hook: bool = False) -> str:
     """ffmpeg -filter_complex for overlaying panels (input 0 = base, input k = panel k).
 
     Each panel's timestamps are shifted to its start time and the overlay is only
-    enabled between start and end. With caption=True the caption track (the LAST input,
-    number len(panels)+1) is overlaid on top of everything at x=CAPTION_X, y=CAPTION_Y;
-    it starts at 0 and runs as one transparent video, so it needs no enable window.
+    enabled between start and end. With caption=True the caption track (input number len(panels)+1) is
+    overlaid on top of everything at x=CAPTION_X, y=CAPTION_Y; it starts at 0 and runs as one transparent
+    video, so it needs no enable window. With hook=True the hook card (the LAST input) is overlaid FIRST, right on
+    the video (below the panels and the captions: no panel starts before the card is done, a panel that starts
+    during its fade-out simply covers it), at x=HOOK_X, y=HOOK_Y; it also starts at 0 and needs no enable window.
     The final video stream is labelled [vout].
     """
-    if not panels and not caption:
-        raise ValueError("build_filter_complex needs at least one panel or a caption track")
+    if not panels and not caption and not hook:
+        raise ValueError("build_filter_complex needs at least one panel, a caption track or a hook card")
     parts: list[str] = []
     prev = "0:v"
+    if hook:
+        k = len(panels) + 1 + (1 if caption else 0)
+        parts.append(f"[{k}:v]setpts=PTS-STARTPTS[hook]")
+        parts.append(f"[{prev}][hook]overlay=x={HOOK_X}:y={HOOK_Y}:format=auto:eof_action=pass[vhook]")
+        prev = "vhook"
     for k, panel in enumerate(panels, start=1):
         start, end = _num(panel["start"]), _num(panel["end"])
         parts.append(f"[{k}:v]setpts=PTS-STARTPTS+{start}/TB[p{k}]")
@@ -255,8 +288,9 @@ def build_ffmpeg_command(
     duration: float | None = None,
     ffmpeg: str = FFMPEG,
     caption_file: str | None = None,
+    hook_file: str | None = None,
 ) -> list[str]:
-    """Full ffmpeg argv: one pass, all panels (and the caption track, when given), x264 crf 18, audio copied."""
+    """Full ffmpeg argv: one pass, all panels (and the caption track and the hook card, when given), x264 crf 18, audio copied."""
     if len(panel_files) != len(panels):
         raise ValueError("panel_files and panels must have the same length")
     cmd = [ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", base_mp4]
@@ -264,8 +298,10 @@ def build_ffmpeg_command(
         cmd += ["-i", path]
     if caption_file:
         cmd += ["-i", caption_file]
+    if hook_file:
+        cmd += ["-i", hook_file]  # the LAST input, see build_filter_complex
     cmd += [
-        "-filter_complex", build_filter_complex(panels, caption=bool(caption_file)),
+        "-filter_complex", build_filter_complex(panels, caption=bool(caption_file), hook=bool(hook_file)),
         "-map", "[vout]", "-map", "0:a?",
         "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
         "-c:a", "copy",
@@ -292,14 +328,20 @@ def build_caption_remotion_command(npx: str, props_json: str, out_mov: str) -> l
     return build_remotion_command(npx, props_json, out_mov, composition=CAPTION_COMPOSITION)
 
 
+def build_hook_remotion_command(npx: str, props_json: str, out_mov: str) -> list[str]:
+    """argv for rendering the hook card (composition HookCard)."""
+    return build_remotion_command(npx, props_json, out_mov, composition=HOOK_COMPOSITION)
+
+
 # --------------------------------------------------------------------------- captions (pure)
 
 
 def validate_captions(captions) -> list[str]:
     """Problems with the ``captions`` argument of render_and_overlay (empty list = valid).
 
-    captions = {"words": [{"text", "start", "end"}...], "font_size", "stroke_width", "box_height",
+    captions = {"words": [{"text", "start", "end", optional "font_size"}...], "font_size", "stroke_width", "box_height",
                 optional "text_color" (#FFFFFF), "stroke_color" (#000000)}; times in seconds on the video's timeline.
+    A word's own "font_size" (smaller than the base size) is for a word that would be too wide at the base size.
     """
     if not isinstance(captions, dict):
         return ["captions: must be an object with words, font_size, stroke_width and box_height"]
@@ -323,6 +365,9 @@ def validate_captions(captions) -> list[str]:
         elif start < previous_end - 1e-6:
             errors.append(f"{where} ({word['text']!r}): starts at {start} before the previous word ends ({previous_end})")
         previous_end = max(previous_end, end)
+        own_size = word.get("font_size")  # optional: a word that is too wide at the base size gets its own, smaller size
+        if own_size is not None and (isinstance(own_size, bool) or not isinstance(own_size, (int, float)) or own_size <= 0):
+            errors.append(f"{where} ({word['text']!r}): font_size must be a positive number, got {own_size!r}")
     for key in ("font_size", "stroke_width", "box_height"):
         value = captions.get(key)
         if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0 or (key == "stroke_width" and value < 1):
@@ -335,7 +380,12 @@ def validate_captions(captions) -> list[str]:
 def build_caption_props(captions: dict) -> dict:
     """The props (JSON) of the WordCaptions composition. The track is as long as the last word plus a short tail,
     rounded up to whole frames; the overlay shows the plain video after it."""
-    words = [{"text": w["text"], "start": float(w["start"]), "end": float(w["end"])} for w in captions["words"]]
+    words = []
+    for w in captions["words"]:
+        item = {"text": w["text"], "start": float(w["start"]), "end": float(w["end"])}
+        if w.get("font_size") is not None:
+            item["fontSize"] = int(w["font_size"])
+        words.append(item)
     last = max(w["end"] for w in words)
     frames = math.ceil((last + CAPTION_TAIL_SECONDS) * CAPTION_FPS - 1e-9)
     return {
@@ -346,6 +396,49 @@ def build_caption_props(captions: dict) -> dict:
         "textColor": captions.get("text_color", "#FFFFFF"),
         "strokeColor": captions.get("stroke_color", "#000000"),
         "seconds": frames / CAPTION_FPS,
+    }
+
+
+# --------------------------------------------------------------------------- hook card (pure)
+
+
+def validate_hook(hook, captions: dict | None = None) -> list[str]:
+    """Problems with the ``hook`` argument of render_and_overlay (empty list = valid).
+
+    hook = {"line1", "line2", "accent", "font_size", "stroke_width", "hook_end"}: the text rules are captions.hook_problems;
+    font_size and stroke_width are what make_video.pick_hook_style chose; hook_end is in seconds on the video's timeline.
+    No caption word may start before hook_end (the captions are hidden under the card)."""
+    problems = captionlib.hook_problems(hook)
+    if not isinstance(hook, dict):
+        return problems
+    for key in ("font_size", "stroke_width", "hook_end"):
+        value = hook.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            problems.append(f"hook.{key}: must be a positive number, got {value!r}")
+    if not problems and captions is not None:
+        early = [w["text"] for w in captions.get("words", []) if float(w["start"]) < hook["hook_end"] - 1e-6]
+        if early:
+            problems.append(f"captions would be drawn under the hook card (before {hook['hook_end']:.2f} s): {', '.join(map(repr, early[:5]))}")
+    return problems
+
+
+def hook_track_seconds(hook_end: float) -> float:
+    """Length of the hook track: on screen until hook_end, then the fade-out, rounded up to whole frames."""
+    return math.ceil((hook_end + HOOK_FADE_SECONDS) * HOOK_FPS - 1e-9) / HOOK_FPS
+
+
+def build_hook_props(hook: dict) -> dict:
+    """The props (JSON) of the HookCard composition."""
+    return {
+        "lines": captionlib.hook_segments(hook),
+        "fontSize": int(hook["font_size"]),
+        "strokeWidth": int(hook["stroke_width"]),
+        "textColor": "#FFFFFF",
+        "strokeColor": "#000000",
+        "accentColor": HOOK_ACCENT_COLOR,
+        "holdSeconds": float(hook["hook_end"]),
+        "fadeSeconds": HOOK_FADE_SECONDS,
+        "seconds": hook_track_seconds(float(hook["hook_end"])),
     }
 
 
@@ -413,7 +506,8 @@ def assert_has_alpha(path: str) -> None:
 
 
 def render_and_overlay(
-    base_mp4: str, script: dict, timings: list[dict], out_mp4: str, work_dir: str, captions: dict | None = None
+    base_mp4: str, script: dict, timings: list[dict], out_mp4: str, work_dir: str, captions: dict | None = None,
+    hook: dict | None = None,
 ) -> dict:
     """Render a panel for every line that has a visual (and the caption track, when given) and overlay them on base_mp4.
 
@@ -421,8 +515,13 @@ def render_and_overlay(
     see validate_captions. The words are drawn one at a time by Remotion (composition WordCaptions) into ONE
     transparent track that is overlaid in the same ffmpeg pass as the panels, so the video is re-encoded once.
 
+    ``hook`` (optional) is {"line1", "line2", "accent", "font_size", "stroke_width", "hook_end"}; see validate_hook. The card
+    is drawn by Remotion (composition HookCard) and overlaid in the same pass. No panel may start before hook_end + the fade and no
+    caption word may start before hook_end (the caller hides those words, see captions.hide_until).
+
     Returns {"panels": n, "render_seconds": s, "out": out_mp4} plus {"captions": {"words", "render_seconds"}}
-    when captions were drawn. Raises VisualError for a script/timings/captions problem (before any rendering),
+    when captions were drawn and {"hook": {"seconds", "render_seconds"}} when a hook card was. Raises VisualError for a
+    script/timings/captions/hook problem (before any rendering),
     RuntimeError if Remotion or ffmpeg fails (the work files are then kept for debugging).
     """
     if not os.path.isfile(base_mp4):
@@ -434,9 +533,17 @@ def render_and_overlay(
         caption_errors = validate_captions(captions)
         if caption_errors:
             raise VisualError("; ".join(caption_errors[:5]))
+    if hook is not None:
+        hook_errors = validate_hook(hook, captions)
+        if hook_errors:
+            raise VisualError("; ".join(hook_errors[:5]))
 
     duration = probe_duration(base_mp4)
     plan = plan_panels(script, timings, video_duration=duration)  # validates visuals first
+    if hook is not None:
+        conflicts = hook_panel_conflicts(plan, float(hook["hook_end"]))
+        if conflicts:
+            raise VisualError("; ".join(conflicts))
     dropped = [i for i, line in enumerate(script["lines"]) if line.get("visual") and i not in {p["index"] for p in plan}]
     if dropped:
         print(
@@ -446,7 +553,7 @@ def render_and_overlay(
         )
     Path(out_mp4).parent.mkdir(parents=True, exist_ok=True)
 
-    if not plan and captions is None:
+    if not plan and captions is None and hook is None:
         if os.path.abspath(base_mp4) != os.path.abspath(out_mp4):
             shutil.copyfile(base_mp4, out_mp4)
         return {"panels": 0, "render_seconds": 0.0, "out": out_mp4}
@@ -496,8 +603,28 @@ def render_and_overlay(
         scratch += [props_path, mov_path]
         caption_seconds = time.monotonic() - t1
 
+    hook_file = None
+    hook_render_seconds = 0.0
+    if hook is not None:
+        t2 = time.monotonic()
+        props_path = work / "hook.json"
+        mov_path = work / "hook.mov"
+        props_path.write_text(json.dumps(build_hook_props(hook), ensure_ascii=False), encoding="utf-8")
+        _run(
+            build_hook_remotion_command(npx, str(props_path), str(mov_path)),
+            cwd=REMOTION_DIR,
+            what="remotion render hook card",
+        )
+        if not mov_path.is_file():
+            raise RuntimeError(f"remotion did not produce {mov_path}")
+        assert_has_alpha(str(mov_path))
+        hook_file = str(mov_path)
+        scratch += [props_path, mov_path]
+        hook_render_seconds = time.monotonic() - t2
+
     cmd = build_ffmpeg_command(
-        base_mp4, panel_files, plan, out_mp4, duration=duration, ffmpeg=_find_tool("ffmpeg", FFMPEG), caption_file=caption_file
+        base_mp4, panel_files, plan, out_mp4, duration=duration, ffmpeg=_find_tool("ffmpeg", FFMPEG),
+        caption_file=caption_file, hook_file=hook_file,
     )
     _run(cmd, what="ffmpeg overlay")
 
@@ -506,6 +633,9 @@ def render_and_overlay(
     result = {"panels": len(plan), "render_seconds": round(render_seconds, 2), "out": out_mp4}
     if captions is not None:
         result["captions"] = {"words": len(captions["words"]), "render_seconds": round(caption_seconds, 2)}
+    if hook is not None:
+        result["hook"] = {"until": float(hook["hook_end"]), "seconds": hook_track_seconds(float(hook["hook_end"])),
+                          "render_seconds": round(hook_render_seconds, 2)}
     return result
 
 

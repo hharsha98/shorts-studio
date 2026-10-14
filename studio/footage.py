@@ -17,6 +17,9 @@ What happens, in order:
                         (studio/footage_blocklist.json), and preferably an uploader that is not in the video yet.
                         When a phrase finds nothing, a video term is used as a stand-in: terms that share a word with
                         the phrase first, never flame/cooking pictures, and the report says when it is unrelated.
+                        The FIRST picture (on screen at 0 s, behind the hook card, and the cover image) must show the
+                        video's topic: a clip whose first 8 tags contain the script's "topic_noun" (searched directly
+                        when line 0's own phrase does not deliver one; no such clip = a plain error naming the noun).
     4. download         only the chosen renditions, once, into work/_clips/ (reused by later runs; clips unused for
                         30 days, or the least recently used ones above 3 GB, are deleted again at the end)
     5. render + join    centre crop to 9:16, scale to 1080x1920, 30 fps, no audio, exact length per segment;
@@ -597,6 +600,26 @@ def shares_word(phrase: str, other: str) -> bool:
     return bool(set(specific_words(mine) or mine) & set(specific_words(phrase_words(other)) or phrase_words(other)))
 
 
+def topic_noun_for(script: dict) -> tuple[str, bool]:
+    """(the noun that must be on screen at 0 s, is it the default?). The script's own "topic_noun" (English, for example
+    "refrigerator"); without one the first video term ("video_terms"[0]) is used."""
+    noun = script.get("topic_noun") if isinstance(script, dict) else None
+    if isinstance(noun, str) and noun.split():
+        return " ".join(noun.split()), False
+    for term in (script.get("video_terms") if isinstance(script, dict) else None) or []:
+        if isinstance(term, str) and term.split():
+            return " ".join(term.split()), True
+    return "", True
+
+
+def tags_show_topic(tags, noun: str) -> bool:
+    """Do the FIRST LEAD_TAGS tags of a clip name the topic? Every specific word of the noun must be among the words of those
+    tags, as a stem, so a plural or singular ('microwaves'/'microwave') and a synonym ('fridge'/'refrigerator') count too."""
+    words = phrase_words(noun)
+    need = specific_words(words) or words
+    return bool(need) and set(need) <= lead_tag_words({"tags": tags})
+
+
 def fallback_terms(phrase: str, terms: list[str], index: int) -> list[str]:
     """The video terms to try when the phrase itself finds nothing, best stand-in first: terms that share a word with
     the phrase ('refrigerator interior' -> 'refrigerator'), then the others, starting at a different term for every
@@ -607,7 +630,7 @@ def fallback_terms(phrase: str, terms: list[str], index: int) -> list[str]:
 
 
 def choose_clips(segments: list[dict], video_terms: list[str], search, accept=None, lines: list[dict] | None = None, log=None,
-                 blocklist: dict | None = None) -> list[dict]:
+                 blocklist: dict | None = None, topic_noun: str | None = None) -> list[dict]:
     """For every segment the best clip not used before. Returns one record per segment: the candidate dict plus
     "segment", "phrase_searched", "fallback" (True when the segment's own phrase found nothing and a video_term did)
     and "fallback_related" (that video term shares a word with the phrase; False = a general stand-in picture).
@@ -617,7 +640,11 @@ def choose_clips(segments: list[dict], video_terms: list[str], search, accept=No
     A phrase without a usable clip retries with the video_terms (related terms first, see fallback_terms); flame and
     cooking pictures are refused there. Another page of results is only asked for the search variants whose previous
     page was full.
-    blocklist: {clip id: reason} of clips a person rejected after looking at them (load_clip_blocklist)."""
+    blocklist: {clip id: reason} of clips a person rejected after looking at them (load_clip_blocklist).
+    topic_noun: the FIRST segment (on screen at 0 s) must use a clip whose first LEAD_TAGS tags show this noun (tags_show_topic).
+    The segment's own phrase is tried first; when it delivers no such clip the noun itself is searched (such a pick is not a
+    "fallback": it is exactly what the first picture is for); then the video terms, with the same condition. No clip at all
+    is a plain FootageError that names the noun."""
     used: set = set()
     used_users: set = set()
     chosen: list[dict] = []
@@ -626,6 +653,9 @@ def choose_clips(segments: list[dict], video_terms: list[str], search, accept=No
         tail = BROLL_TAIL_SECONDS if index == len(segments) - 1 else 0.0  # the last picture runs a little past the narration
         need = (seg["end"] - seg["start"]) + tail + EXTRA_CLIP_SECONDS
         attempts = [seg["phrase"]]
+        need_topic = bool(topic_noun) and index == 0
+        if need_topic and normalize_phrase(topic_noun) != normalize_phrase(seg["phrase"]):
+            attempts.append(topic_noun)
         for term in fallback_terms(seg["phrase"], terms, index):
             if normalize_phrase(term) not in {normalize_phrase(a) for a in attempts}:
                 attempts.append(term)
@@ -634,7 +664,8 @@ def choose_clips(segments: list[dict], video_terms: list[str], search, accept=No
         for phrase in attempts:
             looked_at = 0
             refused_total: dict[str, int] = {}
-            is_fallback = phrase != seg["phrase"]
+            topic_search = need_topic and phrase == topic_noun and phrase != seg["phrase"]
+            is_fallback = phrase != seg["phrase"] and not topic_search
             active = None  # search variants to ask on the next page (None = all)
             for page in range(1, MAX_PAGES + 1):
                 entries, active = collect_hits(phrase, search, page, only=active)
@@ -644,9 +675,15 @@ def choose_clips(segments: list[dict], video_terms: list[str], search, accept=No
                 for reason, n in refused.items():
                     refused_total[reason] = refused_total.get(reason, 0) + n
                 for cand in candidates:
+                    if need_topic and not tags_show_topic(cand["tags"], topic_noun):
+                        refused_total["the first tags do not show the topic"] = refused_total.get("the first tags do not show the topic", 0) + 1
+                        continue
                     if accept is None or accept(cand, seg):
                         pick = {**cand, "segment": index, "phrase_searched": phrase, "fallback": is_fallback,
                                 "fallback_related": shares_word(seg["phrase"], phrase) if is_fallback else True}
+                        if need_topic:
+                            pick["topic_noun"] = topic_noun
+                            pick["topic_search"] = topic_search
                         break
                 if pick or not active:
                     break
@@ -654,6 +691,16 @@ def choose_clips(segments: list[dict], video_terms: list[str], search, accept=No
                 break
             why = ", ".join(f"{n} {r}" for r, n in sorted(refused_total.items(), key=lambda kv: -kv[1])) or "no hits at all"
             summaries.append(f"'{phrase}': {looked_at} hits ({why})")
+        if pick is None and need_topic:
+            own_searches = 1 if normalize_phrase(topic_noun) == normalize_phrase(seg["phrase"]) else 2  # the phrase, and the noun when it is another word
+            raise FootageError(
+                f"No usable stock clip shows the topic '{topic_noun}' for the first seconds of the video ({line_label(seg, lines)}): "
+                f"Pixabay has no clip that lists '{topic_noun}' among its first {LEAD_TAGS} tags and is also at least {need:.1f} s long "
+                "and sharp when cropped to 9:16 (a landscape clip needs 4K for that: its 9:16 centre crop must be at least "
+                f"{MIN_CROP_WIDTH} px wide). Searched: " + "; ".join(summaries[:own_searches]) + (" (the video terms were tried too)" if len(summaries) > own_searches else "") + ". "
+                "Set \"topic_noun\" in script.json to another English word that Pixabay uses for the same thing "
+                "(for example 'oven' instead of 'microwave'), or change line 0's \"broll\" phrase, and run again."
+            )
         if pick is None:
             raise FootageError(
                 f"No usable stock clip was found for {line_label(seg, lines)}, search phrase '{seg['phrase']}' "
@@ -670,6 +717,10 @@ def choose_clips(segments: list[dict], video_terms: list[str], search, accept=No
             note = ""
             if pick["fallback"]:
                 note = f" [fallback search '{pick['phrase_searched']}'" + ("" if pick["fallback_related"] else ", NOT related to the phrase") + "]"
+            elif pick.get("topic_search"):
+                note = f" [topic search '{pick['phrase_searched']}': line 0's own phrase had no clip showing the topic]"
+            if pick.get("topic_noun"):
+                note += f" [topic '{pick['topic_noun']}' is among the first {LEAD_TAGS} tags]"
             log(f"  segment {index + 1}/{len(segments)} {seg['start']:.1f}-{seg['end']:.1f} s '{seg['phrase']}' -> "
                 f"pixabay {pick['id']}: {pick['reason']}" + note)
     return chosen
@@ -1075,7 +1126,9 @@ def build_broll(script: dict, timings: list[dict], total: float, work_dir: Path,
         probes[cand["id"]] = info
         return True
 
-    chosen = choose_clips(segments, script["video_terms"], client.search, accept=accept, lines=lines, log=log, blocklist=load_clip_blocklist())
+    topic_noun, topic_default = topic_noun_for(script)
+    chosen = choose_clips(segments, script["video_terms"], client.search, accept=accept, lines=lines, log=log, blocklist=load_clip_blocklist(),
+                          topic_noun=topic_noun or None)
     unrelated = [(seg, rec) for seg, rec in zip(segments, chosen) if rec["fallback"] and not rec["fallback_related"]]
     if len(unrelated) > MAX_UNRELATED_SHARE * len(segments):
         shown = "; ".join(f"{line_label(seg, lines)} '{seg['phrase']}'" for seg, _ in unrelated[:6])
@@ -1131,6 +1184,15 @@ def build_broll(script: dict, timings: list[dict], total: float, work_dir: Path,
         "pruned_clips": pruned,
         "credits": credits,
     }
+    if topic_noun:
+        first_pick = chosen[0]
+        lead = sorted(lead_tag_words({"tags": first_pick["tags"]}))
+        report["topic"] = {
+            "noun": topic_noun, "noun_is_default": topic_default, "clip_id": first_pick["id"],
+            "searched_phrase": first_pick["phrase_searched"], "found_by_topic_search": bool(first_pick.get("topic_search")),
+            "first_tags": [t.strip() for t in first_pick["tags"].split(",") if t.strip()][:LEAD_TAGS],
+            "lead_tag_words": lead, "ok": tags_show_topic(first_pick["tags"], topic_noun),
+        }
     return {"path": final, "segments": segments, "credits": credits, "credit_lines": [credit_line(c) for c in credits], "report": report}
 
 
@@ -1149,17 +1211,22 @@ def mean_abs_diff(a: bytes, b: bytes) -> float:
     return sum(abs(x - y) for x, y in zip(a, b)) / len(a)
 
 
-def frame_signature(ffmpeg: str, video: Path, seconds: float, run=subprocess.run) -> bytes:
-    """A tiny grey picture of the top part of the frame at `seconds`."""
+def band_signature(ffmpeg: str, video: Path, seconds: float, crop: str, width: int, height: int, run=subprocess.run) -> bytes:
+    """A tiny grey picture (width x height) of the part of the frame at `seconds` that the ffmpeg crop filter `crop` selects."""
     cmd = [ffmpeg, "-v", "error", "-ss", f"{seconds:.3f}", "-i", str(video), "-frames:v", "1",
-           "-vf", f"{SIGNATURE_CROP},scale={SIGNATURE_W}:{SIGNATURE_H}:flags=area,format=gray", "-f", "rawvideo", "-"]
+           "-vf", f"{crop},scale={width}:{height}:flags=area,format=gray", "-f", "rawvideo", "-"]
     try:
         proc = run(cmd, capture_output=True, timeout=120)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise FootageError(f"ffmpeg could not read a frame of {Path(video).name}: {type(exc).__name__}") from None
-    if proc.returncode != 0 or len(proc.stdout) != SIGNATURE_W * SIGNATURE_H:
+    if proc.returncode != 0 or len(proc.stdout) != width * height:
         raise FootageError(f"ffmpeg could not read a frame of {Path(video).name} at {seconds:.1f} s.")
     return proc.stdout
+
+
+def frame_signature(ffmpeg: str, video: Path, seconds: float, run=subprocess.run) -> bytes:
+    """A tiny grey picture of the top part of the frame at `seconds`."""
+    return band_signature(ffmpeg, video, seconds, SIGNATURE_CROP, SIGNATURE_W, SIGNATURE_H, run)
 
 
 def check_order(ffmpeg: str, assembled: Path, broll: Path, times: list[float], limit: float = 20.0, run=subprocess.run) -> list[dict]:
@@ -1197,7 +1264,8 @@ def main(argv=None) -> int:
             raise FootageError("No Pixabay API key in MoneyPrinterTurbo/config.toml.")
         segments = plan_segments(timings, script["lines"], script["video_terms"])
         client = PixabayClient(key)
-        choose_clips(segments, script["video_terms"], client.search, lines=script["lines"], log=print, blocklist=load_clip_blocklist())
+        choose_clips(segments, script["video_terms"], client.search, lines=script["lines"], log=print, blocklist=load_clip_blocklist(),
+                     topic_noun=topic_noun_for(script)[0] or None)
     except (OSError, ValueError, KeyError) as exc:
         print(f"FAILED: {type(exc).__name__}: {mask_secret(exc)}", file=sys.stderr)
         return 1

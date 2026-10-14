@@ -9,6 +9,8 @@ The script is always right about the words. This module puts the two together:
                                            (punctuation attached), timed from Whisper's cues
     group_phrases(words)                -> readable phrases for a YouTube .srt upload
     captions_match_script(words, lines) -> the gate: the caption words ARE the script words, nothing else
+    hide_until(words, seconds)          -> the words that may be drawn while the hook card is NOT on screen
+    hook_*                              -> the hook card's text rules and timing (the card itself is drawn by studio/visuals.py)
 
 Everything here is a pure function (Python standard library only, no files, no network), so it is unit-tested in
 studio/tests/test_captions.py. The words are drawn into the video by Remotion (studio/visuals.py).
@@ -88,16 +90,20 @@ def script_units(script_lines: list[str]) -> list[str]:
     return units
 
 
-def captions_match_script(caption_texts: list[str], script_lines: list[str]) -> tuple[bool, str]:
-    """The gate: the caption words, joined, are the script's words, exactly (case, umlauts and punctuation included)."""
+def captions_match_script(caption_texts: list[str], script_lines: list[str], skip: int = 0) -> tuple[bool, str]:
+    """The gate: the caption words, joined, are the script's words, exactly (case, umlauts and punctuation included).
+
+    skip: the number of script words at the very start that are NOT drawn on purpose (they are spoken while the hook card
+    is on screen, see hide_until); the captions must then be exactly the script's words after those."""
     shown = " ".join(caption_texts).split()
-    wanted = script_words(script_lines)
+    wanted = script_words(script_lines)[skip:]
     if shown == wanted:
-        return True, f"all {len(wanted)} caption words are exactly the script's words, in order"
+        under_hook = f" (the first {skip} are spoken under the hook card and not drawn)" if skip else ""
+        return True, f"all {len(wanted)} caption words are exactly the script's words, in order{under_hook}"
     for k, (a, b) in enumerate(zip(shown, wanted)):
         if a != b:
             return False, f"caption word {k + 1} is {a!r} but the script says {b!r}"
-    return False, f"the captions have {len(shown)} words but the script has {len(wanted)}"
+    return False, f"the captions have {len(shown)} words but the script has {len(wanted)}" + (f" (after skipping the first {skip})" if skip else "")
 
 
 # --------------------------------------------------------------------------------------
@@ -360,6 +366,141 @@ def guessed_warning(stats: dict) -> str | None:
             f"{GUESSED_WARN_SHARE * 100:.0f}%: Whisper heard those parts badly, so look at them in the video"
         )
     return None
+
+
+# --------------------------------------------------------------------------------------
+# Hook card: text rules, timing, and hiding the captions underneath it (pure)
+# --------------------------------------------------------------------------------------
+
+HOOK_LINE1_MAX = 26  # characters
+HOOK_LINE2_MAX = 30
+HOOK_MIN_SECONDS = 2.5  # the hook card stays at least this long ...
+HOOK_MAX_SECONDS = 3.5  # ... and never longer than this, however long line 0 is
+HOOK_FADE_SECONDS = 0.25  # it fades out over this long AFTER hook_end
+
+
+def _accent_key(text: str) -> str:
+    """A word for comparing: lowercase, no punctuation ('Why?' and 'why' are the same; dashes become spaces)."""
+    return " ".join(normalize_words(text))
+
+
+def accent_token(line: str, accent: str) -> int | None:
+    """Index of the first space-separated piece of `line` that is the accent word (case and punctuation ignored), or None."""
+    key = _accent_key(accent)
+    if not key:
+        return None
+    for k, piece in enumerate(str(line).split()):
+        if _accent_key(piece) == key:
+            return k
+    return None
+
+
+def hook_problems(hook) -> list[str]:
+    """Plain-English problems with the script's "hook" object (empty list = fine). It is two short lines for the title card
+    that sits over the first seconds of the video, plus one accent word that is drawn in the accent colour."""
+    if not isinstance(hook, dict):
+        return ['hook must be an object like {"line1": "...", "line2": "...", "accent": "..."}']
+    problems = []
+    for key, limit in (("line1", HOOK_LINE1_MAX), ("line2", HOOK_LINE2_MAX)):
+        value = hook.get(key)
+        if not isinstance(value, str) or not value.strip():
+            problems.append(f"hook.{key} must be a non-empty text")
+        elif len(value.strip()) > limit:
+            problems.append(f"hook.{key} is {len(value.strip())} characters long; the limit is {limit}")
+    accent = hook.get("accent")
+    if not isinstance(accent, str) or not accent.strip():
+        problems.append("hook.accent must be one word of line1 or line2")
+    elif len(accent.split()) != 1:
+        problems.append(f"hook.accent must be ONE word (got {accent!r})")
+    elif not problems and accent_token(hook["line1"], accent) is None and accent_token(hook["line2"], accent) is None:
+        problems.append(f"hook.accent {accent!r} is not a word of hook.line1 or hook.line2")
+    return problems
+
+
+def hook_lines(hook: dict) -> list[str]:
+    return [hook["line1"].strip(), hook["line2"].strip()]
+
+
+def hook_segments(hook: dict) -> list[list[dict]]:
+    """The two lines as runs of text for the card: [[{"text", "accent"}...] per line]. The accent word (its first occurrence,
+    line 1 before line 2; punctuation stuck to it is coloured too) is its own run; the spaces around it stay with the plain runs."""
+    lines = hook_lines(hook)
+    found = None
+    for number, line in enumerate(lines):
+        index = accent_token(line, hook["accent"])
+        if index is not None:
+            found = (number, index)
+            break
+    out = []
+    for number, line in enumerate(lines):
+        pieces = line.split()
+        if found is None or found[0] != number:
+            out.append([{"text": " ".join(pieces), "accent": False}])
+            continue
+        i = found[1]
+        runs = []
+        if i > 0:
+            runs.append({"text": " ".join(pieces[:i]) + " ", "accent": False})
+        runs.append({"text": pieces[i], "accent": True})
+        if i < len(pieces) - 1:
+            runs.append({"text": " " + " ".join(pieces[i + 1:]), "accent": False})
+        out.append(runs)
+    return out
+
+
+def hook_end_seconds(timings: list[dict]) -> float:
+    """When the hook card is fully faded in place and starts to fade out: the end of line 0, but at least HOOK_MIN_SECONDS and
+    at most HOOK_MAX_SECONDS. (The fade-out then takes HOOK_FADE_SECONDS more.)"""
+    if not timings:
+        raise CaptionError("cannot time the hook card: there are no line timings")
+    first = next((t for t in timings if isinstance(t, dict) and t.get("index", 0) == 0), timings[0])
+    return round(min(HOOK_MAX_SECONDS, max(HOOK_MIN_SECONDS, float(first["end"]))), 3)
+
+
+def hook_panel_free_from(hook_end: float) -> float:
+    """The first second at which a diagram panel may start: the hook card has finished fading out (hook_end + HOOK_FADE_SECONDS).
+    A panel that starts while the card is still fading would be drawn over the half-transparent card."""
+    return hook_end + HOOK_FADE_SECONDS
+
+
+def hook_panel_problems(lines: list[dict], timings: list[dict], hook_end: float) -> list[str]:
+    """Diagram panels may not start before the hook card is gone (line 0 can have none; the card covers the same area): not at
+    hook_end, when the card begins to fade out, but only from hook_end + HOOK_FADE_SECONDS, when the fade is over."""
+    problems = []
+    free_from = hook_panel_free_from(hook_end)
+    for index, line in enumerate(lines):
+        if not (isinstance(line, dict) and line.get("visual")):
+            continue
+        entry = next((t for t in timings if isinstance(t, dict) and t.get("index", None) == index), None)
+        if index == 0:
+            problems.append("line 0 has a visual, but the hook card is on screen at the start: remove the visual from line 0")
+        elif entry is not None and float(entry["start"]) < free_from - 1e-6:
+            problems.append(
+                f"line {index} has a visual that would start at {float(entry['start']):.2f} s, but the hook card is on screen until "
+                f"{hook_end:.2f} s and fades out until {free_from:.2f} s: "
+                f"move that visual to a later line (or make lines 0-{index} longer)")
+    return problems
+
+
+def hide_until(words: list[dict], hook_end: float, minimum: float = MIN_WORD_SECONDS) -> tuple[list[dict], int]:
+    """The caption words that may be drawn while a hook card covers 0 .. hook_end.
+
+    A word that ends by hook_end is not drawn; a word that is still being spoken at hook_end is drawn from hook_end on
+    (dropped when less than `minimum` of it is left). Returns (words to draw, number of script words not drawn at the start)
+    so the caller can check the rest against the script (captions_match_script(skip=...))."""
+    shown = []
+    hidden_pieces = 0
+    for word in words:
+        if word["end"] <= hook_end + 1e-6:
+            hidden_pieces += len(word["text"].split())
+        elif word["start"] < hook_end - 1e-6:
+            if word["end"] - hook_end >= minimum - 1e-6:
+                shown.append({**word, "start": hook_end})
+            else:
+                hidden_pieces += len(word["text"].split())
+        else:
+            shown.append(dict(word))
+    return shown, hidden_pieces
 
 
 # --------------------------------------------------------------------------------------

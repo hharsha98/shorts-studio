@@ -620,5 +620,189 @@ class PhraseTests(unittest.TestCase):
         self.assertEqual(make_video.srt_problems(make_video.parse_srt(text)), [])
 
 
+# --------------------------------------------------------------------------------------
+# Hook card: text rules, timing, hiding the captions under it
+# --------------------------------------------------------------------------------------
+
+
+def good_hook(**over):
+    hook = {"line1": "How does a microwave", "line2": "actually heat food?", "accent": "microwave"}
+    hook.update(over)
+    return hook
+
+
+class HookTextTests(unittest.TestCase):
+    def test_a_good_hook_has_no_problems(self):
+        self.assertEqual(cp.hook_problems(good_hook()), [])
+
+    def test_limits_are_26_and_30_characters_inclusive(self):
+        self.assertEqual(cp.hook_problems(good_hook(line1="x" * 26, line2="y" * 30, accent="x" * 26)), [])
+        self.assertTrue(any("hook.line1 is 27" in p for p in cp.hook_problems(good_hook(line1="x" * 27, accent="actually"))))
+        self.assertTrue(any("hook.line2 is 31" in p for p in cp.hook_problems(good_hook(line2="y" * 31))))
+
+    def test_lines_must_be_text(self):
+        for key in ("line1", "line2"):
+            for bad in (None, "", "   ", 5):
+                self.assertTrue(any(f"hook.{key}" in p for p in cp.hook_problems(good_hook(**{key: bad}))), (key, bad))
+
+    def test_the_accent_is_one_word_that_is_in_a_line(self):
+        self.assertTrue(any("ONE word" in p for p in cp.hook_problems(good_hook(accent="does a"))))
+        self.assertTrue(any("not a word of" in p for p in cp.hook_problems(good_hook(accent="fridge"))))
+        self.assertTrue(any("hook.accent" in p for p in cp.hook_problems(good_hook(accent=""))))
+        self.assertTrue(any("hook.accent" in p for p in cp.hook_problems({"line1": "a b", "line2": "c d"})))
+
+    def test_the_accent_ignores_case_and_punctuation(self):
+        self.assertEqual(cp.hook_problems(good_hook(accent="Microwave")), [])
+        self.assertEqual(cp.hook_problems({"line1": "Hot outside.", "line2": "Frozen inside. Why?", "accent": "why"}), [])
+        self.assertEqual(cp.hook_problems({"line1": "Hot outside.", "line2": "Frozen inside. Why?", "accent": "outside"}), [])
+
+    def test_not_an_object(self):
+        for bad in (None, [], "hook", 3):
+            self.assertTrue(cp.hook_problems(bad))
+
+    def test_german_words_and_umlauts_match(self):
+        hook = {"line1": "Außen heiß.", "line2": "Innen eiskalt. Warum?", "accent": "eiskalt"}
+        self.assertEqual(cp.hook_problems(hook), [])
+        self.assertEqual(cp.accent_token("Außen heiß.", "HEISS"), None)  # no spelling tricks: ß stays ß
+        self.assertEqual(cp.accent_token("Außen heiß.", "heiß"), 1)
+
+
+class HookSegmentsTests(unittest.TestCase):
+    def test_the_accent_is_its_own_run_and_the_spaces_stay_with_the_plain_runs(self):
+        self.assertEqual(cp.hook_segments(good_hook()), [
+            [{"text": "How does a ", "accent": False}, {"text": "microwave", "accent": True}],
+            [{"text": "actually heat food?", "accent": False}],
+        ])
+
+    def test_an_accent_at_the_start_the_middle_and_in_line_two(self):
+        self.assertEqual(cp.hook_segments({"line1": "Hot outside.", "line2": "Frozen inside. Why?", "accent": "Frozen"})[1], [
+            {"text": "Frozen", "accent": True}, {"text": " inside. Why?", "accent": False}])
+        self.assertEqual(cp.hook_segments(good_hook(accent="does"))[0], [
+            {"text": "How ", "accent": False}, {"text": "does", "accent": True}, {"text": " a microwave", "accent": False}])
+
+    def test_punctuation_stuck_to_the_accent_is_coloured_with_it(self):
+        self.assertEqual(cp.hook_segments({"line1": "Hot outside.", "line2": "Frozen inside. Why?", "accent": "why"})[1][-1],
+                         {"text": "Why?", "accent": True})
+
+    def test_only_the_first_occurrence_is_coloured(self):
+        runs = cp.hook_segments({"line1": "Ice and ice", "line2": "ice again", "accent": "ice"})
+        self.assertEqual([r["text"] for r in runs[0] if r["accent"]], ["Ice"])
+        self.assertEqual([r for r in runs[1] if r["accent"]], [])
+
+    def test_the_runs_join_back_to_the_lines(self):
+        for accent in ("How", "does", "microwave", "food?"):
+            runs = cp.hook_segments(good_hook(accent=accent))
+            self.assertEqual(["".join(r["text"] for r in line) for line in runs], ["How does a microwave", "actually heat food?"])
+            self.assertEqual(sum(1 for line in runs for r in line if r["accent"]), 1)
+
+
+class HookTimingTests(unittest.TestCase):
+    @staticmethod
+    def timings(first_end):
+        return [{"index": 0, "start": 0.1, "end": first_end}, {"index": 1, "start": first_end + 0.3, "end": first_end + 4}]
+
+    def test_at_least_2_5_seconds(self):
+        self.assertEqual(cp.hook_end_seconds(self.timings(1.2)), 2.5)
+
+    def test_the_end_of_line_zero_in_between(self):
+        self.assertEqual(cp.hook_end_seconds(self.timings(3.1234)), 3.123)
+        self.assertEqual(cp.hook_end_seconds(self.timings(2.5)), 2.5)
+
+    def test_at_most_3_5_seconds_however_long_line_zero_is(self):
+        self.assertEqual(cp.hook_end_seconds(self.timings(6.0)), 3.5)
+
+    def test_no_timings_is_a_plain_error(self):
+        with self.assertRaises(cp.CaptionError):
+            cp.hook_end_seconds([])
+
+    def test_a_panel_may_not_start_before_the_hook_ends(self):
+        lines = [{"visual": None}, {"visual": {"type": "stat"}}, {"visual": {"type": "stat"}}]
+        timings = [{"index": 0, "start": 0.0, "end": 1.8}, {"index": 1, "start": 2.0, "end": 4.0}, {"index": 2, "start": 4.3, "end": 8.0}]
+        problems = cp.hook_panel_problems(lines, timings, 2.5)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("line 1", problems[0])
+        self.assertIn("2.00 s", problems[0])
+        self.assertIn("2.50 s", problems[0])
+        self.assertEqual(cp.hook_panel_problems(lines, timings, 1.75), [])  # the card is gone (1.75 + 0.25 fade) exactly when the panel starts
+
+    def test_a_panel_may_not_start_while_the_hook_card_is_still_fading_out(self):
+        lines = [{"visual": None}, {"visual": {"type": "stat"}}]
+        # the card is fully visible until 2.5 s and fades out until 2.75 s
+        self.assertEqual(cp.HOOK_FADE_SECONDS, 0.25)
+        self.assertEqual(cp.hook_panel_free_from(2.5), 2.75)
+        for start in (2.5, 2.6, 2.74):  # the moment the fade begins, in the middle of it, just before it ends
+            problems = cp.hook_panel_problems(lines, [{"index": 0, "start": 0.0, "end": 2.0}, {"index": 1, "start": start, "end": 6.0}], 2.5)
+            self.assertEqual(len(problems), 1, start)
+            self.assertIn(f"{start:.2f} s", problems[0])
+            self.assertIn("fades out until 2.75 s", problems[0])
+        for start in (2.75, 2.8, 3.4):  # when the fade is over, and later
+            timings = [{"index": 0, "start": 0.0, "end": 2.0}, {"index": 1, "start": start, "end": 6.0}]
+            self.assertEqual(cp.hook_panel_problems(lines, timings, 2.5), [], start)
+
+    def test_line_zero_may_not_have_a_panel(self):
+        problems = cp.hook_panel_problems([{"visual": {"type": "stat"}}], [{"index": 0, "start": 0.0, "end": 3.0}], 3.0)
+        self.assertTrue(problems and "line 0" in problems[0])
+
+
+class HideUntilTests(unittest.TestCase):
+    @staticmethod
+    def words():
+        return [
+            {"text": "Lava", "start": 0.2, "end": 0.7, "timing": "heard"},
+            {"text": "on", "start": 0.7, "end": 1.0, "timing": "heard"},
+            {"text": "the", "start": 1.0, "end": 2.3, "timing": "heard"},
+            {"text": "edges,", "start": 2.3, "end": 2.9, "timing": "heard"},
+            {"text": "ice", "start": 2.9, "end": 3.3, "timing": "heard"},
+        ]
+
+    def test_words_that_end_before_the_hook_ends_are_not_drawn(self):
+        shown, hidden = cp.hide_until(self.words(), 2.5)
+        self.assertEqual([w["text"] for w in shown], ["edges,", "ice"])
+        self.assertEqual(hidden, 3)
+
+    def test_a_word_in_the_middle_of_being_spoken_starts_when_the_hook_ends(self):
+        shown, _hidden = cp.hide_until(self.words(), 2.5)
+        self.assertEqual((shown[0]["start"], shown[0]["end"]), (2.5, 2.9))
+        self.assertEqual((shown[1]["start"], shown[1]["end"]), (2.9, 3.3))  # later words are untouched
+
+    def test_a_word_with_less_than_the_minimum_left_is_dropped(self):
+        words = [{"text": "a", "start": 2.0, "end": 2.55}, {"text": "b", "start": 2.55, "end": 3.0}]
+        shown, hidden = cp.hide_until(words, 2.5)  # only 0.05 s of "a" would be left
+        self.assertEqual([w["text"] for w in shown], ["b"])
+        self.assertEqual(hidden, 1)
+
+    def test_a_word_that_ends_exactly_when_the_hook_ends_is_hidden(self):
+        shown, hidden = cp.hide_until([{"text": "a", "start": 2.0, "end": 2.5}, {"text": "b", "start": 2.5, "end": 3.0}], 2.5)
+        self.assertEqual(([w["text"] for w in shown], hidden), (["b"], 1))
+
+    def test_nothing_is_hidden_when_every_word_starts_after_the_hook(self):
+        words = [{"text": "a", "start": 3.0, "end": 3.4}]
+        self.assertEqual(cp.hide_until(words, 2.5), (words, 0))
+
+    def test_the_input_is_not_changed_and_the_result_is_valid_captions(self):
+        words = self.words()
+        before = [dict(w) for w in words]
+        shown, _hidden = cp.hide_until(words, 2.5)
+        self.assertEqual(words, before)
+        self.assertEqual(cp.caption_problems(shown, 3.3), [])
+
+    def test_a_unit_with_two_pieces_counts_both_as_hidden(self):
+        words = [{"text": "Tom &", "start": 0.0, "end": 1.0}, {"text": "Jerry", "start": 1.0, "end": 3.0}]
+        shown, hidden = cp.hide_until(words, 2.5)
+        self.assertEqual((len(shown), hidden), (1, 2))
+
+    def test_the_rest_is_checked_against_the_script_by_skipping_the_hidden_start(self):
+        lines = ["Lava on the edges,", "ice in the middle?"]
+        shown, hidden = cp.hide_until(self.words()[:4] + [{"text": "ice", "start": 2.9, "end": 3.3}], 2.5)
+        texts = [w["text"] for w in shown]
+        ok, detail = cp.captions_match_script(texts + ["in", "the", "middle?"], lines, skip=hidden)
+        self.assertTrue(ok, detail)
+        self.assertIn("not drawn", detail)
+        self.assertFalse(cp.captions_match_script(texts + ["in", "the", "middle?"], lines)[0])  # without skip it is a mismatch
+        bad, message = cp.captions_match_script(["edges,", "ICE"], lines, skip=3)
+        self.assertFalse(bad)
+        self.assertIn("ICE", message)
+
+
 if __name__ == "__main__":
     unittest.main()

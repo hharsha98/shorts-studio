@@ -593,5 +593,215 @@ class RenderAndOverlayGuardTests(unittest.TestCase):
                 self.assertEqual(f.read(), b"not really a video")
 
 
+# --------------------------------------------------------------------------------------
+# Hook card
+# --------------------------------------------------------------------------------------
+
+
+def hook_args(**over):
+    args = {"line1": "How does a microwave", "line2": "actually heat food?", "accent": "microwave",
+            "font_size": 85, "stroke_width": 8, "hook_end": 2.5}
+    args.update(over)
+    return args
+
+
+class HookValidationTests(unittest.TestCase):
+    def test_a_good_hook_is_valid(self):
+        self.assertEqual(visuals.validate_hook(hook_args()), [])
+
+    def test_the_text_rules_are_the_scripts_rules(self):
+        self.assertTrue(visuals.validate_hook(hook_args(line1="x" * 27)))
+        self.assertTrue(visuals.validate_hook(hook_args(accent="fridge")))
+        self.assertTrue(visuals.validate_hook(None))
+
+    def test_sizes_and_time_must_be_positive_numbers(self):
+        for key in ("font_size", "stroke_width", "hook_end"):
+            for bad in (0, -1, "big", None, True):
+                self.assertTrue(any(f"hook.{key}" in e for e in visuals.validate_hook(hook_args(**{key: bad}))), (key, bad))
+
+    def test_caption_words_may_not_start_under_the_card(self):
+        early = caption_args(words=words_for(("Hallo", 2.0, 2.6), ("Welt.", 2.6, 3.0)))
+        problems = visuals.validate_hook(hook_args(), early)
+        self.assertTrue(problems and "under the hook card" in problems[0] and "'Hallo'" in problems[0])
+        fine = caption_args(words=words_for(("Hallo", 2.5, 2.8), ("Welt.", 2.8, 3.0)))
+        self.assertEqual(visuals.validate_hook(hook_args(), fine), [])  # starting exactly when the card ends is fine
+
+
+class HookPropsTests(unittest.TestCase):
+    def test_the_props_for_remotion(self):
+        props = visuals.build_hook_props(hook_args())
+        self.assertEqual(props["lines"][0], [{"text": "How does a ", "accent": False}, {"text": "microwave", "accent": True}])
+        self.assertEqual(props["lines"][1], [{"text": "actually heat food?", "accent": False}])
+        self.assertEqual((props["fontSize"], props["strokeWidth"]), (85, 8))
+        self.assertEqual((props["textColor"], props["strokeColor"], props["accentColor"]), ("#FFFFFF", "#000000", "#FFB000"))
+        self.assertEqual((props["holdSeconds"], props["fadeSeconds"]), (2.5, 0.25))
+        json.dumps(props, ensure_ascii=False)  # plain data
+
+    def test_the_track_is_the_hold_plus_the_fade_in_whole_frames(self):
+        self.assertAlmostEqual(visuals.build_hook_props(hook_args(hook_end=2.5))["seconds"], 83 / 30)  # 2.75 s = 82.5 frames -> 83 frames
+        seconds = visuals.build_hook_props(hook_args(hook_end=3.5))["seconds"]
+        self.assertEqual(seconds * visuals.HOOK_FPS, round(seconds * visuals.HOOK_FPS))
+        self.assertGreaterEqual(seconds, 3.75 - 1e-9)
+
+    def test_the_card_sits_in_the_top_third(self):
+        self.assertGreaterEqual(visuals.HOOK_Y, 240)
+        self.assertLessEqual(visuals.HOOK_Y + visuals.HOOK_H, 720)
+        self.assertLess(visuals.HOOK_Y + visuals.HOOK_H, 1920 // 3 + 80)
+
+    def test_the_fade_is_the_scripts_fade(self):
+        self.assertEqual(visuals.HOOK_FADE_SECONDS, 0.25)
+
+    def test_umlauts_survive_json(self):
+        hook = hook_args(line1="Außen heiß.", line2="Innen eiskalt. Warum?", accent="eiskalt")
+        self.assertIn("Außen heiß.", json.dumps(visuals.build_hook_props(hook), ensure_ascii=False))
+
+    def test_remotion_command(self):
+        cmd = visuals.build_hook_remotion_command("npx", "/w/hook.json", "/w/hook.mov")
+        self.assertEqual(cmd[:6], ["npx", "remotion", "render", "src/index.ts", "HookCard", "/w/hook.mov"])
+        for flag in ("--props=/w/hook.json", "--codec=prores", "--prores-profile=4444", "--pixel-format=yuva444p10le", "--image-format=png"):
+            self.assertIn(flag, cmd)
+
+
+class HookFilterTests(unittest.TestCase):
+    def test_hook_only(self):
+        self.assertEqual(
+            visuals.build_filter_complex([], hook=True),
+            "[1:v]setpts=PTS-STARTPTS[hook];"
+            "[0:v][hook]overlay=x=0:y=250:format=auto:eof_action=pass[vhook];"
+            "[vhook]format=yuv420p[vout]",
+        )
+
+    def test_the_hook_is_overlaid_first_so_panels_and_captions_sit_on_top_and_it_is_the_last_input(self):
+        graph = visuals.build_filter_complex([{"start": 4.0, "end": 8.0}], caption=True, hook=True)
+        self.assertEqual(
+            graph,
+            "[3:v]setpts=PTS-STARTPTS[hook];"
+            "[0:v][hook]overlay=x=0:y=250:format=auto:eof_action=pass[vhook];"
+            "[1:v]setpts=PTS-STARTPTS+4/TB[p1];"
+            "[vhook][p1]overlay=x=0:y=160:format=auto:eof_action=pass:enable='between(t,4,8)'[v1];"
+            "[2:v]setpts=PTS-STARTPTS[cap];"
+            "[v1][cap]overlay=x=0:y=1300:format=auto:eof_action=pass[vcap];"
+            "[vcap]format=yuv420p[vout]",
+        )
+
+    def test_without_the_hook_flag_the_graph_is_what_it_always_was(self):
+        panels = [{"start": 1.5, "end": 5.0}]
+        self.assertEqual(visuals.build_filter_complex(panels, caption=True), visuals.build_filter_complex(panels, caption=True, hook=False))
+        self.assertNotIn("hook", visuals.build_filter_complex(panels, caption=True))
+
+    def test_ffmpeg_command_has_one_pass_and_the_hook_last(self):
+        panels = [{"start": 4.0, "end": 8.0}]
+        cmd = visuals.build_ffmpeg_command("base.mp4", ["a.mov"], panels, "out.mp4", duration=12.0, ffmpeg="ffmpeg",
+                                           caption_file="cap.mov", hook_file="hook.mov")
+        self.assertEqual([cmd[i + 1] for i, a in enumerate(cmd) if a == "-i"], ["base.mp4", "a.mov", "cap.mov", "hook.mov"])
+        self.assertEqual(cmd[cmd.index("-filter_complex") + 1], visuals.build_filter_complex(panels, caption=True, hook=True))
+        self.assertEqual(cmd.count("-filter_complex"), 1)  # panels + captions + hook in ONE ffmpeg pass: one re-encode
+
+    def test_panels_may_not_start_before_the_hook_ends(self):
+        plan = [{"index": 1, "start": 2.0}, {"index": 3, "start": 5.0}]
+        problems = visuals.hook_panel_conflicts(plan, 2.5)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("lines[1]", problems[0])
+        self.assertEqual(visuals.hook_panel_conflicts(plan, 1.75), [])  # 1.75 s + the 0.25 s fade = 2.0 s: the card is gone
+
+    def test_panels_may_not_start_while_the_hook_card_fades_out(self):
+        plan = [{"index": 1, "start": 2.6}]
+        problems = visuals.hook_panel_conflicts(plan, 2.5)  # fully visible until 2.5 s, fading until 2.75 s
+        self.assertEqual(len(problems), 1)
+        self.assertIn("lines[1]", problems[0])
+        self.assertIn("2.75 s", problems[0])
+        self.assertEqual(visuals.hook_panel_conflicts([{"index": 1, "start": 2.75}], 2.5), [])
+
+
+class CaptionWordSizeTests(unittest.TestCase):
+    def test_a_word_may_bring_its_own_size(self):
+        words = [{"text": "Hallo", "start": 0.0, "end": 0.5}, {"text": "Lebensmittelverschwendung.", "start": 0.5, "end": 1.2, "font_size": 64}]
+        self.assertEqual(visuals.validate_captions(caption_args(words=words)), [])
+        props = visuals.build_caption_props(caption_args(words=words))
+        self.assertEqual(props["words"][0], {"text": "Hallo", "start": 0.0, "end": 0.5})  # no key for a word at the base size
+        self.assertEqual(props["words"][1]["fontSize"], 64)
+        self.assertEqual(props["fontSize"], 69)  # the base size stays for everyone else
+
+    def test_the_own_size_must_be_a_positive_number(self):
+        for bad in (0, -5, "small", True):
+            words = [{"text": "Hallo", "start": 0.0, "end": 0.5, "font_size": bad}]
+            self.assertTrue(any("font_size" in e for e in visuals.validate_captions(caption_args(words=words))), bad)
+
+
+class RenderWithHookTests(unittest.TestCase):
+    """render_and_overlay with a hook card, Remotion and ffmpeg replaced by fakes."""
+
+    def run_overlay(self, tmp, script, timings, captions, hook, fail_ffmpeg=False):
+        base = os.path.join(tmp, "base.mp4")
+        touch(base)
+        out = os.path.join(tmp, "out.mp4")
+        work = os.path.join(tmp, "work")
+        calls = []
+        props = {}
+
+        def fake_run(cmd, cwd=None, timeout=900, what="command"):
+            calls.append({"cmd": list(cmd), "cwd": cwd, "what": what})
+            if cmd[0] == "npx":
+                with open(cmd[6].split("=", 1)[1], encoding="utf-8") as f:
+                    props[cmd[4]] = json.load(f)
+                touch(cmd[5])
+            else:
+                if fail_ffmpeg:
+                    raise RuntimeError("ffmpeg failed")
+                touch(cmd[-1])
+
+        with mock.patch.object(visuals, "_run", side_effect=fake_run), mock.patch.object(visuals, "assert_has_alpha"), \
+                mock.patch.object(visuals, "probe_duration", return_value=12.0), \
+                mock.patch.object(visuals, "_find_tool", side_effect=lambda name, preferred=None: name):
+            result = visuals.render_and_overlay(base, script, timings, out, work, captions=captions, hook=hook)
+        return result, calls, props, work
+
+    def test_hook_captions_and_a_panel_go_through_one_ffmpeg_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            captions = caption_args(words=words_for(("Hallo", 2.5, 3.0), ("Welt.", 3.0, 3.5)))
+            result, calls, props, work = self.run_overlay(
+                tmp, script_with(None, stat()), timings_for((0, 2.4), (3.0, 6.0)), captions, hook_args())
+            kinds = [c["cmd"][4] if c["cmd"][0] == "npx" else "ffmpeg" for c in calls]
+            self.assertEqual(kinds, ["ShortsPanel", "WordCaptions", "HookCard", "ffmpeg"])
+            self.assertEqual(sum(1 for c in calls if c["cmd"][0] != "npx"), 1)
+            ffmpeg = calls[-1]["cmd"]
+            self.assertEqual([os.path.basename(ffmpeg[i + 1]) for i, a in enumerate(ffmpeg) if a == "-i"],
+                             ["base.mp4", "panel-01.mov", "captions.mov", "hook.mov"])
+            self.assertEqual(props["HookCard"]["holdSeconds"], 2.5)
+            self.assertEqual(result["hook"]["until"], 2.5)
+            self.assertEqual(sorted(os.listdir(work)), [])  # the .mov files are gone after a good run
+
+    def test_a_hook_alone_is_still_rendered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result, calls, _props, _work = self.run_overlay(tmp, script_with(None), timings_for((0, 3)), None, hook_args())
+            self.assertEqual([c["cmd"][4] if c["cmd"][0] == "npx" else "ffmpeg" for c in calls], ["HookCard", "ffmpeg"])
+            self.assertEqual(result["panels"], 0)
+
+    def test_the_hook_mov_is_kept_for_debugging_when_ffmpeg_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(RuntimeError):
+                self.run_overlay(tmp, script_with(None), timings_for((0, 3)), None, hook_args(), fail_ffmpeg=True)
+            self.assertIn("hook.mov", os.listdir(os.path.join(tmp, "work")))
+
+    def test_a_panel_before_the_hook_ends_is_refused_before_any_rendering(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(visuals, "probe_duration", return_value=12.0):
+                with self.assertRaises(visuals.VisualError) as raised:
+                    self.run_overlay(tmp, script_with(None, stat()), timings_for((0, 1.8), (2.0, 5.0)), None, hook_args())
+            self.assertIn("lines[1]", str(raised.exception))
+            self.assertFalse(os.path.exists(os.path.join(tmp, "work")))
+
+    def test_captions_under_the_hook_are_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(visuals.VisualError) as raised:
+                self.run_overlay(tmp, script_with(None), timings_for((0, 3)), caption_args(), hook_args())  # words start at 0.0
+            self.assertIn("under the hook card", str(raised.exception))
+
+    def test_a_bad_hook_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(visuals.VisualError):
+                self.run_overlay(tmp, script_with(None), timings_for((0, 3)), None, hook_args(accent="fridge"))
+
+
 if __name__ == "__main__":
     unittest.main()

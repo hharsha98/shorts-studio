@@ -1,11 +1,15 @@
 {
-  "_note": "Provisional picks (2026-10-13): transcription-checked, accent not yet judged by a human. Qwen3-TTS CustomVoice via VoiceStudio; never send 'language'.",
+  "_note": "Provisional picks (2026-10-13): transcription-checked, accent not yet judged by a human. Qwen3-TTS CustomVoice via VoiceStudio; never send 'language'. 2026-10-14: this engine IGNORES the 'instructions' text (same seed + other instructions = byte-identical audio; studio/voice_take.py probes this once per voice/model and caches the answer in work/_voice_probe.json). The field is kept for other engines but nothing relies on it. The pitch register comes from the SEED, so the whole script is voiced in ONE request and a take that is not steady is re-rolled with the next seed. ref_f0_hz = median pitch of the sample the user listened to (ref_sample, measured with 'python3 studio/voice_take.py refs'); every take must land within 3 semitones of it.",
   "en": {
     "voice": "Ryan",
-    "instructions": "Curious, warm science explainer talking to a friend. Clear and upbeat, never salesy. Brisk, steady pace. End each sentence on a confident, falling tone."
+    "instructions": "Curious, warm science explainer talking to a friend. Clear and upbeat, never salesy. Brisk, steady pace. End each sentence on a confident, falling tone.",
+    "ref_f0_hz": 196.9,
+    "ref_sample": "studio/voice-tests/en-Ryan.wav"
   },
   "de": {
     "voice": "Aiden",
-    "instructions": "Neugieriger, freundlicher Wissenschaftserklärer, spricht mit einem Freund. Natürliche, klare deutsche Aussprache. Zügiges, gleichmäßiges Tempo. Sätze enden mit fallender Betonung."
+    "instructions": "Neugieriger, freundlicher Wissenschaftserklärer, spricht mit einem Freund. Natürliche, klare deutsche Aussprache. Zügiges, gleichmäßiges Tempo. Sätze enden mit fallender Betonung.",
+    "ref_f0_hz": 114.8,
+    "ref_sample": "studio/voice-tests/de-Aiden.wav"
   }
 }
