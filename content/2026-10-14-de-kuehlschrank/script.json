@@ -6,8 +6,8 @@
   "title": "Kühlschrank offen lassen: Wird die Küche kühler? Nein!",
   "hook": {
     "line1": "Dein Kühlschrank",
-    "line2": "ist heimlich eine Heizung",
-    "accent": "Heizung"
+    "line2": "heizt heimlich",
+    "accent": "heizt"
   },
   "caption": "Ein Kühlschrank macht keine Kälte, er schafft Wärme weg. Darum heizt ein offener Kühlschrank deine Küche.",
   "hashtags": [
@@ -46,7 +46,7 @@
       "broll": "pipes"
     },
     {
-      "text": "In den Wänden verdampft es, weit unter null Grad.",
+      "text": "In den Wänden verdampft es, weit unter dem Gefrierpunkt.",
       "visual": null,
       "broll": "frost"
     },

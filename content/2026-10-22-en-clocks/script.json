@@ -5,8 +5,8 @@
   "topic_noun": "clock",
   "title": "Clocks Go Back: How Does Your Phone Know the Time Changed?",
   "hook": {
-    "line1": "Clocks go back Sunday.",
-    "line2": "How does your phone know?",
+    "line1": "Clocks go back",
+    "line2": "Your phone knows",
     "accent": "phone"
   },
   "caption": "Your phone doesn't notice the clock change. It follows the time zone database, a rulebook kept by volunteers, and applies it automatically.",

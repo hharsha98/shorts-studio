@@ -5,8 +5,8 @@
   "topic_noun": "clock",
   "title": "Wie funktioniert eine Funkuhr? Ein Sender bei Frankfurt stellt sie",
   "hook": {
-    "line1": "Zeitumstellung am Sonntag",
-    "line2": "Woher weiß das deine Funkuhr?",
+    "line1": "Zeitumstellung",
+    "line2": "Die Funkuhr weiß es",
     "accent": "Funkuhr"
   },
   "caption": "Funkuhren bekommen die Zeit per Langwelle vom Sender DCF77 bei Frankfurt. Er kündigt die Zeitumstellung sogar eine Stunde vorher an.",

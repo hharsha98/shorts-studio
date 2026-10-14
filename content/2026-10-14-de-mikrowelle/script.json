@@ -2,11 +2,11 @@
   "id": "2026-10-14-de-mikrowelle",
   "language": "de",
   "series": "Wie funktioniert das?",
-  "topic_noun": "microwave",
+  "topic_noun": "frozen",
   "title": "Warum ist Essen aus der Mikrowelle innen noch kalt?",
   "hook": {
-    "line1": "Außen heiß.",
-    "line2": "Innen eiskalt. Warum?",
+    "line1": "Außen heiß,",
+    "line2": "innen eiskalt?",
     "accent": "eiskalt"
   },
   "caption": "Die Mikrowelle gart nicht von innen nach außen. Sie erhitzt die äußeren Zentimeter, die Mitte wird erst später warm.",
@@ -28,7 +28,7 @@
     {
       "text": "Außen kochend heiß, innen noch eiskalt?",
       "visual": null,
-      "broll": "microwave"
+      "broll": "frozen food"
     },
     {
       "text": "Das liegt daran: Die Mikrowelle gart nicht von innen nach außen.",

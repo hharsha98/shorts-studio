@@ -5,8 +5,8 @@
   "topic_noun": "satellite",
   "title": "Braucht GPS Internet? So findet dich dein Handy ohne Netz",
   "hook": {
-    "line1": "Braucht GPS Internet?",
-    "line2": "Nein. Dein Handy hört nur zu",
+    "line1": "GPS ohne Internet?",
+    "line2": "Ja. So geht's",
     "accent": "Internet"
   },
   "caption": "GPS funktioniert ohne Internet: Dein Handy hört nur die Satelliten ab und misst die Laufzeiten. Mobile Daten beschleunigen nur den Start und laden die Karte.",

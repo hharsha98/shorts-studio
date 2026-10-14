@@ -2,7 +2,7 @@
   "id": "2026-10-14-en-microwave",
   "language": "en",
   "series": "How things work",
-  "topic_noun": "microwave",
+  "topic_noun": "frozen",
   "title": "Why Is Microwave Food Still Cold in the Middle?",
   "hook": {
     "line1": "Hot outside.",
@@ -28,7 +28,7 @@
     {
       "text": "Lava on the edges, ice in the middle?",
       "visual": null,
-      "broll": "microwave"
+      "broll": "frozen food"
     },
     {
       "text": "That's because a microwave doesn't cook from the inside out.",

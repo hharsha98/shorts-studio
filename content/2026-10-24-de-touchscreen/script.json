@@ -5,8 +5,8 @@
   "topic_noun": "touchscreen",
   "title": "Warum Touchscreens mit Handschuhen nicht gehen (Würstchen schon)",
   "hook": {
-    "line1": "Handschuhe gehen nicht.",
-    "line2": "Ein Würstchen schon. Warum?",
+    "line1": "Handschuhe: nein",
+    "line2": "Würstchen: ja?!",
     "accent": "Würstchen"
   },
   "caption": "Touchscreens spüren die elektrische Ladung deines Körpers, nicht den Druck. Handschuhe isolieren, ein salziges Würstchen leitet wie ein Finger.",
@@ -101,7 +101,7 @@
       "broll": "winter city"
     },
     {
-      "text": "Touchscreen-Handschuhe haben leitende Fäden in den Fingerspitzen.",
+      "text": "Spezielle Handschuhe haben leitende Fäden in den Fingerspitzen.",
       "visual": null,
       "broll": "gloves"
     },
