@@ -27,7 +27,7 @@
     {
       "text": "On the outside of each ear cup, a tiny microphone listens to the world around you.",
       "visual": null,
-      "broll": "microphone"
+      "broll": "ear"
     },
     {
       "text": "A chip reads that noise and creates its exact mirror image, a wave flipped upside down.",
@@ -88,7 +88,7 @@
     {
       "text": "That's why the ear cushions still matter. They block much of the high-pitched noise the electronics miss.",
       "visual": null,
-      "broll": "cushion"
+      "broll": "pillow"
     },
     {
       "text": "Fun fact: the idea is old. A German inventor patented it in the nineteen thirties, decades before it fit inside headphones.",

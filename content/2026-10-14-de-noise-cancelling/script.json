@@ -27,7 +27,7 @@
     {
       "text": "Außen an jeder Ohrmuschel hört ein winziges Mikrofon die Umgebung ab.",
       "visual": null,
-      "broll": "microphone"
+      "broll": "ear"
     },
     {
       "text": "Ein Chip erzeugt daraus ein exaktes Spiegelbild, eine auf den Kopf gestellte Welle.",
@@ -83,10 +83,10 @@
     {
       "text": "Darum zählen die Polster trotzdem. Sie dämpfen viel von dem hohen Lärm, den die Elektronik verpasst.",
       "visual": null,
-      "broll": "cushion"
+      "broll": "pillow"
     },
     {
-      "text": "Übrigens: Die Idee ist alt. Ein deutscher Erfinder hat sie schon in den Dreißigerjahren patentiert.",
+      "text": "Übrigens: Die Idee ist fast hundert Jahre alt. Sie wurde in Deutschland erfunden und patentiert.",
       "visual": null,
       "broll": "vintage radio"
     },
