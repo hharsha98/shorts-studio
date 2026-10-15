@@ -75,6 +75,9 @@ EXTRA_CLIP_SECONDS = 0.5  # a clip must be this much longer than the segment it 
 MAX_UNRELATED_SHARE = 0.25  # at most this share of the segments may show a stand-in picture that is not about their line
 BARS_MIN_SHARE = 0.98  # the picture inside black bars (letterbox) must fill at least this share of the crop's height and width
 BARS_MAX_SAMPLE_SECONDS = 6.0  # how much of a clip is checked for black bars (the part that will be used)
+BARS_BLACK_LEVEL = 24  # a black-bar line has no pixel brighter than this (0-255 grey; real bars decode to 0, about 16 when a clip mislabels its colour range)
+BARS_FLAT_SPREAD = 8  # ... and its brightest and darkest pixels differ by at most this much: stars, noise and dark picture are uneven
+BARS_SAMPLE_FRAMES = 6  # frames spread over the checked part for the closer look; real bars are black and flat in every one of them
 MIN_CROP_WIDTH = 1080  # the 9:16 crop taken from the source must be at least this wide, or it would be upscaled (blurry)
 MAX_CLIP_BYTES = 200 * 1024 * 1024
 LEAD_TAGS = 8  # Pixabay lists the most fitting tags first: the phrase must show up among the first few
@@ -414,7 +417,7 @@ def sharp_enough(width: int, height: int) -> bool:
 def bars_command(ffmpeg: str, clip: Path, offset: float, seconds: float, box: dict) -> list[str]:
     """ffmpeg command that reports (on stderr) the area of the 9:16 crop that is not black: the part of the clip that will
     really be used, `seconds` long, starting `offset` s in. reset=0 keeps the widest area seen in any frame."""
-    vf = f"crop={box['w']}:{box['h']}:{box['x']}:{box['y']},cropdetect=limit=24:round=2:reset=0"
+    vf = f"crop={box['w']}:{box['h']}:{box['x']}:{box['y']},cropdetect=limit={BARS_BLACK_LEVEL}:round=2:reset=0"
     return [ffmpeg, "-hide_banner", "-nostats", "-ss", f"{offset:.3f}", "-i", str(clip), "-t", f"{seconds:.2f}", "-an", "-vf", vf, "-f", "null", "-"]
 
 
@@ -429,6 +432,61 @@ def has_black_bars(box: dict, detected: tuple[int, int] | None) -> bool:
     if not detected:
         return False
     return detected[0] < box["w"] * BARS_MIN_SHARE or detected[1] < box["h"] * BARS_MIN_SHARE
+
+
+def bar_frames_command(ffmpeg: str, clip: Path, offset: float, seconds: float, box: dict, frames: int = BARS_SAMPLE_FRAMES) -> list[str]:
+    """ffmpeg command that writes `frames` grey pictures of the 9:16 crop, spread evenly over the same `seconds` long part that
+    bars_command checks, as raw bytes (one byte per pixel, rows top to bottom) on stdout."""
+    vf = f"fps={frames / seconds:.4f},crop={box['w']}:{box['h']}:{box['x']}:{box['y']},format=gray"
+    return [ffmpeg, "-hide_banner", "-nostats", "-v", "error", "-ss", f"{offset:.3f}", "-i", str(clip), "-t", f"{seconds:.2f}", "-an",
+            "-vf", vf, "-frames:v", str(frames), "-f", "rawvideo", "-"]
+
+
+def is_bar_line(line: bytes) -> bool:
+    """Is one row or column of a grey picture black-bar black: dark AND flat (no star, noise or picture in it)?"""
+    brightest = max(line)
+    return brightest <= BARS_BLACK_LEVEL and brightest - min(line) <= BARS_FLAT_SPREAD
+
+
+def bar_depth(frames: list[bytes], width: int, height: int, side: str, limit: int) -> int:
+    """How many rows (side 'top'/'bottom') or columns ('left'/'right'), counted from that edge, are bar lines in EVERY frame.
+    Dark picture changes between frames (or has stars in it), real bars do not. Never more than `limit`."""
+    if side not in ("top", "bottom", "left", "right"):
+        raise ValueError(f"unknown side: {side!r}")
+    depth = max(limit, 0)
+    for frame in frames:  # the depth can only shrink: each frame is only checked as deep as the frames before it went
+        count = 0
+        while count < depth:
+            if side == "top":
+                line = frame[count * width:(count + 1) * width]
+            elif side == "bottom":
+                row = height - 1 - count
+                line = frame[row * width:(row + 1) * width]
+            elif side == "left":
+                line = frame[count::width]
+            else:
+                line = frame[width - 1 - count::width]
+            if not is_bar_line(line):
+                break
+            count += 1
+        depth = count
+        if depth == 0:
+            break
+    return depth
+
+
+def measure_picture(raw: bytes | None, width: int, height: int) -> tuple[int, int] | None:
+    """(width, height) of the part of the crop that is picture, from raw grey frames of width x height (bar_frames_command's output):
+    the crop minus the black bars found on each side. None when not even one whole frame came out (an incomplete last frame is ignored)."""
+    size = width * height
+    if not raw or size <= 0 or len(raw) < size:
+        return None
+    frames = [raw[k * size:(k + 1) * size] for k in range(len(raw) // size)]
+    top = bar_depth(frames, width, height, "top", height)
+    bottom = bar_depth(frames, width, height, "bottom", height - top)
+    left = bar_depth(frames, width, height, "left", width)
+    right = bar_depth(frames, width, height, "right", width - left)
+    return width - left - right, height - top - bottom  # an all-black sample gives 0 x 0, which counts as bars: right
 
 
 def orientation(width: int, height: int) -> str:
@@ -1113,16 +1171,26 @@ def build_broll(script: dict, timings: list[dict], total: float, work_dir: Path,
             log(f"  skipped pixabay {cand['id']}: the file lasts {info['duration']:.1f} s, this segment needs {length + 0.3:.1f} s (not as listed)")
             return False
         box = crop_box(info["width"], info["height"])
+        offset, seconds = pick_offset(info["duration"], length), min(length, BARS_MAX_SAMPLE_SECONDS)  # both checks look at the same part of the clip
         try:
-            sample = run(bars_command(ffmpeg, path, pick_offset(info["duration"], length), min(length, BARS_MAX_SAMPLE_SECONDS), box),
-                         capture_output=True, text=True, timeout=180)
+            sample = run(bars_command(ffmpeg, path, offset, seconds, box), capture_output=True, text=True, timeout=180)
             detected = parse_cropdetect(sample.stderr) if sample.returncode == 0 else None
         except (OSError, subprocess.TimeoutExpired):
             detected = None  # cannot check: do not refuse a clip for that
         if has_black_bars(box, detected):
-            rejected.add(cand["id"])
-            log(f"  skipped pixabay {cand['id']}: black bars inside the picture (only {detected[0]}x{detected[1]} of {box['w']}x{box['h']} is picture)")
-            return False
+            # cropdetect only looks at AVERAGE brightness, so dark picture (space, stars, shadow) looks like bars: take a closer look before refusing
+            try:
+                closer = run(bar_frames_command(ffmpeg, path, offset, seconds, box), capture_output=True, timeout=180)  # bytes, not text
+                picture = measure_picture(closer.stdout, box["w"], box["h"]) if closer.returncode == 0 else None
+            except (OSError, subprocess.TimeoutExpired):
+                picture = None  # the closer look failed, but cropdetect did see bars: keep its verdict
+            if picture is not None and not has_black_bars(box, picture):
+                log(f"  kept pixabay {cand['id']}: its dark edges are part of the picture (stars, space or shadow), not black bars")
+            else:
+                found_w, found_h = picture or detected
+                rejected.add(cand["id"])
+                log(f"  skipped pixabay {cand['id']}: black bars inside the picture (only {found_w}x{found_h} of {box['w']}x{box['h']} is picture)")
+                return False
         probes[cand["id"]] = info
         return True
 

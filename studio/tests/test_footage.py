@@ -10,6 +10,8 @@ import io
 import json
 import math
 import os
+import random
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -274,6 +276,176 @@ class BlackBarTests(unittest.TestCase):
         self.assertTrue(vf.startswith("crop=1214:2160:313:0,cropdetect="))
         self.assertIn("reset=0", vf)
         self.assertEqual(cmd[-3:], ["-f", "null", "-"])
+
+
+# ---- synthetic grey frames: what ffmpeg prints for bar_frames_command (one byte per pixel, rows top to bottom) --------------
+
+
+def plain(width: int, height: int, value: int) -> bytearray:
+    """A flat grey picture."""
+    return bytearray([value]) * (width * height)
+
+
+def dark_noise(rng: random.Random, width: int, height: int, brightest: int) -> bytearray:
+    """A grey picture of uneven dark pixels, values 0..brightest (a night sky without stars)."""
+    table = bytes(value % (brightest + 1) for value in range(256))
+    return bytearray(rng.randbytes(width * height).translate(table))
+
+
+def add_stars(rng: random.Random, frame: bytearray, share: float = 0.002) -> bytearray:
+    """Put stars (150-255) on about `share` of the pixels, at new random places every time this is called."""
+    for _ in range(int(len(frame) * share)):
+        frame[rng.randrange(len(frame))] = rng.randint(150, 255)
+    return frame
+
+
+def paint_block(frame: bytearray, width: int, x0: int, y0: int, x1: int, y1: int, value: int) -> bytearray:
+    for y in range(y0, y1):
+        frame[y * width + x0:y * width + x1] = bytes([value]) * (x1 - x0)
+    return frame
+
+
+def starfield(rng: random.Random, width: int, height: int) -> bytearray:
+    """Dark space as one frame of the closer look sees it: uneven 0..10 noise, stars, a bright planet in the middle."""
+    frame = add_stars(rng, dark_noise(rng, width, height, 10))
+    return paint_block(frame, width, width // 3, height * 2 // 5, width * 2 // 3, height * 3 // 5, 200)
+
+
+def paint_bars(frame: bytearray, width: int, height: int, top: int = 0, bottom: int = 0, left: int = 0, right: int = 0, level: int = 0) -> bytes:
+    """Cover the edges of a grey frame with flat bars of grey `level` (0 = pure black) and give the frame back as bytes."""
+    if top:
+        frame[:top * width] = bytes([level]) * (top * width)
+    if bottom:
+        frame[len(frame) - bottom * width:] = bytes([level]) * (bottom * width)
+    for y in range(height if left or right else 0):
+        if left:
+            frame[y * width:y * width + left] = bytes([level]) * left
+        if right:
+            frame[(y + 1) * width - right:(y + 1) * width] = bytes([level]) * right
+    return bytes(frame)
+
+
+class BarCloseLookTests(unittest.TestCase):
+    """The closer look (measure_picture): real bars are black AND flat in every sampled frame, dark picture never is."""
+
+    PORTRAIT = {"x": 0, "y": 0, "w": 1080, "h": 1920}  # a portrait clip: the whole picture is the crop
+    FILM = {"x": 313, "y": 0, "w": 1214, "h": 2160}  # the 9:16 crop of a 3840x2160 film
+
+    def test_a_starfield_with_dark_edges_is_not_black_bars(self):
+        w, h, rng = 1080, 1920, random.Random(1)
+        frames = [bytes(starfield(rng, w, h)) for _ in range(ft.BARS_SAMPLE_FRAMES)]
+        for frame in frames:  # the original bug: cropdetect rates a line by its AVERAGE brightness, and these top lines are all dark
+            self.assertTrue(all(sum(frame[y * w:(y + 1) * w]) / w <= ft.BARS_BLACK_LEVEL for y in range(300)))
+        picture = ft.measure_picture(b"".join(frames), w, h)
+        self.assertEqual(picture, (1080, 1920))
+        self.assertFalse(ft.has_black_bars(self.PORTRAIT, picture))
+
+    def test_a_true_letterbox_is_found(self):
+        w, h = 1214, 2160
+        raw = b"".join(paint_bars(plain(w, h, 100 + 20 * k), w, h, top=277, bottom=276) for k in range(ft.BARS_SAMPLE_FRAMES))  # bright picture, new every frame
+        picture = ft.measure_picture(raw, w, h)
+        self.assertEqual(picture, (1214, 1607))
+        self.assertTrue(ft.has_black_bars(self.FILM, picture))
+
+    def test_a_letterbox_around_dark_space_is_still_found(self):
+        w, h, rng = 1214, 2160, random.Random(3)
+        raw = b"".join(paint_bars(add_stars(rng, dark_noise(rng, w, h, 30)), w, h, top=277, bottom=276) for _ in range(ft.BARS_SAMPLE_FRAMES))
+        picture = ft.measure_picture(raw, w, h)
+        self.assertEqual(picture, (1214, 1607))
+        self.assertTrue(ft.has_black_bars(self.FILM, picture))
+
+    def test_a_pillarbox_is_found(self):
+        w, h = 1080, 1920
+        raw = b"".join(paint_bars(plain(w, h, 150 + 10 * k), w, h, left=100, right=100) for k in range(ft.BARS_SAMPLE_FRAMES))
+        picture = ft.measure_picture(raw, w, h)
+        self.assertEqual(picture, (880, 1920))
+        self.assertTrue(ft.has_black_bars(self.PORTRAIT, picture))
+
+    def test_a_dark_band_that_is_flat_black_only_in_some_frames_is_not_a_bar(self):
+        w, h, rng = 1080, 1920, random.Random(5)  # the night side of the Earth moving through the top of the picture
+        for pattern in ([True, True, True, False, False, False], [False, False, False, True, True, True]):
+            frames = []
+            for is_black in pattern:
+                frame = plain(w, h, 150)
+                frame[:300 * w] = bytes(300 * w) if is_black else dark_noise(rng, w, 300, 40)
+                frames.append(bytes(frame))
+            picture = ft.measure_picture(b"".join(frames), w, h)
+            self.assertEqual(picture, (1080, 1920), pattern)
+            self.assertFalse(ft.has_black_bars(self.PORTRAIT, picture))
+
+    def test_bars_at_a_flat_16_are_still_bars(self):
+        w, h = 1214, 2160  # a clip that mislabels its colour range decodes black as about 16
+        raw = b"".join(paint_bars(plain(w, h, 120 + 10 * k), w, h, top=277, bottom=276, level=16) for k in range(ft.BARS_SAMPLE_FRAMES))
+        self.assertEqual(ft.measure_picture(raw, w, h), (1214, 1607))
+
+    def test_an_uneven_dark_band_is_not_a_bar(self):
+        w, h = 1080, 1920
+        band = dark_noise(random.Random(7), w, 300, 20)  # values 0..20: dark, but not flat, and the same in every frame
+        frames = []
+        for k in range(ft.BARS_SAMPLE_FRAMES):
+            frame = plain(w, h, 150 + k)
+            frame[:300 * w] = band
+            frames.append(bytes(frame))
+        picture = ft.measure_picture(b"".join(frames), w, h)
+        self.assertEqual(picture, (1080, 1920))
+        self.assertFalse(ft.has_black_bars(self.PORTRAIT, picture))
+
+    def test_one_fade_to_black_frame_does_not_create_bars(self):
+        w, h = 1080, 1920
+        for black in (0, 2, 5):
+            raw = b"".join(bytes(w * h) if k == black else bytes(plain(w, h, 150 + k)) for k in range(ft.BARS_SAMPLE_FRAMES))
+            self.assertEqual(ft.measure_picture(raw, w, h), (1080, 1920), black)
+
+    def test_an_all_black_sample_counts_as_bars(self):
+        picture = ft.measure_picture(bytes(40 * 30 * 3), 40, 30)
+        self.assertEqual(picture, (0, 0))
+        self.assertTrue(ft.has_black_bars({"x": 0, "y": 0, "w": 40, "h": 30}, picture))
+
+    def test_nothing_is_measured_without_a_whole_frame(self):
+        self.assertIsNone(ft.measure_picture(b"", 40, 30))
+        self.assertIsNone(ft.measure_picture(None, 40, 30))
+        self.assertIsNone(ft.measure_picture(bytes(40 * 30 - 1), 40, 30))  # one byte short of a frame
+
+    def test_an_incomplete_last_frame_is_ignored(self):
+        w, h = 40, 30
+        whole = paint_bars(plain(w, h, 150), w, h, top=5, bottom=5)
+        self.assertEqual(ft.measure_picture(whole * 2, w, h), (40, 20))
+        self.assertEqual(ft.measure_picture(whole * 2 + bytes(500), w, h), (40, 20))  # 500 black bytes are not a frame: they change nothing
+
+    def test_bar_depth_never_goes_past_its_limit(self):
+        frames = [bytes(40 * 30)] * 3
+        self.assertEqual(ft.bar_depth(frames, 40, 30, "top", 7), 7)
+        self.assertEqual(ft.bar_depth(frames, 40, 30, "right", 0), 0)
+        with self.assertRaises(ValueError):
+            ft.bar_depth(frames, 40, 30, "middle", 5)
+
+    def test_the_frames_command_looks_at_the_same_part_as_the_cropdetect_command(self):
+        box = {"x": 313, "y": 0, "w": 1214, "h": 2160}
+        bars = ft.bars_command("ffmpeg", Path("/c/x.mp4"), 1.5, 4.25, box)
+        cmd = ft.bar_frames_command("ffmpeg", Path("/c/x.mp4"), 1.5, 4.25, box)
+        for flag in ("-ss", "-t", "-i"):
+            self.assertEqual(cmd[cmd.index(flag) + 1], bars[bars.index(flag) + 1], flag)
+        self.assertEqual(cmd[cmd.index("-ss") + 1], "1.500")
+        self.assertEqual(cmd[cmd.index("-t") + 1], "4.25")
+        self.assertEqual(cmd[cmd.index("-vf") + 1], f"fps={ft.BARS_SAMPLE_FRAMES / 4.25:.4f},crop=1214:2160:313:0,format=gray")
+        self.assertEqual(cmd[cmd.index("-frames:v") + 1], str(ft.BARS_SAMPLE_FRAMES))
+        self.assertEqual(cmd[-3:], ["-f", "rawvideo", "-"])
+        few = ft.bar_frames_command("ffmpeg", Path("/c/x.mp4"), 0.0, 3.0, box, frames=3)
+        self.assertEqual((few[few.index("-vf") + 1].split(",")[0], few[few.index("-frames:v") + 1]), ("fps=1.0000", "3"))
+
+    def test_the_cropdetect_filter_is_unchanged(self):
+        vf = ft.bars_command("ffmpeg", Path("/c/x.mp4"), 0.0, 4.0, self.FILM)[-4]
+        self.assertEqual(vf, "crop=1214:2160:313:0,cropdetect=limit=24:round=2:reset=0")
+
+    def test_what_makes_a_line_a_bar_line(self):
+        self.assertTrue(ft.is_bar_line(b"\x00" * 50))
+        self.assertTrue(ft.is_bar_line(b"\x10" * 50))  # a flat 16
+        self.assertFalse(ft.is_bar_line(b"\x00" * 49 + b"\xc8"))  # one star
+        self.assertFalse(ft.is_bar_line(b"\x00\x14" * 25))  # dark but uneven (0 and 20)
+        self.assertTrue(ft.is_bar_line(b"\x00" * 49 + bytes([ft.BARS_FLAT_SPREAD])))  # the limits themselves still count ...
+        self.assertFalse(ft.is_bar_line(b"\x00" * 49 + bytes([ft.BARS_FLAT_SPREAD + 1])))
+        self.assertTrue(ft.is_bar_line(bytes([ft.BARS_BLACK_LEVEL]) * 50))
+        self.assertFalse(ft.is_bar_line(bytes([ft.BARS_BLACK_LEVEL + 1]) * 50))  # ... a flat grey above the black level is picture
 
 
 class SharpnessTests(unittest.TestCase):
@@ -1083,6 +1255,10 @@ class BuildBrollTests(NoNetworkTestCase):
         self.bars = {}  # clip id (text) -> (width, height) of the picture that cropdetect finds
         self.bar_checks = []
         self.bars_returncode = 0
+        self.frame_checks = []  # clip file names that got the closer look (raw grey frames) after cropdetect saw bars
+        self.dark_edges = set()  # clip ids (text) whose closer-look frames show dark space (stars, no bars), whatever cropdetect said
+        self.frames_returncode = 0
+        self.frames_error = None  # an exception the fake closer look raises instead of answering
         self.SIZES = dict(self.SIZES)  # tests change sizes: never touch the shared class dict
 
     def urlopen(self, req, timeout):
@@ -1109,13 +1285,38 @@ class BuildBrollTests(NoNetworkTestCase):
             box_w, box_h = (int(x) for x in vf.split("crop=")[1].split(",")[0].split(":")[:2])
             w, h = self.bars.get(Path(cmd[cmd.index("-i") + 1]).name.split("-")[1], (box_w, box_h))
             return mock.Mock(returncode=self.bars_returncode, stderr=f"[Parsed_cropdetect_1 @ 0x1] x1:0 w:{w} h:{h} crop={w}:{h}:0:0\n", stdout="")
+        if "rawvideo" in cmd:  # the closer look: raw grey frames on stdout (the last argument is "-": it must NOT fall through and be written as a file)
+            if self.frames_error:
+                raise self.frames_error
+            name = Path(cmd[cmd.index("-i") + 1]).name
+            self.frame_checks.append(name)
+            vf = cmd[cmd.index("-vf") + 1]
+            box_w, box_h = (int(x) for x in vf.split("crop=")[1].split(",")[0].split(":")[:2])
+            frames = self.fake_frames(name.split("-")[1], box_w, box_h, int(cmd[cmd.index("-frames:v") + 1]))
+            return mock.Mock(returncode=self.frames_returncode, stdout=frames, stderr=b"")
         Path(cmd[-1]).write_bytes(b"OUT")  # ffmpeg writes its last argument
         return mock.Mock(returncode=0, stderr="", stdout="")
 
-    def build(self, table):
+    def fake_frames(self, clip_id, width, height, count):
+        """What the closer look 'sees': dark space with changing stars, or real black bars around a picture of the size in self.bars, or a plain picture."""
+        rng = random.Random(int(clip_id))
+        frames = []
+        for k in range(count):
+            if clip_id in self.dark_edges:
+                frames.append(bytes(starfield(rng, width, height)))
+            elif clip_id in self.bars:
+                picture_w, picture_h = self.bars[clip_id]
+                left, top = (width - picture_w) // 2, (height - picture_h) // 2  # centred, flat pure-black bars
+                frames.append(paint_bars(plain(width, height, 100 + 20 * k), width, height, top=top, bottom=height - picture_h - top,
+                                         left=left, right=width - picture_w - left))
+            else:
+                frames.append(bytes(plain(width, height, 100 + 20 * k)))
+        return b"".join(frames)
+
+    def build(self, table, log=lambda m: None):
         client = ft.PixabayClient(FAKE_KEY, cache_dir=self.tmp / "cache", urlopen=no_network)
         client.search = search_from(table)  # no network: answers come straight from the table
-        return ft.build_broll(self.script, self.timings, self.total, self.tmp / "work", FAKE_KEY, "ffmpeg", "ffprobe", log=lambda m: None,
+        return ft.build_broll(self.script, self.timings, self.total, self.tmp / "work", FAKE_KEY, "ffmpeg", "ffprobe", log=log,
                               client=client, clips_dir=self.tmp / "clips", urlopen=self.urlopen, run=self.fake_tool)
 
     def table(self):
@@ -1199,6 +1400,74 @@ class BuildBrollTests(NoNetworkTestCase):
         self.bars_returncode = 1
         report = self.build(self.table())["report"]
         self.assertEqual([s["clip_id"] for s in report["segments"]], [1, 3, 2])
+
+    # --- the closer look at cropdetect's "black bars" (dark space is not bars) ---
+
+    def table_with_a_spare_clip(self):
+        table = self.table()
+        table["ice cubes"] = [make_hit(2, LANDSCAPE_4K, tags="ice, cube"), make_hit(3, PORTRAIT_HD, tags="ice, cube"), make_hit(4, LANDSCAPE_4K, tags="ice, cube")]
+        self.SIZES[4] = (3840, 2160)
+        return table
+
+    def test_dark_space_that_cropdetect_calls_bars_is_kept(self):
+        self.bars["2"] = (1214, 2024)  # cropdetect: "bars" ...
+        self.dark_edges = {"2"}  # ... but the closer look finds stars and dark picture, not flat black bars
+        messages = []
+        report = self.build(self.table(), log=messages.append)["report"]
+        self.assertEqual([s["clip_id"] for s in report["segments"]], [1, 3, 2])  # clip 2 is used, as if cropdetect had found nothing
+        self.assertTrue(any("kept pixabay 2" in m for m in messages))
+        self.assertFalse(any("skipped" in m or "black bars inside the picture" in m for m in messages))  # no refusal (the 'kept' line itself says "not black bars")
+        self.assertEqual(self.frame_checks, ["pixabay-2-large.mp4"])
+
+    def assert_cropdetect_verdict_kept(self):
+        """Cropdetect flags clip 2; the test has made the closer look fail: clip 2 must be refused with cropdetect's own size in the message."""
+        self.bars["2"] = (1214, 2024)
+        messages = []
+        report = self.build(self.table_with_a_spare_clip(), log=messages.append)["report"]
+        self.assertEqual([s["clip_id"] for s in report["segments"]], [1, 3, 4])
+        self.assertTrue(any("black bars" in m and "pixabay 2" in m and "1214x2024 of 1214x2160" in m for m in messages))
+        self.assertFalse(any("kept pixabay" in m for m in messages))
+
+    def test_bars_are_refused_as_before_when_the_closer_look_fails(self):
+        self.frames_returncode = 1  # ffmpeg exits with an error: a failed second look must not let a barred clip through
+        self.assert_cropdetect_verdict_kept()
+        self.assertEqual(self.frame_checks, ["pixabay-2-large.mp4"])  # it did try
+
+    def test_bars_are_refused_as_before_when_the_closer_look_cannot_start(self):
+        self.frames_error = OSError("no ffmpeg")
+        self.assert_cropdetect_verdict_kept()
+
+    def test_bars_are_refused_as_before_when_the_closer_look_times_out(self):
+        self.frames_error = subprocess.TimeoutExpired("ffmpeg", 180)
+        self.assert_cropdetect_verdict_kept()
+
+    def test_bars_are_refused_as_before_when_the_closer_look_gives_no_whole_frame(self):
+        with mock.patch.object(ft, "measure_picture", return_value=None):
+            self.assert_cropdetect_verdict_kept()
+
+    def test_real_bars_are_refused_with_the_size_from_the_closer_look(self):
+        self.bars["2"] = (1214, 1607)  # the same picture size cropdetect would report, in flat pure-black bars
+        messages = []
+        report = self.build(self.table_with_a_spare_clip(), log=messages.append)["report"]
+        self.assertEqual([s["clip_id"] for s in report["segments"]], [1, 3, 4])
+        self.assertTrue(any("black bars" in m and "pixabay 2" in m and "1214x1607 of 1214x2160" in m for m in messages))
+
+    def test_the_closer_look_only_runs_for_clips_cropdetect_flagged(self):
+        self.build(self.table())
+        self.assertEqual(self.frame_checks, [])  # no bars anywhere: no extra ffmpeg call
+        self.bars["2"] = (1214, 2024)
+        self.build(self.table_with_a_spare_clip())
+        self.assertEqual(self.frame_checks, ["pixabay-2-large.mp4"])  # once: clip 2 is refused and never looked at again
+
+    def test_the_closer_look_uses_the_same_window_as_cropdetect(self):
+        self.bars["2"] = (1214, 2024)
+        self.build(self.table_with_a_spare_clip())
+        cropdetect = [c for c in self.commands if any("cropdetect" in part for part in c) and c[c.index("-i") + 1].endswith("pixabay-2-large.mp4")]
+        frames = [c for c in self.commands if "rawvideo" in c and c[c.index("-i") + 1].endswith("pixabay-2-large.mp4")]
+        self.assertEqual((len(cropdetect), len(frames)), (1, 1))
+        for flag in ("-ss", "-t"):
+            self.assertEqual(frames[0][frames[0].index(flag) + 1], cropdetect[0][cropdetect[0].index(flag) + 1], flag)
+        self.assertEqual(frames[0][frames[0].index("-frames:v") + 1], str(ft.BARS_SAMPLE_FRAMES))
 
     def test_a_clip_that_was_found_unusable_is_not_downloaded_or_checked_again(self):
         table = {"refrigerator": [make_hit(1, PORTRAIT_HD)], "ice cubes": [make_hit(2, LANDSCAPE_4K, tags="ice, cube"), make_hit(3, PORTRAIT_HD, tags="ice, cube"), make_hit(4, LANDSCAPE_4K, tags="ice, cube")]}
