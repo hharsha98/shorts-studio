@@ -26,6 +26,12 @@ What produce_narration() does (every number below is a module constant):
      changing a word must voice again. A pointer file remembers which seed was accepted for a script, so a take found with
      --voice-seed 7 is still reused when the next run starts at seed 1 and every seed there was rejected earlier
 
+Engines: VoiceStudio always does the TRANSCRIPTION. The speech comes from VoiceStudio too, unless studio/voices.json gives the
+language an "engine_url": then only the speech request goes there (the German Thorsten voice in voice-de/, same POST
+/v1/audio/speech interface). An engine marked "deterministic" says the same text the same way every time, so a seed re-roll or a
+re-voiced line would only repeat it: such a script gets ONE take, no patch loop, and a failing line is reported with what was
+heard, so the line can be reworded.
+
 Python standard library only (plus the voice_pitch.py subprocess for pitch). The pure parts (silence search, boundary
 snapping, pause shortening, the gate maths, the patch rule, cache keys) are unit-tested in studio/tests/test_voice_take.py
 with a fake VoiceStudio.
@@ -103,7 +109,12 @@ class VoiceTakeError(Exception):
 
 
 class TakeRejected(Exception):
-    """This one take (seed) is not good enough; the message says why. The caller re-rolls with the next seed."""
+    """This one take (seed) is not good enough; the message says why. The caller re-rolls with the next seed.
+    `lines` (optional) holds the lines that failed the voice check: [{"index", "text", "heard", "wer", "cer", "threshold"}]."""
+
+    def __init__(self, message: str, lines: list[dict] | None = None):
+        super().__init__(message)
+        self.lines = lines or []
 
 
 # --------------------------------------------------------------------------------------
@@ -544,25 +555,30 @@ class VoiceStudioBackend:
     """Everything the take needs from the outside world: speech, transcription, pitch. Tests replace this class."""
 
     def __init__(self, url: str, voice: str, asr_model: str, language: str, instructions: str = "",
-                 ffmpeg: str = "ffmpeg", mpt_dir: Path = MPT_DIR):
+                 ffmpeg: str = "ffmpeg", mpt_dir: Path = MPT_DIR, *, engine_url: str | None = None, engine_start_hint: str = ""):
+        """`url` is VoiceStudio: it ALWAYS does the transcription. The speech comes from VoiceStudio too, unless `engine_url` names
+        another engine with the same POST /v1/audio/speech interface (the German Thorsten voice): then only synth() goes there."""
         self.url, self.voice, self.asr_model, self.language = url.rstrip("/"), voice, asr_model, language
         self.instructions, self.ffmpeg, self.mpt_dir = instructions, ffmpeg, mpt_dir
+        self.engine_url = engine_url.rstrip("/") if engine_url else None
+        self.engine_start_hint = engine_start_hint
 
-    def _request(self, path: str, data: bytes, content_type: str, timeout: float, what: str) -> bytes:
+    def _request(self, path: str, data: bytes, content_type: str, timeout: float, what: str, *, engine: tuple | None = None) -> bytes:
+        """POST to VoiceStudio, or to `engine` = (name for messages, base url, what to try when it is not running)."""
+        name, base, advice = engine or ("VoiceStudio", self.url, "Is VoiceStudio still running? Start or restart it and run this again.")
         last: Exception | None = None
         for _attempt in range(2):
-            req = urllib.request.Request(self.url + path, data=data, headers={"Content-Type": content_type})
+            req = urllib.request.Request(base + path, data=data, headers={"Content-Type": content_type})
             try:
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
                     return resp.read()
             except urllib.error.HTTPError as exc:
                 detail = exc.read().decode("utf-8", "replace")[:300]
-                raise VoiceTakeError(f"VoiceStudio refused {what} (HTTP {exc.code}): {detail}") from None
+                raise VoiceTakeError(f"{name} refused {what} (HTTP {exc.code}): {detail}") from None
             except HTTP_ERRORS as exc:
                 last = exc
                 time.sleep(2)
-        raise VoiceTakeError(f"VoiceStudio could not do {what}: {type(last).__name__}: {last}. Is VoiceStudio still running? "
-                             "Start or restart it and run this again.")
+        raise VoiceTakeError(f"{name} could not do {what}: {type(last).__name__}: {last}. {advice}")
 
     def synth(self, text: str, seed: int, instructions: str | None = None) -> bytes:
         """wav bytes of `text` in one request. instructions=None uses the configured text, "" sends none."""
@@ -570,9 +586,17 @@ class VoiceStudioBackend:
         used = self.instructions if instructions is None else instructions
         if used:
             body["instructions"] = used
-        audio = self._request("/v1/audio/speech", json.dumps(body).encode("utf-8"), "application/json", 1800, "to voice the text")
+        payload = json.dumps(body).encode("utf-8")
+        if self.engine_url:
+            name = f"The voice engine at {self.engine_url}"
+            advice = f"Is it still running? Start it: {self.engine_start_hint or 'start the engine'}, then run this again."
+            audio = self._request("/v1/audio/speech", payload, "application/json", 1800, "to voice the text",
+                                  engine=(name, self.engine_url, advice))
+        else:
+            audio = self._request("/v1/audio/speech", payload, "application/json", 1800, "to voice the text")
+            name = "VoiceStudio"
         if len(audio) < 100:
-            raise VoiceTakeError(f"VoiceStudio sent back no audio ({audio[:200]!r}).")
+            raise VoiceTakeError(f"{name} sent back no audio ({audio[:200]!r}).")
         return audio
 
     def to_standard_wav(self, path: Path) -> None:
@@ -787,13 +811,20 @@ def try_patch(i: int, text: str, segments: list[array.array], sr: int, f0s: list
     return None
 
 
-def evaluate_take(texts: list[str], seed: int, backend, grade, ref_f0: float | None, folder: Path, patch_cache: dict, log) -> dict:
-    """Build the take for one seed and run every gate. Returns the accepted take, or raises TakeRejected(reason)."""
+def evaluate_take(texts: list[str], seed: int, backend, grade, ref_f0: float | None, folder: Path, patch_cache: dict, log,
+                  patch: bool = True) -> dict:
+    """Build the take for one seed and run every gate. Returns the accepted take, or raises TakeRejected(reason).
+
+    patch=False (a deterministic engine): a line that fails the voice check is NOT re-voiced with other seeds, because the
+    engine would say it the same way again; the take is rejected with the failing lines attached (TakeRejected.lines)."""
     built = build_segments(texts, seed, backend, folder, log)
     segments, sr = built["segments"], built["sr"]
     graded = grade_segments(texts, segments, sr, backend, grade, folder)
     patches: list[dict] = []
     bad = [i for i, g in graded.items() if not g["ok"]]
+    if bad and not patch:
+        raise TakeRejected(f"{len(bad)} line(s) fail the voice check: line(s) {', '.join(map(str, bad))}",
+                           lines=[{k: graded[i].get(k) for k in ("index", "text", "heard", "wer", "cer", "threshold", "cer_limit")} for i in bad])
     if len(bad) > MAX_PATCH_LINES:
         raise TakeRejected(f"{len(bad)} lines fail the voice check (more than {MAX_PATCH_LINES}, too many to patch): lines {', '.join(map(str, bad))}")
     f0s, loud = measure_segments(segments, sr, backend, folder)
@@ -842,15 +873,32 @@ def no_steady_take_message(attempts: list[dict], first_seed: int) -> str:
             f"so later runs without the flag reuse it).")
 
 
+def deterministic_failure_message(attempt: dict, lines: list[dict]) -> str:
+    """Plain words for a take that failed with an engine that says the same text the same way every time."""
+    head = ("This voice engine gives identical audio for identical text, so there is nothing to re-roll: the script was voiced ONCE and "
+            "that take was not accepted. No other seeds were tried and no line was re-voiced (they would sound exactly the same).\n")
+    if lines:
+        detail = "\n".join(
+            f"    line {g['index']}: {g['text']}\n      heard: {g['heard']}\n"
+            f"      word errors {g['wer']:.2f} (limit {g['threshold']:.2f}), letter errors {g['cer']:.2f} (limit {g.get('cer_limit') or 0:.2f})"
+            for g in lines)
+        return (f"{head}  {len(lines)} line(s) were not understood by the transcription. Reword them (simpler words, numbers written as "
+                f"words, fewer foreign or invented words) and run again:\n{detail}")
+    return f"{head}  Why: {attempt['reason']}\n  Reword the line(s) that cause it (shorter sentences, plainer words) and run again."
+
+
 def produce_narration(texts: list[str], *, backend, grade, voice: str, model: str, asr_model: str, ref_f0: float | None,
                       work_dir: Path, cache_root: Path, start_seed: int = 1, instructions_in_key: str = "",
-                      use_cache: bool = True, max_takes: int = MAX_TAKES, log=print) -> dict:
+                      use_cache: bool = True, max_takes: int = MAX_TAKES, deterministic: bool = False, log=print) -> dict:
     """The whole thing: the accepted one-take narration of `texts` (see the module docstring).
 
     Writes work_dir/narration.wav and returns a dict with narration (that path), duration, timings ([{index, start, end,
     text}] as make_video's timings.json wants them), lines (per-line check, pitch, loudness), continuity (the gate
     numbers), seed, patches, attempts, cache ({hit, key, folder}) ...
-    Raises VoiceTakeError when VoiceStudio fails or no take passes."""
+    deterministic=True (an engine that gives identical audio for identical text, like the German Thorsten voice): exactly ONE
+    take, no seed re-rolls, no line patching (a seed changes nothing), and a rejection is not remembered (the engine may be
+    fixed or changed later); a failing line is reported with what was heard, so the line can be reworded.
+    Raises VoiceTakeError when the voice engine fails or no take passes."""
     clean = [t.strip() for t in texts]
     full = " ".join(clean)
     if len(full) >= INPUT_MAX_CHARS:
@@ -858,6 +906,9 @@ def produce_narration(texts: list[str], *, backend, grade, voice: str, model: st
                              "Shorten the script (a Short needs about 1100 characters).")
     work_dir = Path(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
+    if deterministic:
+        max_takes = 1  # the same text sounds the same with every seed: a second take would be a copy of the first
+    remember_rejections = use_cache and not deterministic
     seeds = [start_seed + k for k in range(max_takes)]
     keys = {s: cache_key(clean, voice, model, s, instructions_in_key) for s in seeds}  # made from the LINES, not the joined text
     skey = script_key(clean, voice, model, instructions_in_key)
@@ -883,19 +934,23 @@ def produce_narration(texts: list[str], *, backend, grade, voice: str, model: st
     attempts: list[dict] = []
     patch_cache: dict = {}
     for s in seeds:
-        if use_cache:
+        if remember_rejections:
             earlier = rejected_before(cache_root, keys[s], s, asr_model)
             if earlier:
                 log(f"  take seed {s}: skipped, it was rejected in an earlier run ({earlier[:120]})")
                 attempts.append({"seed": s, "accepted": False, "reason": f"{earlier} (remembered from an earlier run)"})
                 continue
         try:
-            take = evaluate_take(clean, s, backend, grade, ref_f0, work_dir / f"take-s{s}", patch_cache, log)
+            take = evaluate_take(clean, s, backend, grade, ref_f0, work_dir / f"take-s{s}", patch_cache, log, patch=not deterministic)
         except TakeRejected as why:
             log(f"  take seed {s}: REJECTED: {why}")
             attempts.append({"seed": s, "accepted": False, "reason": str(why)})
-            if use_cache:
+            if remember_rejections:
                 store_rejection(cache_root, keys[s], s, asr_model, str(why))
+            if deterministic:
+                failure = VoiceTakeError(deterministic_failure_message(attempts[-1], why.lines))
+                failure.attempts = attempts
+                raise failure
             continue
         write_wav(final_path, _concat(take["segments"]), take["sr"])
         take["bounds"] = [0]

@@ -1,5 +1,5 @@
 {
-  "_note": "Provisional picks (2026-10-13): transcription-checked, accent not yet judged by a human. Qwen3-TTS CustomVoice via VoiceStudio; never send 'language'. 2026-10-14: this engine IGNORES the 'instructions' text (same seed + other instructions = byte-identical audio; studio/voice_take.py probes this once per voice/model and caches the answer in work/_voice_probe.json). The field is kept for other engines but nothing relies on it. The pitch register comes from the SEED, so the whole script is voiced in ONE request and a take that is not steady is re-rolled with the next seed. ref_f0_hz = median pitch of the sample the user listened to (ref_sample, measured with 'python3 studio/voice_take.py refs'); every take must land within 3 semitones of it.",
+  "_note": "Provisional picks (2026-10-13): transcription-checked, accent not yet judged by a human. Qwen3-TTS CustomVoice via VoiceStudio; never send 'language'. 2026-10-14: this engine IGNORES the 'instructions' text (same seed + other instructions = byte-identical audio; studio/voice_take.py probes this once per voice/model and caches the answer in work/_voice_probe.json). The field is kept for other engines but nothing relies on it. The pitch register comes from the SEED, so the whole script is voiced in ONE request and a take that is not steady is re-rolled with the next seed. ref_f0_hz = median pitch of the sample the user listened to (ref_sample, measured with 'python3 studio/voice_take.py refs'); every take must land within 3 semitones of it. 2026-10-14 (German): 'de' is voiced by its OWN engine, Thorsten-Voice/Kokoro (Apache-2.0, dataset CC0), a small server in voice-de/ (start it with voice-de/run.sh start). engine_url = where the speech request goes; transcription (the per-line voice check) stays on VoiceStudio. deterministic = the same text gives the same audio, so the pipeline makes ONE take and never re-rolls seeds or patches lines: a line that fails the voice check has to be reworded. The Aiden voice (Qwen3, English-native) failed whole scripts (24 seeds: de-funkuhr, de-noise-cancelling).",
   "en": {
     "voice": "Ryan",
     "instructions": "Curious, warm science explainer talking to a friend. Clear and upbeat, never salesy. Brisk, steady pace. End each sentence on a confident, falling tone.",
@@ -7,9 +7,10 @@
     "ref_sample": "studio/voice-tests/en-Ryan.wav"
   },
   "de": {
-    "voice": "Aiden",
-    "instructions": "Neugieriger, freundlicher Wissenschaftserklärer, spricht mit einem Freund. Natürliche, klare deutsche Aussprache. Zügiges, gleichmäßiges Tempo. Sätze enden mit fallender Betonung.",
-    "ref_f0_hz": 114.8,
-    "ref_sample": "studio/voice-tests/de-Aiden.wav"
+    "voice": "thorsten",
+    "engine_url": "http://127.0.0.1:3910",
+    "deterministic": true,
+    "ref_f0_hz": 160.8,
+    "ref_sample": "studio/voice-tests/de-thorsten.wav"
   }
 }

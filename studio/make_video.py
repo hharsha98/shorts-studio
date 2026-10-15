@@ -8,12 +8,15 @@ Usage (from /Users/harsha/shorts-studio):
 
 What it does, in order (every gate fails LOUDLY: non-zero exit + a plain-English message):
      1. validate script.json against the contract
-     2. preflight (VoiceStudio health + the right TTS engine, tools, MoneyPrinterTurbo config)
+     2. preflight (VoiceStudio health + transcription engine; for a language that VoiceStudio speaks, its TTS engine too; for a
+        language with its own "engine_url" in studio/voices.json (German: voice-de/run.sh start) that engine's /health; tools,
+        MoneyPrinterTurbo config)
      3. voice the WHOLE script in ONE VoiceStudio request (studio/voice_take.py), find the line boundaries in the take,
         shorten pauses over 0.45 s to 0.35 s, check every line by transcription (word/letter error rate; a number Whisper
         writes as digits equals the spoken number word, see studio/number_words.py), patch a failed line alone, and
         accept the take only if pitch and loudness are steady from line to line and close to the channel's reference
-        voice (a take that is not steady is re-rolled with the next seed, up to 6 times)
+        voice (a take that is not steady is re-rolled with the next seed, up to 6 times; an engine marked "deterministic" in
+        voices.json makes ONE take: a failing line is reported to be reworded, nothing is re-rolled or patched)
      4. write work/<id>/narration.wav + work/<id>/timings.json (first/last sound of every line)
      5. length gate (default 45-75 s)           <- --stage voice stops here
      6. captions and video:
@@ -86,6 +89,8 @@ REVIEW_ROOT = ROOT / "review"
 VOICESTUDIO_URL = os.environ.get("VOICESTUDIO_URL", "http://127.0.0.1:3900").rstrip("/")
 REQUIRED_TTS_ENGINE = "mlx-audio"
 REQUIRED_TTS_MODEL = "Qwen3-TTS-12Hz-1.7B-CustomVoice"
+ENGINE_START_HINT = "voice-de/run.sh start"  # a language with its own speech engine (studio/voices.json "engine_url") is started with this
+LANGUAGE_NAMES = {"en": "English", "de": "German"}
 
 WER_LIMIT_LONG = 0.15  # lines with >= 5 words
 WER_LIMIT_SHORT = 0.34  # shorter lines (one wrong word is a big share)
@@ -372,6 +377,22 @@ def grade_line(text: str, heard: str) -> dict:
     score = line_error_score(wer, cer, limit)
     return {"wer": round(wer, 4), "cer": round(cer, 4), "threshold": limit, "cer_limit": CER_LIMIT, "score": round(score, 4),
             "ok": score <= 1.0, "words": len(text.split())}
+
+
+def voice_accuracy_detail(lines: list[dict], patched: int = 0) -> str:
+    """The sentence of the 'voice accuracy' check. A line passes on its combined word/letter score (grade_line), so a line can
+    have more word errors than its word limit and still pass because its letter errors are small. Say so plainly: the report
+    must not read "all inside their WER limit (worst 0.31)" when the limit is 0.15. Lines that passed that way are named so a
+    person can listen to them before upload."""
+    worst = max(g["wer"] for g in lines)
+    text = f"all {len(lines)} lines pass the voice check (combined word/letter score; worst word error {worst:.2f})"
+    close = [g["index"] for g in lines if g["wer"] > g["threshold"]]
+    if close:
+        text += (f"; line(s) {', '.join(str(i) for i in close)} have more word errors than the word limit and pass only because "
+                 f"their letter errors are small: listen to them before upload")
+    if patched:
+        text += f"; {patched} line(s) patched"
+    return text
 
 
 def word_differences(reference: str, hypothesis: str, limit: int = 30, words=normalize_words) -> list[str]:
@@ -1140,6 +1161,45 @@ def check_tts_engine(info: dict) -> str | None:
     )
 
 
+def voice_engine_url(voice_cfg) -> str | None:
+    """The address of the language's OWN speech engine (studio/voices.json "engine_url"), or None when VoiceStudio voices it.
+    VoiceStudio still does the transcription (the per-line voice check) for every language."""
+    url = voice_cfg.get("engine_url") if isinstance(voice_cfg, dict) else None
+    if isinstance(url, str) and url.strip().lower().startswith(("http://", "https://")):
+        return url.strip().rstrip("/")
+    return None
+
+
+def configured_engine_url(language: str) -> str | None:
+    """voice_engine_url for a language, read leniently: a missing or broken voices.json gives None here (step_preflight
+    explains that problem in plain words a moment later)."""
+    try:
+        voices = json.loads(VOICES_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return voice_engine_url(voices.get(language)) if isinstance(voices, dict) else None
+
+
+def engine_get_json(url: str, path: str, timeout: float = 10) -> dict:
+    with urllib.request.urlopen(url.rstrip("/") + path, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def check_voice_engine(url: str, language: str) -> dict:
+    """GET <url>/health of a language's own speech engine (voice-de/server.py). Returns its answer; a missing or unhealthy engine
+    becomes a plain-English GateError that says how to start it."""
+    name = LANGUAGE_NAMES.get(language, language)
+    try:
+        info = engine_get_json(url, "/health")
+    except HTTP_ERRORS as exc:
+        raise GateError(f"The {name} voice engine at {url} is not reachable ({type(exc).__name__}: {exc}). It is a separate program "
+                        f"that must be running: start it: {ENGINE_START_HINT}, then run this again.") from None
+    if not isinstance(info, dict) or str(info.get("status", "")).lower() != "ok":
+        raise GateError(f"The {name} voice engine at {url} did not say ok on /health (it said {info!r}). "
+                        f"Restart it (voice-de/run.sh stop, then {ENGINE_START_HINT}) and run this again.")
+    return info
+
+
 def build_multipart(fields: dict, file_field: str, filename: str, data: bytes, content_type: str) -> tuple[bytes, str]:
     boundary = uuid.uuid4().hex
     parts = []
@@ -1433,6 +1493,37 @@ def load_visuals_module(needed: list[int]):
     return module
 
 
+def preflight_voice_services(ctx: Ctx, language: str) -> dict:
+    """VoiceStudio must be healthy and have a transcription engine: the per-line voice check uses it for EVERY language.
+    Who SPEAKS the language decides the rest: VoiceStudio itself (its TTS engine must be MLX-Audio + Qwen3-TTS CustomVoice), or
+    the language's own engine (studio/voices.json "engine_url": its /health must answer; VoiceStudio's TTS engine does not matter).
+    Returns {"tts": {"active", "active_model"}, "asr_model", "engine_url" (None when VoiceStudio speaks)}."""
+    health = voicestudio_info("/health", "whether it is healthy")
+    if str(health.get("status", "")).lower() != "ok":
+        raise GateError(f"VoiceStudio /health did not say ok: {health}")
+    engine_url = configured_engine_url(language)
+    if engine_url:
+        engine = check_voice_engine(engine_url, language)
+        model = str(engine.get("model") or "unknown")
+        tts = {"active": model, "active_model": model}
+    else:
+        tts = voicestudio_info("/engines/tts", "which voice engine is active")
+        problem = check_tts_engine(tts)
+        if problem:
+            raise GateError(problem)
+    asr = voicestudio_info("/engines/asr", "which transcription engine is active")
+    asr_model = asr.get("active")
+    if not asr_model:
+        raise GateError("VoiceStudio has no active transcription engine (/engines/asr). Select one in VoiceStudio and run this again.")
+    if engine_url:
+        name = LANGUAGE_NAMES.get(language, language)
+        ctx.check("VoiceStudio", True, f"healthy; transcription {asr_model} (it only checks the {name} voice here, it does not speak it)")
+        ctx.check("voice engine", True, f"{tts['active']} at {engine_url} answers /health (it speaks {name}; VoiceStudio's own TTS engine is not used)")
+    else:
+        ctx.check("VoiceStudio", True, f"healthy; TTS {tts.get('active')} / {tts.get('active_model')}; transcription {asr_model}")
+    return {"tts": tts, "asr_model": asr_model, "engine_url": engine_url}
+
+
 def step_preflight(ctx: Ctx) -> dict:
     ctx.step(2, "Preflight")
     args, script = ctx.args, ctx.script
@@ -1441,18 +1532,8 @@ def step_preflight(ctx: Ctx) -> dict:
     ctx.media_dir = pick_media_scripts_dir(Path.home() / ".claude/plugins/cache/media-studio-marketplace/media-studio")
     ctx.check("tools", True, f"ffmpeg, ffprobe, node, uv found; media-studio scripts: {ctx.media_dir}")
 
-    health = voicestudio_info("/health", "whether it is healthy")
-    if str(health.get("status", "")).lower() != "ok":
-        raise GateError(f"VoiceStudio /health did not say ok: {health}")
-    tts = voicestudio_info("/engines/tts", "which voice engine is active")
-    problem = check_tts_engine(tts)
-    if problem:
-        raise GateError(problem)
-    asr = voicestudio_info("/engines/asr", "which transcription engine is active")
-    asr_model = asr.get("active")
-    if not asr_model:
-        raise GateError("VoiceStudio has no active transcription engine (/engines/asr). Select one in VoiceStudio and run this again.")
-    ctx.check("VoiceStudio", True, f"healthy; TTS {tts.get('active')} / {tts.get('active_model')}; transcription {asr_model}")
+    services = preflight_voice_services(ctx, script["language"])
+    tts, asr_model, engine_url = services["tts"], services["asr_model"], services["engine_url"]
 
     if not VOICES_FILE.is_file():
         raise GateError(f"{VOICES_FILE} is missing (it holds the voice + delivery directions per language).")
@@ -1470,6 +1551,11 @@ def step_preflight(ctx: Ctx) -> dict:
     if ref_f0 is not None and (isinstance(ref_f0, bool) or not isinstance(ref_f0, (int, float)) or ref_f0 <= 0):
         raise GateError(f"studio/voices.json: \"{script['language']}\".ref_f0_hz must be a positive number of Hz (got {ref_f0!r}). "
                         "Run `python3 studio/voice_take.py refs` to measure it from the voice sample.")
+    if "engine_url" in voice_cfg and voice_engine_url(voice_cfg) is None:
+        raise GateError(f"studio/voices.json: \"{script['language']}\".engine_url must be an address like http://127.0.0.1:3910 "
+                        f"(got {voice_cfg['engine_url']!r}). Remove the key to let VoiceStudio speak this language.")
+    if "deterministic" in voice_cfg and not isinstance(voice_cfg["deterministic"], bool):
+        raise GateError(f"studio/voices.json: \"{script['language']}\".deterministic must be true or false (got {voice_cfg['deterministic']!r}).")
     if ref_f0 is None:
         ctx.warn(f"studio/voices.json has no ref_f0_hz for \"{script['language']}\", so the take is not compared with the channel's reference voice. "
                  "Run `python3 studio/voice_take.py refs` to measure it from studio/voice-tests/.")
@@ -1540,12 +1626,13 @@ def step_preflight(ctx: Ctx) -> dict:
     ctx.report["voice"] = {
         "engine": tts.get("active"), "model": tts.get("active_model"), "voice": voice_cfg["voice"],
         "instructions": voice_cfg.get("instructions"), "ref_f0_hz": ref_f0, "transcription_engine": asr_model,
+        "engine_url": engine_url, "deterministic": bool(voice_cfg.get("deterministic")),
     }
     ctx.report["inputs"]["footage_source"] = {"local": "local", "own": "pixabay (own selection)"}.get(mode, source)
     ctx.report["inputs"]["footage_mode"] = mode
     ctx.report["footage"] = {"mode": mode, "provider": {"local": "local files", "own": "pixabay", "mpt": source}[mode]}
     return {"voice_cfg": voice_cfg, "ref_f0": ref_f0, "asr_model": asr_model, "tts_model": str(tts.get("active_model")),
-            "local_files": local_files, "caption": caption, "source": source, "footage": mode}
+            "engine_url": engine_url, "local_files": local_files, "caption": caption, "source": source, "footage": mode}
 
 
 def voice_failure_message(bad: list[dict], max_attempts: int) -> str:
@@ -1578,18 +1665,27 @@ def step_voice(ctx: Ctx, setup: dict) -> dict:
     ctx.step(3, "Voicing the whole script in one take and checking it")
     texts = [line["text"].strip() for line in ctx.script["lines"]]
     cfg, language = setup["voice_cfg"], ctx.script["language"]
-    instructions = cfg.get("instructions") or ""
+    engine_url = setup.get("engine_url")  # the language's own speech engine (voices.json "engine_url"); None = VoiceStudio speaks
+    deterministic = bool(cfg.get("deterministic"))  # same text = same audio: one take, no seed re-rolls, no line patching
+    instructions = "" if engine_url else (cfg.get("instructions") or "")  # an own engine gets no delivery text
+    own_engine = {"engine_url": engine_url, "engine_start_hint": ENGINE_START_HINT} if engine_url else {}
     backend = voice_take.VoiceStudioBackend(VOICESTUDIO_URL, cfg["voice"], setup["asr_model"], language, instructions,
-                                            ffmpeg=find_tool("ffmpeg"), mpt_dir=MPT_DIR)
+                                            ffmpeg=find_tool("ffmpeg"), mpt_dir=MPT_DIR, **own_engine)
     seed = ctx.args.voice_seed if ctx.args.voice_seed is not None else int(cfg.get("seed", 1))
     ctx.work.mkdir(parents=True, exist_ok=True)
     try:
-        probe = voice_take.probe_instructions(backend, cfg["voice"], setup["tts_model"], WORK_ROOT / "_voice_probe.json", instructions, log=ctx.say)
+        if deterministic:
+            ctx.say(f"  voice engine {setup['tts_model']}: identical text gives identical audio, so ONE take is made; no seed re-rolls, "
+                    "no re-voicing of single lines (a failing line must be reworded)"
+                    + ("; --voice-seed changes nothing here" if ctx.args.voice_seed is not None else ""))
+            probe = {"voice": cfg["voice"], "model": setup["tts_model"], "instructions_ignored": True, "deterministic": True}
+        else:
+            probe = voice_take.probe_instructions(backend, cfg["voice"], setup["tts_model"], WORK_ROOT / "_voice_probe.json", instructions, log=ctx.say)
         take = voice_take.produce_narration(
             texts, backend=backend, grade=grade_line, voice=cfg["voice"], model=setup["tts_model"], asr_model=setup["asr_model"],
             ref_f0=setup.get("ref_f0"), work_dir=ctx.work, cache_root=WORK_ROOT / "_voice_cache", start_seed=seed,
             instructions_in_key="" if probe.get("instructions_ignored") is True else instructions,
-            use_cache=not ctx.args.no_voice_cache, log=ctx.say)
+            use_cache=not ctx.args.no_voice_cache, deterministic=deterministic, log=ctx.say)
     except voice_take.VoiceTakeError as exc:
         ctx.report["voice"].update(mode="one take", start_seed=seed, attempts=getattr(exc, "attempts", None))
         ctx.checks.append({"name": "voice take", "ok": False, "detail": str(exc)})
@@ -1610,9 +1706,7 @@ def step_voice(ctx: Ctx, setup: dict) -> dict:
     if bad:
         ctx.checks.append({"name": "voice accuracy", "ok": False, "detail": [g["index"] for g in bad]})
         raise GateError(voice_failure_message(bad, voice_take.PATCH_SEEDS))
-    worst = max(g["wer"] for g in lines)
-    ctx.check("voice accuracy", True, f"all {len(lines)} lines inside their WER limit (worst {worst:.2f})"
-              + (f"; {len(take['patches'])} line(s) patched" if take["patches"] else ""))
+    ctx.check("voice accuracy", True, voice_accuracy_detail(lines, len(take["patches"])))
     reference = (f"; reference voice {gate['ref_f0_hz']:.0f} Hz ({gate['ref_offset_st']:+.1f} st)" if gate.get("ref_f0_hz") else "")
     ctx.check("voice continuity", gate["ok"],
               f"seed {take['seed']}: take median {gate['take_median_hz']} Hz, spread {gate['sd_st']} st, farthest line {gate['max_line_offset_st']} st, "

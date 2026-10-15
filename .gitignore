@@ -15,3 +15,9 @@ __pycache__/
 config.toml
 review/
 work/
+
+# German narrator (Thorsten Kokoro): venv, 327 MB model, server pid/log
+voice-de/.venv/
+voice-de/model/
+voice-de/server.pid
+voice-de/server.log
