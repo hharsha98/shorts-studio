@@ -6,9 +6,14 @@ Tick a box by changing `[ ]` to `[x]`.
 ## Now
 - [x] **Pixabay key**: done (in `MoneyPrinterTurbo/config.toml`, line 88).
 - [ ] **Watch the videos** (phone previews) and tell Claude what to change. The upload packs are in `review/`:
-      `UPLOAD-PACK-2026-10-14.md` (week 1, 5 videos) and `UPLOAD-PACK-2026-10-20.md` (week 2, 5 videos).
-- [ ] **German voice:** the German videos are being moved to the native German "Thorsten" voice. When the samples
-      arrive, ask a native German speaker if it sounds natural.
+      `UPLOAD-PACK-2026-10-14.md` (week 1, 6 videos) and `UPLOAD-PACK-2026-10-20.md` (week 2, 6 videos).
+- [ ] **Listen to the German voice (Thorsten), with sound on.** All 6 German videos now use it. Ask a native German
+      speaker if it sounds natural. These sentences only just passed the automatic check, so listen to them closely:
+      - Noise Cancelling 0:21 "…wie Triebwerken, Zugrattern oder dem Brummen einer Klimaanlage."
+      - Mikrowelle 0:00 "Außen kochend heiß…", 0:16 "Wassermoleküle sind ungleich geladen…", 0:35 "…große Portionen innen kalt…"
+      - Kühlschrank 0:35 "Das Gas kühlt ab…", 0:47 "Wenn also jemand ruft: Tür zu…"
+      - Touchscreen 0:22 "Wolle und Leder leiten nicht…"
+      Short samples: `voice-de/samples/`.
 - [ ] ⏰ **Deadline Thu 22 Oct:** the clock-change videos only make sense before the change on Sunday 25 Oct.
       They can only go out if your accounts and Impressum are ready by then.
 
