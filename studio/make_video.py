@@ -1551,6 +1551,10 @@ def step_preflight(ctx: Ctx) -> dict:
     if ref_f0 is not None and (isinstance(ref_f0, bool) or not isinstance(ref_f0, (int, float)) or ref_f0 <= 0):
         raise GateError(f"studio/voices.json: \"{script['language']}\".ref_f0_hz must be a positive number of Hz (got {ref_f0!r}). "
                         "Run `python3 studio/voice_take.py refs` to measure it from the voice sample.")
+    max_ref_st = voice_cfg.get("max_ref_st")  # how far (semitones) a take may be from ref_f0_hz; missing = the default of voice_take.py
+    if max_ref_st is not None and (isinstance(max_ref_st, bool) or not isinstance(max_ref_st, (int, float)) or not math.isfinite(max_ref_st) or max_ref_st <= 0):
+        raise GateError(f"studio/voices.json: \"{script['language']}\".max_ref_st must be a positive number of semitones (got {max_ref_st!r}). "
+                        "Use a number like 2.0 (a smaller number keeps the narrator closer to the reference voice), or remove the key.")
     if "engine_url" in voice_cfg and voice_engine_url(voice_cfg) is None:
         raise GateError(f"studio/voices.json: \"{script['language']}\".engine_url must be an address like http://127.0.0.1:3910 "
                         f"(got {voice_cfg['engine_url']!r}). Remove the key to let VoiceStudio speak this language.")
@@ -1625,13 +1629,13 @@ def step_preflight(ctx: Ctx) -> dict:
     ctx.report["captions"] = {"mode": SUBTITLE_DISPLAY_MODE, "animation": SUBTITLE_ANIMATION, "position": SUBTITLE_POSITION, **caption}
     ctx.report["voice"] = {
         "engine": tts.get("active"), "model": tts.get("active_model"), "voice": voice_cfg["voice"],
-        "instructions": voice_cfg.get("instructions"), "ref_f0_hz": ref_f0, "transcription_engine": asr_model,
+        "instructions": voice_cfg.get("instructions"), "ref_f0_hz": ref_f0, "max_ref_st": max_ref_st, "transcription_engine": asr_model,
         "engine_url": engine_url, "deterministic": bool(voice_cfg.get("deterministic")),
     }
     ctx.report["inputs"]["footage_source"] = {"local": "local", "own": "pixabay (own selection)"}.get(mode, source)
     ctx.report["inputs"]["footage_mode"] = mode
     ctx.report["footage"] = {"mode": mode, "provider": {"local": "local files", "own": "pixabay", "mpt": source}[mode]}
-    return {"voice_cfg": voice_cfg, "ref_f0": ref_f0, "asr_model": asr_model, "tts_model": str(tts.get("active_model")),
+    return {"voice_cfg": voice_cfg, "ref_f0": ref_f0, "max_ref_st": max_ref_st, "asr_model": asr_model, "tts_model": str(tts.get("active_model")),
             "engine_url": engine_url, "local_files": local_files, "caption": caption, "source": source, "footage": mode}
 
 
@@ -1683,7 +1687,7 @@ def step_voice(ctx: Ctx, setup: dict) -> dict:
             probe = voice_take.probe_instructions(backend, cfg["voice"], setup["tts_model"], WORK_ROOT / "_voice_probe.json", instructions, log=ctx.say)
         take = voice_take.produce_narration(
             texts, backend=backend, grade=grade_line, voice=cfg["voice"], model=setup["tts_model"], asr_model=setup["asr_model"],
-            ref_f0=setup.get("ref_f0"), work_dir=ctx.work, cache_root=WORK_ROOT / "_voice_cache", start_seed=seed,
+            ref_f0=setup.get("ref_f0"), max_ref_st=setup.get("max_ref_st"), work_dir=ctx.work, cache_root=WORK_ROOT / "_voice_cache", start_seed=seed,
             instructions_in_key="" if probe.get("instructions_ignored") is True else instructions,
             use_cache=not ctx.args.no_voice_cache, deterministic=deterministic, log=ctx.say)
     except voice_take.VoiceTakeError as exc:

@@ -732,15 +732,70 @@ class VoiceStepRoutingTests(TmpDirTest):
         self.assertTrue((self.tmp / "work" / "_voice_probe.json").is_file())  # the instructions probe still runs
         self.assertGreater(len(fake.synth_calls), 1)
 
+    def test_the_language_reference_limit_reaches_the_take(self):
+        pitch = lambda seed, i: 150.0 * 2 ** ((3.0 if seed == 1 else 1.0) / 12)  # seed 1 is 3.0 st above the reference voice (150 Hz), seed 2 1.0 st
+        strict = {**self.english_setup(), "max_ref_st": 2.0}
+        take, _made, _printed = self.run_step(self.make_ctx("en"), FakeVoice(pitch=pitch), strict)
+        self.assertEqual(take["seed"], 2)
+        self.assertIn("limit 2.0 semitones", take["attempts"][0]["reason"])
+
+    def test_without_a_reference_limit_the_step_uses_the_default_of_four_semitones(self):
+        pitch = lambda seed, i: 150.0 * 2 ** ((3.0 if seed == 1 else 1.0) / 12)
+        take, _made, _printed = self.run_step(self.make_ctx("en"), FakeVoice(pitch=pitch), {**self.english_setup(), "max_ref_st": None})
+        self.assertEqual(take["seed"], 1)
+        german, _made, _printed = self.run_step(self.make_ctx("de"), FakeVoice(pitch=lambda seed, i: 150.0 * 2 ** (3.0 / 12)), self.german_setup())
+        self.assertEqual(german["seed"], 1)  # german_setup() has no max_ref_st key at all, like voices.json
+
     def test_voice_seed_flag_is_said_to_change_nothing_for_a_deterministic_engine(self):
         ctx = self.make_ctx("de", "--voice-seed", "5")
         _take, _made, printed = self.run_step(ctx, FakeVoice(), self.german_setup())
         self.assertIn("--voice-seed changes nothing", printed)
 
 
+class MaxRefStPreflightTests(TmpDirTest):
+    """step_preflight checks "max_ref_st" in voices.json right after ref_f0_hz. These tests stop it at the next call
+    (voice_take.pitch_command), so the tools, MoneyPrinterTurbo and footage checks that come later never run."""
+
+    STOP = "stopped after the voices.json checks"
+
+    def preflight(self, **voice_extra):
+        """-> the GateError step_preflight raised: the STOP text means the voices.json checks passed."""
+        path = self.tmp / "voices.json"
+        path.write_text(json.dumps({"en": {"voice": "Ryan", "ref_f0_hz": 196.9, **voice_extra}}), encoding="utf-8")
+        ctx = mv.Ctx(mv.parse_args(["content/x/script.json"]))
+        ctx.script = {"id": "x", "language": "en", "lines": []}
+        services = {"tts": {"active": "mlx-audio", "active_model": "m1"}, "asr_model": "faster-whisper", "engine_url": None}
+        with mock.patch.object(mv, "VOICES_FILE", path), mock.patch.object(mv, "find_tool", return_value="/bin/true"), \
+                mock.patch.object(mv, "pick_media_scripts_dir", return_value=self.tmp), \
+                mock.patch.object(mv, "preflight_voice_services", return_value=services), \
+                mock.patch.object(mv.voice_take, "pitch_command", side_effect=vt.VoiceTakeError(self.STOP)), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(mv.GateError) as caught:
+                mv.step_preflight(ctx)
+        return str(caught.exception)
+
+    def test_a_positive_number_or_no_key_passes(self):
+        self.assertEqual(self.preflight(), self.STOP)
+        for value in (2.0, 2, 0.5, 4.0, None):  # null is the same as missing, like ref_f0_hz
+            self.assertEqual(self.preflight(max_ref_st=value), self.STOP, value)
+
+    def test_zero_negative_boolean_and_text_are_refused_in_plain_english(self):
+        for value in (0, 0.0, -1, -0.5, True, False, "2", [2.0]):
+            message = self.preflight(max_ref_st=value)
+            self.assertNotEqual(message, self.STOP, value)
+            self.assertIn('"en".max_ref_st must be a positive number of semitones', message)
+            self.assertIn(f"(got {value!r})", message)
+            self.assertIn("remove the key", message)
+
+
 class VoicesJsonTests(unittest.TestCase):
     def setUp(self):
         self.voices = json.loads((STUDIO_DIR / "voices.json").read_text(encoding="utf-8"))
+
+    def test_english_is_held_to_two_semitones_and_german_keeps_the_default(self):
+        self.assertEqual(self.voices["en"]["max_ref_st"], 2.0)
+        self.assertNotIn("max_ref_st", self.voices["de"])  # German has ONE take and cannot be re-rolled
+        self.assertEqual(vt.MAX_REF_ST, 4.0)
 
     def test_german_uses_the_thorsten_engine(self):
         de = self.voices["de"]

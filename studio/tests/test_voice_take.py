@@ -308,9 +308,9 @@ def hz(base, offsets_st):
 
 
 class ContinuityGateTests(unittest.TestCase):
-    def gate(self, offsets, loud=None, ref=None, base=150.0):
+    def gate(self, offsets, loud=None, ref=None, base=150.0, **limits):
         f0s = hz(base, offsets)
-        return vt.continuity_gate(f0s, loud if loud is not None else [-17.0] * len(f0s), ref)
+        return vt.continuity_gate(f0s, loud if loud is not None else [-17.0] * len(f0s), ref, **limits)
 
     def test_a_steady_take_passes(self):
         g = self.gate([0, 0.5, -0.5, 1.0, -1.0, 0.3], ref=150.0)
@@ -366,8 +366,22 @@ class ContinuityGateTests(unittest.TestCase):
         self.assertIn("reference voice", far["reasons"][0])
         self.assertLess(far["ref_offset_st"], -vt.MAX_REF_ST)
 
+    def test_a_tighter_reference_limit_rejects_what_the_default_accepts_and_names_the_limit_in_use(self):
+        steady = [0, 0.2, -0.2]
+        reference = 150.0 * 2 ** (-3.0 / 12)  # the take (150 Hz) is 3.0 st above the reference voice
+        self.assertTrue(self.gate(steady, ref=reference)["ok"])  # the default limit, MAX_REF_ST
+        strict = self.gate(steady, ref=reference, max_ref_st=2.0)
+        self.assertFalse(strict["ok"])
+        self.assertEqual(len(strict["reasons"]), 1)
+        self.assertIn("+3.0 semitones from the channel's reference voice", strict["reasons"][0])
+        self.assertIn("limit 2.0 semitones", strict["reasons"][0])
+        self.assertTrue(self.gate(steady, ref=reference, max_ref_st=3.5)["ok"])
+        wide = self.gate(steady, ref=150.0 * 2 ** (-5.0 / 12))  # 5.0 st: outside the default too, which is named as well
+        self.assertIn("limit 4.0 semitones", wide["reasons"][0])
+
     def test_no_reference_means_no_reference_check(self):
         self.assertTrue(self.gate([0, 0.2, -0.2], ref=None, base=400.0)["ok"])
+        self.assertTrue(self.gate([0, 0.2, -0.2], ref=None, base=400.0, max_ref_st=0.5)["ok"])  # a limit without a reference changes nothing
 
     def test_unmeasurable_line_fails(self):
         g = vt.continuity_gate([150.0, None, 151.0], [-17.0, -17.0, -17.0])
@@ -490,6 +504,18 @@ class CacheFileTests(TmpDirTest):
         vt.write_wav(wav, tone(0.1))
         vt.store_take(self.tmp / "cache", "k", 2, wav, self.meta(f0=150.0))
         self.assertIsNone(vt.load_cached_take(self.tmp / "cache", "k", 2, 250.0))  # now the channel reference is far away
+
+    def test_a_cached_take_outside_a_tighter_reference_limit_is_a_miss(self):
+        wav = self.tmp / "n.wav"
+        vt.write_wav(wav, tone(0.1))
+        vt.store_take(self.tmp / "cache", "k", 2, wav, self.meta(f0=150.0))
+        reference = 150.0 * 2 ** (-3.0 / 12)  # the stored take sits 3.0 st above the reference voice
+        cache, same = self.tmp / "cache", ["line 0", "line 1", "line 2"]
+        self.assertIsNotNone(vt.load_cached_take(cache, "k", 2, reference))  # the default limit (4.0): a hit
+        self.assertIsNotNone(vt.load_cached_take(cache, "k", 2, reference, same, max_ref_st=vt.MAX_REF_ST))
+        self.assertIsNone(vt.load_cached_take(cache, "k", 2, reference, max_ref_st=2.0))  # judged again with the tighter limit: a miss
+        self.assertIsNone(vt.load_cached_take(cache, "k", 2, reference, same, max_ref_st=2.0))
+        self.assertIsNotNone(vt.load_cached_take(cache, "k", 2, reference, max_ref_st=3.5))
 
     def test_broken_cache_files_are_a_miss_not_a_crash(self):
         folder = vt.cache_dir_for(self.tmp / "cache", "k", 1)
@@ -842,6 +868,49 @@ class ProduceNarrationTests(TmpDirTest):
         self.assertEqual(take["seed"], 3)
         self.assertIn("reference voice", take["attempts"][0]["reason"])
 
+    def test_a_tighter_reference_limit_rejects_a_take_that_the_default_limit_accepts(self):
+        pitch = lambda seed, i: 150.0 * 2 ** ((3.0 if seed == 1 else 1.0) / 12)  # seed 1 is 3.0 st above the reference voice (150 Hz), seed 2 only 1.0
+        strict = FakeVoice(pitch=pitch)
+        take = self.produce(strict, max_ref_st=2.0)
+        self.assertEqual(take["seed"], 2)
+        self.assertEqual([c[1] for c in strict.synth_calls], [1, 2])
+        self.assertEqual([a["accepted"] for a in take["attempts"]], [False, True])
+        self.assertIn("reference voice", take["attempts"][0]["reason"])
+        self.assertIn("limit 2.0 semitones", take["attempts"][0]["reason"])  # the message names the limit in use
+        default = FakeVoice(pitch=pitch)
+        loose = self.produce(default, work_dir=self.tmp / "w-default", cache_root=self.tmp / "c-default")  # no limit given: MAX_REF_ST (4.0)
+        self.assertEqual(loose["seed"], 1)
+        self.assertEqual([c[1] for c in default.synth_calls], [1])
+
+    def test_a_take_cached_under_the_default_limit_is_judged_again_under_a_tighter_one(self):
+        pitch = lambda seed, i: 150.0 * 2 ** ((3.0 if seed == 1 else 1.0) / 12)
+        first = self.produce(FakeVoice(pitch=pitch))  # default limit: seed 1 (+3.0 st) is accepted and cached
+        self.assertEqual(first["seed"], 1)
+        fake = FakeVoice(pitch=pitch)
+        strict = self.produce(fake, max_ref_st=2.0, work_dir=self.tmp / "w-strict")
+        self.assertFalse(strict["cache"]["hit"])  # the cached seed 1 is outside 2.0 st: a miss, so it is voiced and rejected again
+        self.assertEqual((strict["seed"], [c[1] for c in fake.synth_calls]), (2, [1, 2]))
+        again = FakeVoice(pitch=pitch)
+        third = self.produce(again, max_ref_st=2.0, work_dir=self.tmp / "w-strict2")
+        self.assertTrue(third["cache"]["hit"])  # seed 2 is cached now, and seed 1's remembered rejection is not needed
+        self.assertEqual((third["seed"], again.synth_calls), (2, []))
+        plain = FakeVoice(pitch=pitch)
+        fourth = self.produce(plain, work_dir=self.tmp / "w-plain")  # the limit is a run setting: without it seed 1 is a hit again
+        self.assertTrue(fourth["cache"]["hit"])
+        self.assertEqual((fourth["seed"], plain.synth_calls), (1, []))
+
+    def test_a_language_without_a_limit_keeps_four_semitones(self):
+        # the German voice has no max_ref_st in voices.json, so make_video passes None and the default decides; it is ONE take
+        self.assertEqual(vt.MAX_REF_ST, 4.0)
+        inside = FakeVoice(pitch=lambda seed, i: 150.0 * 2 ** (3.0 / 12))
+        take = self.produce(inside, deterministic=True, max_ref_st=None)
+        self.assertEqual(take["seed"], 1)  # +3.0 st is fine here (a 2.0 limit would have refused it)
+        outside = FakeVoice(pitch=lambda seed, i: 150.0 * 2 ** (4.5 / 12))
+        with self.assertRaises(vt.VoiceTakeError) as caught:
+            self.produce(outside, deterministic=True, work_dir=self.tmp / "w-out", cache_root=self.tmp / "c-out")
+        self.assertEqual(len(outside.synth_calls), 1)  # no re-roll
+        self.assertIn("limit 4.0 semitones", str(caught.exception))
+
     def test_loudness_jump_between_neighbours_is_rejected(self):
         fake = FakeVoice(amp=lambda seed, i: (0.07 if (seed == 1 and i == 1) else 0.2))
         take = self.produce(fake)
@@ -946,6 +1015,21 @@ class ProduceNarrationTests(TmpDirTest):
         _bad, _later = self.failing_then_accepted_after_the_last_default_seed()
         with self.assertRaises(vt.VoiceTakeError):
             self.produce(FakeVoice(), ref_f0=250.0, work_dir=self.tmp / "w-ref")  # the channel reference moved: the pointed seed is wrong now
+
+    def test_a_pointed_take_is_judged_with_the_same_reference_limit(self):
+        accepted_seed = vt.MAX_TAKES + 1
+        # seeds 1..MAX_TAKES: line 2 jumps 6 st (rejected); the later seed is steady but 3.0 st above the reference voice (150 Hz)
+        pitch = lambda seed, i: 150.0 * (2 ** (3.0 / 12) if seed == accepted_seed else 2 ** (6 / 12) if i == 2 else 1)
+        with self.assertRaises(vt.VoiceTakeError):
+            self.produce(FakeVoice(pitch=pitch))
+        self.assertEqual(self.produce(FakeVoice(pitch=pitch), start_seed=accepted_seed)["seed"], accepted_seed)
+        strict = FakeVoice(pitch=pitch)
+        with self.assertRaises(vt.VoiceTakeError):  # the pointer leads to a take that is outside 2.0 st, so it does not save the run
+            self.produce(strict, max_ref_st=2.0, work_dir=self.tmp / "w-strict")
+        self.assertEqual(strict.synth_calls, [])  # the verdicts of seeds 1..MAX_TAKES are remembered: nothing is voiced again
+        plain = FakeVoice(pitch=pitch)
+        reused = self.produce(plain, work_dir=self.tmp / "w-plain")  # with the default limit the pointed take is reused
+        self.assertEqual((reused["seed"], reused["cache"]["hit"], plain.synth_calls), (accepted_seed, True, []))
 
     def test_no_cache_flag_ignores_and_writes_no_pointer(self):
         accepted_seed = vt.MAX_TAKES + 1

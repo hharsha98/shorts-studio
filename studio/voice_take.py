@@ -19,7 +19,8 @@ What produce_narration() does (every number below is a module constant):
   6. take continuity gate: per-line median pitch (YIN, voice_pitch.py in MoneyPrinterTurbo's numpy venv) and loudness
      (RMS of the active frames). Accepted only if every line is within 5 st of the take's median, the line medians
      have a spread (SD) <= 2 st, no two neighbouring lines differ by more than 3 st or 3 dB, and the take's median is
-     within 3 st of the channel's reference voice (ref_f0_hz in voices.json: the sample the user listened to)
+     within MAX_REF_ST (4 st) of the channel's reference voice (ref_f0_hz in voices.json: the sample the user listened to);
+     a language may set a tighter "max_ref_st" there (English: 2 st, because its seed picks the register)
   7. a rejected take is re-rolled with the next seed (up to 6 whole takes), then the run fails in plain words
   8. the accepted take is cached by (script LINES, voice, model, seed): the same script is instant the next time. The key
      holds the list of lines, not the joined text, because a take is cut at the line boundaries: moving a boundary without
@@ -383,7 +384,7 @@ def continuity_gate(f0s: list, loud_db: list, ref_f0: float | None = None, *, ma
         result["ref_offset_st"] = round(off, 2)
         if abs(off) > max_ref_st:
             reasons.append(f"the take's median pitch {med:.0f} Hz is {off:+.1f} semitones from the channel's reference voice "
-                           f"({ref_f0:.0f} Hz; limit {max_ref_st:g}): the voice came out in another register")
+                           f"({ref_f0:.0f} Hz; limit {float(max_ref_st)} semitones): the voice came out in another register")
     return {**result, "ok": not reasons, "reasons": reasons}
 
 
@@ -436,8 +437,10 @@ def cache_dir_for(cache_root: Path, key: str, seed: int) -> Path:
     return Path(cache_root) / f"{key}-s{seed}"
 
 
-def load_cached_take(cache_root: Path, key: str, seed: int, ref_f0: float | None, texts: list[str] | None = None) -> dict | None:
-    """The accepted take stored for this key, or None. The stored numbers are judged again with TODAY's gate rules.
+def load_cached_take(cache_root: Path, key: str, seed: int, ref_f0: float | None, texts: list[str] | None = None,
+                     max_ref_st: float = MAX_REF_ST) -> dict | None:
+    """The accepted take stored for this key, or None. The stored numbers are judged again with TODAY's gate rules, including
+    today's limit for the distance to the reference voice (max_ref_st): a take accepted under a looser limit is a miss now.
 
     With `texts` (the current script lines) the stored take must hold exactly these lines, in this split: a take is cut at
     line boundaries, so the same number of lines with other text, or other line count, is a miss."""
@@ -451,7 +454,7 @@ def load_cached_take(cache_root: Path, key: str, seed: int, ref_f0: float | None
             return None
         if texts is not None and ([line["text"] for line in lines] != list(texts) or len(meta["bounds"]) != len(texts) + 1):
             return None
-        gate = continuity_gate([line["f0_hz"] for line in lines], [line["loudness_db"] for line in lines], ref_f0)
+        gate = continuity_gate([line["f0_hz"] for line in lines], [line["loudness_db"] for line in lines], ref_f0, max_ref_st=max_ref_st)
         if not gate["ok"]:
             return None
         return {**meta, "folder": folder, "continuity": gate}
@@ -812,7 +815,7 @@ def try_patch(i: int, text: str, segments: list[array.array], sr: int, f0s: list
 
 
 def evaluate_take(texts: list[str], seed: int, backend, grade, ref_f0: float | None, folder: Path, patch_cache: dict, log,
-                  patch: bool = True) -> dict:
+                  patch: bool = True, max_ref_st: float = MAX_REF_ST) -> dict:
     """Build the take for one seed and run every gate. Returns the accepted take, or raises TakeRejected(reason).
 
     patch=False (a deterministic engine): a line that fails the voice check is NOT re-voiced with other seeds, because the
@@ -840,7 +843,7 @@ def evaluate_take(texts: list[str], seed: int, backend, grade, ref_f0: float | N
         f0s, loud = measure_segments(segments, sr, backend, folder)  # the next patch sees the repaired neighbour
     lines = [{**graded[i], "f0_hz": f0s[i], "loudness_db": None if loud[i] is None else round(loud[i], 2),
               "patched_seed": graded[i].get("patched_seed")} for i in range(len(texts))]
-    gate = continuity_gate(f0s, loud, ref_f0)
+    gate = continuity_gate(f0s, loud, ref_f0, max_ref_st=max_ref_st)
     log(f"  take seed {seed}: median pitch per line (Hz): {' '.join('-' if f is None else f'{f:.0f}' for f in f0s)}")
     if not gate["ok"]:
         raise TakeRejected("; ".join(gate["reasons"]))
@@ -889,7 +892,8 @@ def deterministic_failure_message(attempt: dict, lines: list[dict]) -> str:
 
 def produce_narration(texts: list[str], *, backend, grade, voice: str, model: str, asr_model: str, ref_f0: float | None,
                       work_dir: Path, cache_root: Path, start_seed: int = 1, instructions_in_key: str = "",
-                      use_cache: bool = True, max_takes: int = MAX_TAKES, deterministic: bool = False, log=print) -> dict:
+                      use_cache: bool = True, max_takes: int = MAX_TAKES, deterministic: bool = False, max_ref_st: float | None = None,
+                      log=print) -> dict:
     """The whole thing: the accepted one-take narration of `texts` (see the module docstring).
 
     Writes work_dir/narration.wav and returns a dict with narration (that path), duration, timings ([{index, start, end,
@@ -898,8 +902,11 @@ def produce_narration(texts: list[str], *, backend, grade, voice: str, model: st
     deterministic=True (an engine that gives identical audio for identical text, like the German Thorsten voice): exactly ONE
     take, no seed re-rolls, no line patching (a seed changes nothing), and a rejection is not remembered (the engine may be
     fixed or changed later); a failing line is reported with what was heard, so the line can be reworded.
+    max_ref_st: how many semitones the take may be from the reference voice ref_f0 (None = MAX_REF_ST). voices.json can set a
+    tighter limit for a language whose seed picks the register (English); a cached take is judged again with this limit.
     Raises VoiceTakeError when the voice engine fails or no take passes."""
     clean = [t.strip() for t in texts]
+    ref_limit = MAX_REF_ST if max_ref_st is None else max_ref_st
     full = " ".join(clean)
     if len(full) >= INPUT_MAX_CHARS:
         raise VoiceTakeError(f"The whole script is {len(full)} characters long, but VoiceStudio takes fewer than {INPUT_MAX_CHARS} in one request. "
@@ -924,7 +931,7 @@ def produce_narration(texts: list[str], *, backend, grade, voice: str, model: st
 
     if use_cache:
         for s in seeds:
-            hit = load_cached_take(cache_root, keys[s], s, ref_f0, clean)
+            hit = load_cached_take(cache_root, keys[s], s, ref_f0, clean, ref_limit)
             if hit:
                 shutil.copyfile(hit["folder"] / "narration.wav", final_path)
                 log(f"  voice cache: the accepted take (seed {s}) of this exact script is reused, no voicing needed")
@@ -941,7 +948,8 @@ def produce_narration(texts: list[str], *, backend, grade, voice: str, model: st
                 attempts.append({"seed": s, "accepted": False, "reason": f"{earlier} (remembered from an earlier run)"})
                 continue
         try:
-            take = evaluate_take(clean, s, backend, grade, ref_f0, work_dir / f"take-s{s}", patch_cache, log, patch=not deterministic)
+            take = evaluate_take(clean, s, backend, grade, ref_f0, work_dir / f"take-s{s}", patch_cache, log, patch=not deterministic,
+                                 max_ref_st=ref_limit)
         except TakeRejected as why:
             log(f"  take seed {s}: REJECTED: {why}")
             attempts.append({"seed": s, "accepted": False, "reason": str(why)})
@@ -973,7 +981,7 @@ def produce_narration(texts: list[str], *, backend, grade, voice: str, model: st
         # another seed range, e.g. one found with --voice-seed 7 after seeds 1-6 failed: use it instead of failing.
         pointed = accepted_pointer(cache_root, skey)
         if pointed is not None and pointed not in seeds:
-            hit = load_cached_take(cache_root, cache_key(clean, voice, model, pointed, instructions_in_key), pointed, ref_f0, clean)
+            hit = load_cached_take(cache_root, cache_key(clean, voice, model, pointed, instructions_in_key), pointed, ref_f0, clean, ref_limit)
             if hit:
                 shutil.copyfile(hit["folder"] / "narration.wav", final_path)
                 log(f"  voice cache: seeds {seeds[0]}-{seeds[-1]} gave no steady take, but this exact script has an accepted take "

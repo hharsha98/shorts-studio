@@ -28,7 +28,7 @@ Plan: ~/.claude/plans/https-github-com-harry0703-moneyprintert-dynamic-starfish.
 ## Lessons v2 (2026-10-14, after the expert review)
 - Run with `--min-seconds 38` (Shorts/Reels sweet spot is 35-55 s; TikTok's 60 s rule only matters after 10k followers).
 - Voice is ONE take per script (studio/voice_take.py); VoiceStudio IGNORES the voices.json "instructions" text.
-  Gate: neighbour pitch jump <= 4 st, register +-4 st of ref, 12 seeds. Re-try with `--voice-seed 13` etc.
+  Gate: neighbour pitch jump <= 4 st, register +-4 st of ref (English: max_ref_st 2.0 in studio/voices.json), 12 seeds. Re-try with `--voice-seed 13` etc.
 - The old German narrator (Qwen3 Aiden, English-native) failed some scripts entirely (24 seeds: de-funkuhr, de-noise-cancelling):
   garbled words + random register. Replaced 2026-10-14 by native German Thorsten-Voice/Kokoro (user chose it; Apache-2.0 model, CC0 data;
   details in voice-de/README.md). German reviews rendered before the switch still use Aiden (see "voice" in review/*/report.json): re-render them before upload so the channel has one voice.
