@@ -14,6 +14,9 @@ Tick a box by changing `[ ]` to `[x]`.
       - Kühlschrank 0:35 "Das Gas kühlt ab…", 0:47 "Wenn also jemand ruft: Tür zu…"
       - Touchscreen 0:22 "Wolle und Leder leiten nicht…"
       Short samples: `voice-de/samples/`.
+- [ ] **Listen to the new English voice (Kokoro "Heart"), with sound on.** All 6 English videos now use it, so the
+      narrator sounds the same in every video. Every English sentence passed the automatic check; one tip for writing:
+      the voice says "touchscreen gloves" a bit like "touch green gloves", so that line now says "gloves made for phones".
 - [ ] ⏰ **Deadline Thu 22 Oct:** the clock-change videos only make sense before the change on Sunday 25 Oct.
       They can only go out if your accounts and Impressum are ready by then.
 

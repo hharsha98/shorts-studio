@@ -24,6 +24,11 @@ Plan: ~/.claude/plans/https-github-com-harry0703-moneyprintert-dynamic-starfish.
 - Pick "broll" phrases Pixabay really covers (single words often work best); avoid ambiguous words
   ("coils" -> rope, "speaker" -> people talking). Keep loose stand-ins at 0 using the plan command.
 - German voice is Thorsten (Thorsten-Voice/Kokoro, local server in voice-de/; start it with `voice-de/run.sh start`). It is deterministic: ONE take, no re-rolls, so a line that fails the voice check must be REWORDED (it is the same words every time). It mishears word endings such as 'Atomuhr' (heard 'Atomur') and 'lädt die Karte'; test a new wording with one request to 127.0.0.1:3910 plus a VoiceStudio transcription before a full run.
+- English voice is Kokoro "af_heart" (user's choice 2026-10-15), local server in voice-en/ on 127.0.0.1:3911 (start it with
+  `voice-en/run.sh start`; it borrows VoiceStudio's Python and the cached model, offline). Also deterministic: ONE take,
+  reword failing lines. Qwen "Ryan" was dropped because its seed picked the pitch (98-239 Hz), so videos sounded like
+  different people. Writing rules: "e.g." is read as the letters "E G" (write "for example"); "U.S.A."/"Ph.D." split a
+  sentence (avoid them); numbers are fine as words.
 
 ## Lessons v2 (2026-10-14, after the expert review)
 - Run with `--min-seconds 38` (Shorts/Reels sweet spot is 35-55 s; TikTok's 60 s rule only matters after 10k followers).
