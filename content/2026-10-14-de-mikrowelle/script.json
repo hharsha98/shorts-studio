@@ -38,7 +38,7 @@
     {
       "text": "Darin steckt ein Bauteil namens Magnetron. Es erzeugt Funkwellen.",
       "visual": null,
-      "broll": "circuit board"
+      "broll": "abstract waves"
     },
     {
       "text": "Die Wellen prallen im Metallkasten hin und her und wechseln zweieinhalb Milliarden Mal pro Sekunde die Richtung.",
@@ -107,7 +107,7 @@
         "value": "12 cm",
         "label": "Wellenlänge, viel größer als die Löcher"
       },
-      "broll": "fence"
+      "broll": "metal grid"
     },
     {
       "text": "Also: nach der Hälfte umrühren und kurz ruhen lassen. Sonst heißt es wieder…",

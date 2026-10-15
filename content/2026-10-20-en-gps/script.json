@@ -28,7 +28,7 @@
     {
       "text": "Your phone never talks to GPS satellites.",
       "visual": null,
-      "broll": "satellite"
+      "broll": "satellite dish"
     },
     {
       "text": "It only listens. That's why GPS works without internet.",
@@ -42,7 +42,7 @@
         "value": "20,200 km",
         "label": "how high GPS satellites fly"
       },
-      "broll": "earth orbit"
+      "broll": "planet earth"
     },
     {
       "text": "Each one constantly broadcasts its position and the exact time from an atomic clock.",
@@ -67,7 +67,7 @@
           "Your position"
         ]
       },
-      "broll": "earth orbit"
+      "broll": "smartphone"
     },
     {
       "text": "A delay of one millionth of a second means an error of three hundred meters.",
@@ -91,10 +91,15 @@
     {
       "text": "Overall, their clocks gain thirty-eight microseconds a day.",
       "visual": null,
-      "broll": "clock"
+      "broll": "wall clock"
     },
     {
       "text": "So engineers set them to tick slightly slower before launch.",
+      "visual": null,
+      "broll": "hourglass"
+    },
+    {
+      "text": "The internet only helps your phone start faster and load the map.",
       "visual": {
         "type": "compare",
         "title": "GPS and the internet",
@@ -107,17 +112,12 @@
           "text": "It only listens to satellites"
         }
       },
-      "broll": "rocket launch"
-    },
-    {
-      "text": "The internet only helps your phone start faster and load the map.",
-      "visual": null,
-      "broll": "phone navigation"
+      "broll": "navigation"
     },
     {
       "text": "So, does GPS need the internet? No. Your phone never talks to the satellites…",
       "visual": null,
-      "broll": "satellite"
+      "broll": "radio telescope"
     }
   ],
   "sources": [

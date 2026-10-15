@@ -33,7 +33,7 @@
     {
       "text": "Lässt du im Sommer die Tür offen, wird deine Küche wärmer. Nicht kühler.",
       "visual": null,
-      "broll": "summer heat"
+      "broll": "sunshine"
     },
     {
       "text": "Denn ein Kühlschrank macht keine Kälte. Er schafft Wärme weg.",
@@ -109,7 +109,7 @@
     {
       "text": "Tipp: Sauge ab und zu den Staub von den Kühlschlangen.",
       "visual": null,
-      "broll": "cleaning"
+      "broll": "dust"
     },
     {
       "text": "Wenn also jemand ruft: Tür zu, die Kälte geht raus! Es ist genau andersrum. Denn…",

@@ -38,7 +38,7 @@
     {
       "text": "Unter dem Glas liegt ein Gitter aus winzigen Elektroden mit einem elektrischen Feld.",
       "visual": null,
-      "broll": "circuit board"
+      "broll": "grid"
     },
     {
       "text": "Dein Finger besteht vor allem aus salzigem Wasser. Er leitet Strom.",
@@ -87,7 +87,7 @@
       "broll": "sausage"
     },
     {
-      "text": "Im Jahr zweitausendzehn, bei einer Kältewelle in Südkorea, tippten Leute mit Snack-Würstchen.",
+      "text": "Zweitausendzehn war es in Südkorea bitterkalt. Manche bedienten ihr Handy mit einem Würstchen.",
       "visual": null,
       "broll": "snow"
     },

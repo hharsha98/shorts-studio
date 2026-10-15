@@ -38,7 +38,7 @@
     {
       "text": "Inside, a part called a magnetron turns electricity into radio waves.",
       "visual": null,
-      "broll": "circuit board"
+      "broll": "abstract waves"
     },
     {
       "text": "The waves bounce around the metal box and flip direction about two and a half billion times a second.",
@@ -107,7 +107,7 @@
         "value": "12 cm",
         "label": "wavelength, far bigger than the holes"
       },
-      "broll": "fence"
+      "broll": "metal grid"
     },
     {
       "text": "So stir halfway and let it rest a minute. Otherwise it's back to…",

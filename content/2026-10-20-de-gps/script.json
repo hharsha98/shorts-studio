@@ -28,7 +28,7 @@
     {
       "text": "Dein Handy redet nie mit GPS-Satelliten.",
       "visual": null,
-      "broll": "satellite"
+      "broll": "satellite dish"
     },
     {
       "text": "Es hört nur zu. Deshalb funktioniert GPS auch ohne Internet.",
@@ -42,10 +42,10 @@
         "value": "20.200 km",
         "label": "Flughöhe der GPS-Satelliten"
       },
-      "broll": "earth orbit"
+      "broll": "planet earth"
     },
     {
-      "text": "Jeder sendet ständig seine Position und die genaue Zeit einer Atomuhr.",
+      "text": "Jeder sendet ständig seine Position und die genaue Uhrzeit.",
       "visual": null,
       "broll": "clock"
     },
@@ -67,7 +67,7 @@
           "Deine Position"
         ]
       },
-      "broll": "earth orbit"
+      "broll": "smartphone"
     },
     {
       "text": "Eine Mikrosekunde Abweichung bedeutet dreihundert Meter Fehler.",
@@ -91,10 +91,15 @@
     {
       "text": "Insgesamt gewinnen sie achtunddreißig Mikrosekunden pro Tag.",
       "visual": null,
-      "broll": "clock"
+      "broll": "wall clock"
     },
     {
       "text": "Deshalb stellen Ingenieure sie vor dem Start etwas langsamer ein.",
+      "visual": null,
+      "broll": "hourglass"
+    },
+    {
+      "text": "Das Internet hilft nur beim schnelleren Start und liefert die Karte.",
       "visual": {
         "type": "compare",
         "title": "GPS und Internet",
@@ -107,17 +112,12 @@
           "text": "Es hört nur Satelliten zu"
         }
       },
-      "broll": "rocket launch"
-    },
-    {
-      "text": "Das Internet hilft nur beim schnelleren Start und lädt die Karte.",
-      "visual": null,
-      "broll": "phone navigation"
+      "broll": "navigation"
     },
     {
       "text": "Braucht GPS also Internet? Nein. Dein Handy redet nie mit den Satelliten…",
       "visual": null,
-      "broll": "satellite"
+      "broll": "radio telescope"
     }
   ],
   "sources": [

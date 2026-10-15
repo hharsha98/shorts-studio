@@ -38,7 +38,7 @@
     {
       "text": "Sie bekommt die Zeit von einem Sender bei Frankfurt am Main.",
       "visual": null,
-      "broll": "radio tower"
+      "broll": "antenna tower"
     },
     {
       "text": "Der Sender heißt DCF siebenundsiebzig.",
@@ -47,12 +47,12 @@
         "value": "77,5 kHz",
         "label": "Langwelle aus Mainflingen"
       },
-      "broll": "antenna"
+      "broll": "mast"
     },
     {
       "text": "Die Zeit dafür liefern Atomuhren in Braunschweig.",
       "visual": null,
-      "broll": "clock"
+      "broll": "laboratory"
     },
     {
       "text": "Jede Sekunde wird das Signal kurz schwächer.",
@@ -98,12 +98,12 @@
           "text": "Ein Sender sagt es ihr an"
         }
       },
-      "broll": "clock"
+      "broll": "wall clock"
     },
     {
       "text": "Das Signal reicht etwa zweitausend Kilometer weit, bis nach Spanien oder Schweden.",
       "visual": null,
-      "broll": "map"
+      "broll": "world globe"
     },
     {
       "text": "Die meisten dieser Uhren gleichen sich nachts ab, wenn der Empfang am besten ist.",
@@ -113,7 +113,7 @@
     {
       "text": "Also: Sonntag eine Stunde länger schlafen. Und deine Uhr? Die wusste es schon…",
       "visual": null,
-      "broll": "alarm clock"
+      "broll": "sleep"
     }
   ],
   "sources": [
