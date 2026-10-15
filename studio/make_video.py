@@ -9,7 +9,7 @@ Usage (from /Users/harsha/shorts-studio):
 What it does, in order (every gate fails LOUDLY: non-zero exit + a plain-English message):
      1. validate script.json against the contract
      2. preflight (VoiceStudio health + transcription engine; for a language that VoiceStudio speaks, its TTS engine too; for a
-        language with its own "engine_url" in studio/voices.json (German: voice-de/run.sh start) that engine's /health; tools,
+        language with its own "engine_url" in studio/voices.json (German: voice-de/run.sh start, English: voice-en/run.sh start) that engine's /health; tools,
         MoneyPrinterTurbo config)
      3. voice the WHOLE script in ONE VoiceStudio request (studio/voice_take.py), find the line boundaries in the take,
         shorten pauses over 0.45 s to 0.35 s, check every line by transcription (word/letter error rate; a number Whisper
@@ -89,7 +89,7 @@ REVIEW_ROOT = ROOT / "review"
 VOICESTUDIO_URL = os.environ.get("VOICESTUDIO_URL", "http://127.0.0.1:3900").rstrip("/")
 REQUIRED_TTS_ENGINE = "mlx-audio"
 REQUIRED_TTS_MODEL = "Qwen3-TTS-12Hz-1.7B-CustomVoice"
-ENGINE_START_HINT = "voice-de/run.sh start"  # a language with its own speech engine (studio/voices.json "engine_url") is started with this
+# A language with its own speech engine (studio/voices.json "engine_url") is started with its "start_hint", default voice-<language>/run.sh start
 LANGUAGE_NAMES = {"en": "English", "de": "German"}
 
 WER_LIMIT_LONG = 0.15  # lines with >= 5 words
@@ -1180,23 +1180,42 @@ def configured_engine_url(language: str) -> str | None:
     return voice_engine_url(voices.get(language)) if isinstance(voices, dict) else None
 
 
+def voice_start_hint(voice_cfg, language: str) -> str:
+    """How to start the language's own speech engine: the "start_hint" text in studio/voices.json, else voice-<language>/run.sh start."""
+    hint = voice_cfg.get("start_hint") if isinstance(voice_cfg, dict) else None
+    if isinstance(hint, str) and hint.strip():
+        return hint.strip()
+    return f"voice-{language}/run.sh start"
+
+
+def configured_start_hint(language: str) -> str:
+    """voice_start_hint for a language, read leniently like configured_engine_url (a missing or broken voices.json gives the default)."""
+    try:
+        voices = json.loads(VOICES_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        voices = None
+    return voice_start_hint(voices.get(language) if isinstance(voices, dict) else None, language)
+
+
 def engine_get_json(url: str, path: str, timeout: float = 10) -> dict:
     with urllib.request.urlopen(url.rstrip("/") + path, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
-def check_voice_engine(url: str, language: str) -> dict:
-    """GET <url>/health of a language's own speech engine (voice-de/server.py). Returns its answer; a missing or unhealthy engine
-    becomes a plain-English GateError that says how to start it."""
+def check_voice_engine(url: str, language: str, start_hint: str | None = None) -> dict:
+    """GET <url>/health of a language's own speech engine (voice-de/server.py, voice-en/server.py). Returns its answer; a missing or
+    unhealthy engine becomes a plain-English GateError that says how to start it (`start_hint`, default voice-<language>/run.sh start)."""
     name = LANGUAGE_NAMES.get(language, language)
+    start_hint = start_hint or f"voice-{language}/run.sh start"
+    stop_hint = start_hint[:-len("start")] + "stop" if start_hint.endswith(" start") else "stop it"
     try:
         info = engine_get_json(url, "/health")
     except HTTP_ERRORS as exc:
         raise GateError(f"The {name} voice engine at {url} is not reachable ({type(exc).__name__}: {exc}). It is a separate program "
-                        f"that must be running: start it: {ENGINE_START_HINT}, then run this again.") from None
+                        f"that must be running: start it: {start_hint}, then run this again.") from None
     if not isinstance(info, dict) or str(info.get("status", "")).lower() != "ok":
         raise GateError(f"The {name} voice engine at {url} did not say ok on /health (it said {info!r}). "
-                        f"Restart it (voice-de/run.sh stop, then {ENGINE_START_HINT}) and run this again.")
+                        f"Restart it ({stop_hint}, then {start_hint}) and run this again.")
     return info
 
 
@@ -1503,7 +1522,7 @@ def preflight_voice_services(ctx: Ctx, language: str) -> dict:
         raise GateError(f"VoiceStudio /health did not say ok: {health}")
     engine_url = configured_engine_url(language)
     if engine_url:
-        engine = check_voice_engine(engine_url, language)
+        engine = check_voice_engine(engine_url, language, configured_start_hint(language))
         model = str(engine.get("model") or "unknown")
         tts = {"active": model, "active_model": model}
     else:
@@ -1558,6 +1577,9 @@ def step_preflight(ctx: Ctx) -> dict:
     if "engine_url" in voice_cfg and voice_engine_url(voice_cfg) is None:
         raise GateError(f"studio/voices.json: \"{script['language']}\".engine_url must be an address like http://127.0.0.1:3910 "
                         f"(got {voice_cfg['engine_url']!r}). Remove the key to let VoiceStudio speak this language.")
+    if "start_hint" in voice_cfg and not (isinstance(voice_cfg["start_hint"], str) and voice_cfg["start_hint"].strip()):
+        raise GateError(f"studio/voices.json: \"{script['language']}\".start_hint must be the text that starts the engine, like voice-{script['language']}/run.sh start "
+                        f"(got {voice_cfg['start_hint']!r}). Remove the key to use that default.")
     if "deterministic" in voice_cfg and not isinstance(voice_cfg["deterministic"], bool):
         raise GateError(f"studio/voices.json: \"{script['language']}\".deterministic must be true or false (got {voice_cfg['deterministic']!r}).")
     if ref_f0 is None:
@@ -1672,7 +1694,7 @@ def step_voice(ctx: Ctx, setup: dict) -> dict:
     engine_url = setup.get("engine_url")  # the language's own speech engine (voices.json "engine_url"); None = VoiceStudio speaks
     deterministic = bool(cfg.get("deterministic"))  # same text = same audio: one take, no seed re-rolls, no line patching
     instructions = "" if engine_url else (cfg.get("instructions") or "")  # an own engine gets no delivery text
-    own_engine = {"engine_url": engine_url, "engine_start_hint": ENGINE_START_HINT} if engine_url else {}
+    own_engine = {"engine_url": engine_url, "engine_start_hint": voice_start_hint(cfg, language)} if engine_url else {}
     backend = voice_take.VoiceStudioBackend(VOICESTUDIO_URL, cfg["voice"], setup["asr_model"], language, instructions,
                                             ffmpeg=find_tool("ffmpeg"), mpt_dir=MPT_DIR, **own_engine)
     seed = ctx.args.voice_seed if ctx.args.voice_seed is not None else int(cfg.get("seed", 1))

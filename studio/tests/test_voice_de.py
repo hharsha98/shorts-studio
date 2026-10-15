@@ -807,13 +807,7 @@ class VoicesJsonTests(unittest.TestCase):
         self.assertEqual(de["ref_sample"], "studio/voice-tests/de-thorsten.wav")
         self.assertEqual(mv.voice_engine_url(de), "http://127.0.0.1:3910")
 
-    def test_english_is_untouched(self):
-        en = self.voices["en"]
-        self.assertEqual(en["voice"], "Ryan")
-        self.assertNotIn("engine_url", en)
-        self.assertNotIn("deterministic", en)
-        self.assertEqual(en["ref_f0_hz"], 196.9)
-        self.assertTrue(en["instructions"])
+    # English has its own engine since 2026-10-15 (Kokoro af_heart): its routing is tested in test_voice_en.py (VoicesJsonRoutingTests).
 
 
 class VoiceAccuracyDetailTests(unittest.TestCase):

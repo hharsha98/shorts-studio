@@ -21,3 +21,7 @@ voice-de/.venv/
 voice-de/model/
 voice-de/server.pid
 voice-de/server.log
+
+# English narrator (Kokoro af_heart): server pid/log (it borrows VoiceStudio's Python and model cache, so no venv or model here)
+voice-en/server.pid
+voice-en/server.log

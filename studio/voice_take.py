@@ -1009,13 +1009,14 @@ def format_line_table(lines: list[dict]) -> str:
 
 
 def store_reference_pitches(voices_file: Path = VOICES_FILE, tests_dir: Path = VOICE_TESTS_DIR, log=print) -> None:
-    """For every language in voices.json: measure studio/voice-tests/<lang>-<voice>.wav (the sample the user listened to) and
-    store ref_f0_hz (+ ref_sample) next to the voice."""
+    """For every language in voices.json: measure the sample the user listened to and store ref_f0_hz (+ ref_sample) next to the
+    voice. The sample is the file named by "ref_sample" in studio/voice-tests/, else studio/voice-tests/<lang>-<voice>.wav."""
     voices = json.loads(voices_file.read_text(encoding="utf-8"))
     for lang, cfg in voices.items():
         if lang.startswith("_") or not isinstance(cfg, dict):
             continue
-        sample = tests_dir / f"{lang}-{cfg['voice']}.wav"
+        named = cfg.get("ref_sample")
+        sample = tests_dir / (Path(named).name if isinstance(named, str) and named.strip() else f"{lang}-{cfg['voice']}.wav")
         if not sample.is_file():
             log(f"  {lang}: sample {sample} not found, skipped")
             continue

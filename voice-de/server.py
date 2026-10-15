@@ -19,6 +19,11 @@ request is accepted but ignored). That also means a bad take cannot be fixed by 
 
 Only the Python standard library is used outside ThorstenEngine (the pure helpers are unit-tested without the model, in
 studio/tests/test_voice_de.py). The server listens on 127.0.0.1 only.
+
+The sentence cutting, request checking, wav writing and HTTP layer are shared: voice-en/server.py (the English narrator)
+imports this file and reuses them. What differs per narrator lives in a Profile (the name /health reports, the one voice the
+server has, the abbreviations whose full stop does not end a sentence); every function takes it as an optional argument that
+defaults to the German values, so nothing here changes for German.
 """
 
 from __future__ import annotations
@@ -36,6 +41,7 @@ import time
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import NamedTuple
 
 HERE = Path(__file__).resolve().parent
 MODEL_DIR = HERE / "model"
@@ -69,15 +75,16 @@ _SINGLE_LETTER_THEN_STOP = re.compile(r"^\s*[^\W\d_]\.(\s|$)")
 _ENDS_WITH_LETTER_STOP = re.compile(r"(^|\s)[^\W\d_]\.\s*$")
 
 
-def _is_abbreviation(text: str, stop_at: int) -> bool:
-    """Is the full stop at text[stop_at] part of an abbreviation ("ca.", "z. B.", "d. h."), not the end of a sentence?"""
+def _is_abbreviation(text: str, stop_at: int, abbreviations: frozenset = ABBREVIATIONS) -> bool:
+    """Is the full stop at text[stop_at] part of an abbreviation ("ca.", "z. B.", "d. h."), not the end of a sentence?
+    `abbreviations` is the narrator's list of lower-case words that keep their full stop inside the sentence."""
     if text[stop_at] != "." or text[stop_at + 1:stop_at + 2] in {".", "!", "?", "…"}:
         return False
     found = _WORD_BEFORE.search(text[:stop_at])
     if not found:
         return False
     word = found.group(1).lower()
-    if word in ABBREVIATIONS:
+    if word in abbreviations:
         return True
     if len(word) == 1:  # "z. B.": the first part is followed by another letter + stop, the second part follows one
         return bool(_SINGLE_LETTER_THEN_STOP.match(text[stop_at + 1:])
@@ -85,13 +92,13 @@ def _is_abbreviation(text: str, stop_at: int) -> bool:
     return False
 
 
-def split_sentences(text: str) -> list[str]:
+def split_sentences(text: str, abbreviations: frozenset = ABBREVIATIONS) -> list[str]:
     """The text as a list of sentences (a sentence ends at . ! ? or an ellipsis followed by a space or the end)."""
     text = " ".join(text.split())  # line breaks and runs of spaces become one space
     sentences: list[str] = []
     start = 0
     for found in _SENTENCE_END.finditer(text):
-        if _is_abbreviation(text, found.start()):
+        if _is_abbreviation(text, found.start(), abbreviations):
             continue
         piece = text[start:found.end()].strip()
         if piece:
@@ -126,11 +133,11 @@ def speakable(piece: str) -> bool:
     return any(ch.isalnum() for ch in piece)
 
 
-def plan_pieces(text: str) -> list[tuple[str, float]]:
+def plan_pieces(text: str, abbreviations: frozenset = ABBREVIATIONS) -> list[tuple[str, float]]:
     """[(piece of text, seconds of silence after it)]: every sentence (cut at commas when it is long) with its pause.
     The last piece has no pause after it."""
     plan: list[tuple[str, float]] = []
-    for sentence in split_sentences(text):
+    for sentence in split_sentences(text, abbreviations):
         parts = [p for p in split_long(sentence) if speakable(p)]
         long_pause = sentence.rstrip("\"'“”‘’«»)] ").endswith(("?", "…"))
         for k, part in enumerate(parts):
@@ -162,12 +169,12 @@ def _number(value, name: str, low: float, high: float) -> float:
     return float(value)
 
 
-def parse_request(raw: bytes) -> dict:
+def parse_request(raw: bytes, voice_name: str = VOICE_NAME) -> dict:
     """Check a POST /v1/audio/speech body. Returns {"text", "speed", "seed"} or raises RequestError.
 
     Like VoiceStudio's endpoint: "input" is required, "voice" and "response_format" are optional but must name what this
-    server can do (the voice "thorsten", the format "wav"); other fields (model, instructions, ...) are ignored. "seed" must
-    be a whole number when it is given, and is ignored (the output is deterministic)."""
+    server can do (its one voice, German: "thorsten"; the format "wav"); other fields (model, instructions, ...) are ignored.
+    "seed" must be a whole number when it is given, and is ignored (the output is deterministic)."""
     try:
         body = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
@@ -180,8 +187,8 @@ def parse_request(raw: bytes) -> dict:
     if len(text) >= MAX_INPUT_CHARS:
         raise RequestError(400, f'"input" has {len(text)} characters, but this server takes fewer than {MAX_INPUT_CHARS} in one request.')
     voice = body.get("voice")
-    if voice not in (None, "") and (not isinstance(voice, str) or voice.strip().lower() != VOICE_NAME):
-        raise RequestError(400, f'This server has one voice, "{VOICE_NAME}" (the request asked for {voice!r}).')
+    if voice not in (None, "") and (not isinstance(voice, str) or voice.strip().lower() != voice_name.lower()):
+        raise RequestError(400, f'This server has one voice, "{voice_name}" (the request asked for {voice!r}).')
     fmt = body.get("response_format")
     if fmt is not None and (not isinstance(fmt, str) or fmt.strip().lower() != "wav"):
         raise RequestError(400, f'Only "wav" can be sent back (the request asked for {fmt!r}).')
@@ -222,11 +229,29 @@ def wav_bytes(samples: array.array, sr: int = SAMPLE_RATE) -> bytes:
     return buf.getvalue()
 
 
-def synthesize(engine, text: str, speed: float = 1.0) -> tuple[array.array, int]:
+def synthesize(engine, text: str, speed: float = 1.0, abbreviations: frozenset = ABBREVIATIONS) -> tuple[array.array, int]:
     """(samples, number of pieces) for the whole text: engine.speak(piece, speed) per piece, joined with the planned pauses."""
-    plan = plan_pieces(text)
+    plan = plan_pieces(text, abbreviations)
     audio = [engine.speak(piece, speed) for piece, _pause in plan]
     return join_pieces(audio, [pause for _piece, pause in plan]), len(plan)
+
+
+# --------------------------------------------------------------------------------------
+# What differs between narrators (voice-en/server.py has its own Profile)
+# --------------------------------------------------------------------------------------
+
+
+class Profile(NamedTuple):
+    """The per-narrator facts of this server: `model_name` is what GET /health reports, `voice_name` the one voice a request may
+    ask for, `abbreviations` the lower-case words whose full stop stays inside the sentence, `server_name` the HTTP Server header."""
+
+    model_name: str
+    voice_name: str
+    abbreviations: frozenset
+    server_name: str
+
+
+GERMAN = Profile(MODEL_NAME, VOICE_NAME, ABBREVIATIONS, "ThorstenVoice/1")
 
 
 # --------------------------------------------------------------------------------------
@@ -278,11 +303,11 @@ class ThorstenEngine:
 # --------------------------------------------------------------------------------------
 
 
-def make_handler(engine, lock: threading.Lock):
+def make_handler(engine, lock: threading.Lock, profile: Profile = GERMAN):
     """The request handler class. `engine` needs speak(piece, speed) -> array('h'); one request voices at a time (lock)."""
 
     class Handler(BaseHTTPRequestHandler):
-        server_version = "ThorstenVoice/1"
+        server_version = profile.server_name
 
         def log_message(self, fmt, *args):  # one line per request on stderr (voice-de/server.log); never the text itself
             sys.stderr.write(f"{time.strftime('%H:%M:%S')} {self.address_string()} {fmt % args}\n")
@@ -303,7 +328,7 @@ def make_handler(engine, lock: threading.Lock):
 
         def do_GET(self):  # noqa: N802 (the name is fixed by http.server)
             if self.path.split("?")[0] == "/health":
-                self._send_json(200, {"status": "ok", "model": MODEL_NAME})
+                self._send_json(200, {"status": "ok", "model": profile.model_name})
             else:
                 self._refuse(404, f"Nothing here: {self.path}. This server has GET /health and POST /v1/audio/speech.")
 
@@ -329,14 +354,14 @@ def make_handler(engine, lock: threading.Lock):
                 self._refuse(413, f"The request is {size} bytes; the limit is {MAX_BODY_BYTES}.")
                 return
             try:
-                request = parse_request(self.rfile.read(size))
+                request = parse_request(self.rfile.read(size), profile.voice_name)
             except RequestError as exc:
                 self._refuse(exc.status, str(exc))
                 return
             started = time.time()
             try:
                 with lock:
-                    samples, pieces = synthesize(engine, request["text"], request["speed"])
+                    samples, pieces = synthesize(engine, request["text"], request["speed"], profile.abbreviations)
             except Exception as exc:  # the model broke on this text: say so, keep serving
                 import traceback
                 traceback.print_exc()
@@ -352,9 +377,9 @@ def make_handler(engine, lock: threading.Lock):
     return Handler
 
 
-def make_server(engine, port: int = DEFAULT_PORT) -> ThreadingHTTPServer:
+def make_server(engine, port: int = DEFAULT_PORT, profile: Profile = GERMAN) -> ThreadingHTTPServer:
     """The server for `engine`, bound to 127.0.0.1 (port 0 = any free port, for tests)."""
-    server = ThreadingHTTPServer((HOST, port), make_handler(engine, threading.Lock()))
+    server = ThreadingHTTPServer((HOST, port), make_handler(engine, threading.Lock(), profile))
     server.daemon_threads = True
     return server
 
