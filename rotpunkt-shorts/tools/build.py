@@ -42,6 +42,31 @@ SCENE_LEAD = 0.12
 SHORTS = ("short1", "short2", "short3")
 LANGS = ("en", "de")
 
+# Product photos from Rotpunkt Küchen's public website (rotpunkt.de redirects there), shown small-credited inside the scenes.
+# They are the company's images: downloaded at build time into a git-ignored folder, never committed or published.
+SITE = "https://www.rotpunktkuechen.de"
+PRODUCT_IMAGES = {
+    "s1-hook.webp": "/fileadmin/_processed_/8/4/csm_01-zerox-sy-ver-loft-brown-oak_gallery__1400x875_31bc567624.webp",
+    "s1-pain.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK07_Hauptschuss__1200.jpg",
+    "s2-hook.webp": "/fileadmin/_processed_/5/5/csm_MK_11_Zerox_SY_VER_Loft_Dark_Oak__header__1200_94c6bedc92.webp",
+    "s2-pain.webp": "/fileadmin/_processed_/1/0/csm_06-smala-sc-velvet-green_gallery__1400x875_bc6a077a07.webp",
+    "s3-hook.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK09_Hauptschuss__1200.jpg",
+    "s3-idea.webp": "/fileadmin/_processed_/1/4/csm_Rotpunkt_HM01_Hauptschuss_Final__1200_7ec0652391.webp",
+}
+
+
+def fetch_images() -> None:
+    """Download the product photos once into video/public/products/. A missing image stops the build with the URL that failed
+    (the scenes would otherwise render an empty frame); see STORYBOARD.md for the generic fallback."""
+    target = VIDEO / "public" / "products"
+    target.mkdir(parents=True, exist_ok=True)
+    for name, path in PRODUCT_IMAGES.items():
+        out = target / name
+        if out.exists() and out.stat().st_size > 10_000:
+            continue
+        print(f"  fetching {name} from {SITE}{path}")
+        run(["curl", "-sSfL", "--retry", "3", "-A", "Mozilla/5.0", "-o", str(out), SITE + path])
+
 
 # ---------------------------------------------------------------------------------------------------- small helpers
 
@@ -439,28 +464,45 @@ def transcribe(path: Path, lang: str) -> list[tuple[str, float, float]]:
         _whisper = WhisperModel("small", device="cpu", compute_type="int8")
     audio = decode_audio(path, 16000)
     # without conditioning on earlier text, one misheard stretch cannot snowball into a repetition loop ("a a a a ...")
-    segments, _ = _whisper.transcribe(audio, language=lang, beam_size=5, word_timestamps=True, condition_on_previous_text=False)
+    segments, _ = _whisper.transcribe(audio, language=lang, beam_size=5, word_timestamps=True, condition_on_previous_text=False, vad_filter=False)
     return [(w.word.strip(), w.start, w.end) for s in segments for w in (s.words or [])]
 
 
+def transcribe_clip(audio16k: np.ndarray, lang: str) -> list[str]:
+    global _whisper
+    from faster_whisper import WhisperModel
+
+    if _whisper is None:
+        _whisper = WhisperModel("small", device="cpu", compute_type="int8")
+    segments, _ = _whisper.transcribe(audio16k, language=lang, beam_size=5, condition_on_previous_text=False)
+    return " ".join(s.text for s in segments).split()
+
+
 def check_voice(short: str, lang: str) -> list[dict]:
+    """Every narration line is compared word by word with the script, twice: in a transcript of the whole narration (words placed
+    by their timestamps) and in a transcript of the line cut out on its own. Each pass has its own recogniser slips (timestamps that
+    drift; words lost at clip edges), so the better of the two counts."""
     d = out_dir(short, lang)
     timeline = json.loads((d / "timeline.json").read_text())
+    audio = decode_audio(d / "narration.wav", 16000)
     heard = transcribe(d / "narration.wav", lang)
     nums = NUMBER_WORDS[lang]
     simple = lambda w: nums.get(norm(w), norm(w))
+
+    def compare(want: list[str], said: list[str]) -> tuple[float, list[tuple[str, str]]]:
+        m = difflib.SequenceMatcher(a=want, b=said)
+        return m.ratio(), [(" ".join(want[i1:i2]), " ".join(said[j1:j2])) for tag, i1, i2, j1, j2 in m.get_opcodes() if tag != "equal"]
+
     report = []
     for ln in timeline["lines"]:
-        said = [simple(w) for w, s, e in heard if ln["start"] - 0.25 <= (s + e) / 2 <= ln["end"] + 0.25]
-        want = [simple(w["text"]) for w in ln["words"]]
-        said, want = [w for w in said if w], [w for w in want if w]
-        ratio = difflib.SequenceMatcher(a=want, b=said).ratio()
-        diffs = [
-            (" ".join(want[i1:i2]), " ".join(said[j1:j2]))
-            for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(a=want, b=said).get_opcodes()
-            if tag != "equal"
-        ]
-        report.append({"line": ln["i"] + 1, "ratio": round(ratio, 3), "diffs": diffs, "text": ln["text"]})
+        want = [w for w in (simple(x["text"]) for x in ln["words"]) if w]
+        in_full = [w for w in (simple(x) for x, s, e in heard if ln["start"] - 0.25 <= (s + e) / 2 <= ln["end"] + 0.25) if w]
+        a = max(0, int((ln["start"] - 0.12) * 16000))
+        b = min(len(audio), int((ln["end"] + 0.12) * 16000))
+        in_clip = [w for w in (simple(x) for x in transcribe_clip(audio[a:b], lang)) if w]
+        (r1, d1), (r2, d2) = compare(want, in_full), compare(want, in_clip)
+        ratio, diffs = (r1, d1) if r1 >= r2 else (r2, d2)
+        report.append({"line": ln["i"] + 1, "ratio": round(ratio, 3), "diffs": diffs, "full": round(r1, 3), "clip": round(r2, 3), "text": ln["text"]})
     (d / "voice-check.json").write_text(json.dumps(report, ensure_ascii=False, indent=1))
     for r in report:
         flag = "ok " if r["ratio"] >= 0.92 else "CHECK"
@@ -492,6 +534,7 @@ def frames_at(video: Path, times: list[float], out_dir_: Path, prefix: str) -> l
 def build_one(short: str, lang: str, force_voice: bool = False, deliver: bool = True) -> dict:
     script = load_script(short)
     d = out_dir(short, lang)
+    fetch_images()
     timeline = voice_short(short, lang, force=force_voice)
     props = build_props(short, lang, timeline, voice=True)
     props_silent = build_props(short, lang, timeline, voice=False)

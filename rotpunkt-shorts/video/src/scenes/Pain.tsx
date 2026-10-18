@@ -4,6 +4,7 @@ import { fitText, textWidth } from "../text";
 import { clamp01, ease, lerp, pop } from "../anim";
 import { Icon } from "../icons";
 import { Lines, SceneShell, SceneTitle, titleHeight, useTitleFit } from "../components/Scene";
+import { Photo } from "../components/Photo";
 import type { PainLabels, SceneCtx } from "../types";
 import { Y } from "../theme";
 
@@ -27,13 +28,71 @@ const Chip: React.FC<{ text: string; p: number; color?: string }> = ({ text, p, 
 );
 
 // ---------------------------------------------------------------- rule of ten (order errors)
-const RuleOfTen: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "ruleOfTen" }> }> = ({ ctx, p }) => {
+
+/** Variants, dimensions and dependencies pinned onto the real kitchen photo (coordinates inside the 960x430 card). */
+const Callouts: React.FC<{ frame: number; fps: number; at: number; chips: string[] }> = ({ frame, fps, at, chips }) => {
+  const q = [0, 1, 2].map((i) => pop(frame, at + i * 6, fps, 170, 15));
+  const line = ease(frame, at + 6, 12);
+  const pill = (text: string, cx: number, cy: number, k: number): React.ReactNode => {
+    const w = textWidth(text, 32, 700) + 44;
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: cx - w / 2,
+          top: cy - 26,
+          width: w,
+          height: 52,
+          borderRadius: 26,
+          background: "rgba(8,14,24,0.86)",
+          border: `2.5px solid ${C.amber}`,
+          color: C.text,
+          fontSize: 32,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: clamp01(q[k] * 1.5),
+          transform: `scale(${0.75 + 0.25 * q[k]})`,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
+        }}
+      >
+        {text}
+      </div>
+    );
+  };
+  return (
+    <>
+      <svg width={960} height={430} viewBox="0 0 960 430" style={{ position: "absolute", left: 0, top: 0 }}>
+        <g opacity={clamp01(q[1] * 1.5)}>
+          <line x1={82} y1={236} x2={82 + (870 - 82) * line} y2={236} stroke={C.amber} strokeWidth={4} />
+          <line x1={82} y1={218} x2={82} y2={254} stroke={C.amber} strokeWidth={4} />
+          {line > 0.98 ? <line x1={870} y1={218} x2={870} y2={254} stroke={C.amber} strokeWidth={4} /> : null}
+        </g>
+        <g opacity={clamp01(q[2] * 1.5)}>
+          <circle cx={480} cy={157} r={9} fill={C.amber} />
+          <polyline points="489,152 590,96 640,96" fill="none" stroke={C.amber} strokeWidth={4} strokeLinejoin="round" />
+        </g>
+        <g opacity={clamp01(q[0] * 1.5)}>
+          {[210, 395, 575].map((x) => (
+            <rect key={x} x={x - 60} y={300} width={120} height={110} rx={10} fill="none" stroke={tint(C.amber, 0.85)} strokeWidth={3} strokeDasharray="10 8" />
+          ))}
+        </g>
+      </svg>
+      {pill(chips[0], 395, 355, 0)}
+      {pill(chips[1], 476, 236, 1)}
+      {pill(chips[2], 760, 96, 2)}
+    </>
+  );
+};
+const RuleOfTen: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "ruleOfTen" }>; credit: string }> = ({ ctx, p, credit }) => {
   const { frame, fps } = ctx;
   const titleFit = useTitleFit(p.title, 56);
-  const top0 = Y.sceneTop + titleHeight(titleFit) + 30;
+  const top0 = Y.sceneTop + titleHeight(titleFit) + (p.photo ? 24 : 30);
+  const photo = p.photo ? { x: MARGIN, y: top0, w: CONTENT_W, h: 430 } : null;
   const chipsAt = ctx.cue("pain.chips", ctx.start + 6);
   const barAt = [0, 1, 2].map((i) => ctx.cue(`pain.${i}`, ctx.start + 24 + i * 14));
-  const heights = [80, 240, 470];
+  const heights = photo ? [50, 140, 250] : [80, 240, 470];
   const colors = [C.green, C.amber, C.coral];
   const centers = [210, 540, 870];
   const baseY = 1225;
@@ -47,11 +106,17 @@ const RuleOfTen: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "ruleO
   return (
     <SceneShell ctx={ctx}>
       <SceneTitle ctx={ctx} fit={titleFit} />
-      <div style={{ position: "absolute", left: MARGIN, top: top0, width: CONTENT_W, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
-        {p.chips.map((c, i) => (
-          <Chip key={i} text={c} p={pop(frame, chipsAt + i * 5, fps)} />
-        ))}
-      </div>
+      {photo && p.photo ? (
+        <Photo src={p.photo} credit={credit} x={photo.x} y={photo.y} w={photo.w} h={photo.h} focus="center 60%">
+          <Callouts frame={frame} fps={fps} at={chipsAt} chips={p.chips} />
+        </Photo>
+      ) : (
+        <div style={{ position: "absolute", left: MARGIN, top: top0, width: CONTENT_W, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
+          {p.chips.map((c, i) => (
+            <Chip key={i} text={c} p={pop(frame, chipsAt + i * 5, fps)} />
+          ))}
+        </div>
+      )}
       {centers.map((cx, i) => {
         const h = heights[i] * grown[i];
         return (
@@ -123,7 +188,7 @@ const TILE_W = 410;
 const TILE_H = 160;
 const TILE_ICONS = ["book", "quote", "inbox", "user"];
 
-const Scattered: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "scattered" }> }> = ({ ctx, p }) => {
+const Scattered: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "scattered" }>; credit: string }> = ({ ctx, p, credit }) => {
   const { frame, fps } = ctx;
   const titleFit = useTitleFit(p.title, 58);
   const top0 = Y.sceneTop + titleHeight(titleFit) + 40;
@@ -203,32 +268,59 @@ const Scattered: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "scatt
           </div>
         );
       })}
-      <div
-        style={{
-          position: "absolute",
-          left: 540 - 112,
-          top: cy - 112,
-          width: 224,
-          height: 224,
-          borderRadius: 112,
-          background: tint(C.coral, 0.16),
-          border: `4px solid ${C.coral}`,
-          boxShadow: `0 0 ${50 * pulse}px ${tint(C.coral, 0.45)}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transform: `scale(${(0.7 + 0.3 * centerP) * pulse})`,
-        }}
-      >
-        <Icon name="alert" size={110} color={C.coral} stroke={3.4} />
-      </div>
-      <div style={{ position: "absolute", left: 0, width: W, top: cy + 130, textAlign: "center", fontSize: 40, fontWeight: 800, color: C.text }}>{p.center}</div>
+      {p.photo ? (
+        <>
+          <div style={{ position: "absolute", left: 540 - 180, top: cy - 125, width: 360, height: 250, borderRadius: 30, boxShadow: `0 0 ${50 * pulse}px ${tint(C.coral, 0.5)}`, transform: `scale(${0.7 + 0.3 * centerP})` }} />
+          <Photo src={p.photo} credit={credit} x={540 - 180} y={cy - 125} w={360} h={250} radius={30} border={`4px solid ${C.coral}`} creditSize={17} scale={0.7 + 0.3 * centerP} progress={clamp01((frame - ctx.start) / 150)}>
+            <div style={{ position: "absolute", inset: 0, background: "rgba(40,8,0,0.28)" }} />
+          </Photo>
+          <div
+            style={{
+              position: "absolute",
+              left: 540 + 180 - 46,
+              top: cy - 125 - 30,
+              width: 76,
+              height: 76,
+              borderRadius: 38,
+              background: C.coral,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: `scale(${(0.7 + 0.3 * centerP) * pulse})`,
+              boxShadow: `0 0 30px ${tint(C.coral, 0.6)}`,
+            }}
+          >
+            <Icon name="alert" size={46} color={C.ink} stroke={4} />
+          </div>
+        </>
+      ) : (
+        <div
+          style={{
+            position: "absolute",
+            left: 540 - 112,
+            top: cy - 112,
+            width: 224,
+            height: 224,
+            borderRadius: 112,
+            background: tint(C.coral, 0.16),
+            border: `4px solid ${C.coral}`,
+            boxShadow: `0 0 ${50 * pulse}px ${tint(C.coral, 0.45)}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: `scale(${(0.7 + 0.3 * centerP) * pulse})`,
+          }}
+        >
+          <Icon name="alert" size={110} color={C.coral} stroke={3.4} />
+        </div>
+      )}
+      <div style={{ position: "absolute", left: 0, width: W, top: cy + (p.photo ? 142 : 130), textAlign: "center", fontSize: 40, fontWeight: 800, color: C.text }}>{p.center}</div>
       <div
         style={{
           position: "absolute",
           left: 0,
           width: W,
-          top: cy + 186,
+          top: cy + (p.photo ? 198 : 186),
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -349,8 +441,8 @@ const Bottleneck: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "bott
   );
 };
 
-export const PainScene: React.FC<{ ctx: SceneCtx; pain: PainLabels }> = ({ ctx, pain }) => {
-  if (pain.kind === "ruleOfTen") return <RuleOfTen ctx={ctx} p={pain} />;
-  if (pain.kind === "scattered") return <Scattered ctx={ctx} p={pain} />;
+export const PainScene: React.FC<{ ctx: SceneCtx; pain: PainLabels; credit: string }> = ({ ctx, pain, credit }) => {
+  if (pain.kind === "ruleOfTen") return <RuleOfTen ctx={ctx} p={pain} credit={credit} />;
+  if (pain.kind === "scattered") return <Scattered ctx={ctx} p={pain} credit={credit} />;
   return <Bottleneck ctx={ctx} p={pain} />;
 };

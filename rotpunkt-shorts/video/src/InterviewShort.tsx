@@ -32,13 +32,13 @@ const Scene: React.FC<{ win: SceneWindow; props: ShortProps; frame: number; fps:
   const L = props.labels;
   switch (win.key) {
     case "hook":
-      return <HookScene ctx={ctx} hook={L.hook} />;
+      return <HookScene ctx={ctx} hook={L.hook} credit={L.credit} status={L.pain.kind === "scattered" ? L.pain.center : ""} />;
     case "evidence":
       return <EvidenceScene ctx={ctx} ev={L.evidence} />;
     case "pain":
-      return <PainScene ctx={ctx} pain={L.pain} />;
+      return <PainScene ctx={ctx} pain={L.pain} credit={L.credit} />;
     case "idea":
-      return <IdeaScene ctx={ctx} idea={L.idea} />;
+      return <IdeaScene ctx={ctx} idea={L.idea} credit={L.credit} />;
     case "arch":
       return <ArchScene ctx={ctx} arch={L.arch} />;
     case "proof":

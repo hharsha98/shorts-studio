@@ -34,6 +34,12 @@ def tc(seconds: float) -> str:
 
 
 def on_screen(labels: dict, key: str) -> str:
+    text = _on_screen(labels, key)
+    photo = labels.get(key, {}).get("photo") if isinstance(labels.get(key), dict) else None
+    return f"{text} — **product photo** `{photo.split('/')[-1]}` ({labels['credit']})" if photo else text
+
+
+def _on_screen(labels: dict, key: str) -> str:
     L = labels
     if key == "hook":
         return " / ".join("".join(r["text"] for r in line) for line in L["hook"]["lines"]) + f" — {L['hook']['sub']}"

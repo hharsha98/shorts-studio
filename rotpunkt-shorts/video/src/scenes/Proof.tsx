@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { C, CONTENT_W, MARGIN, Y, tint } from "../theme";
 import { fitText, textWidth } from "../text";
 import type { Fit } from "../text";
-import { clamp01, pop } from "../anim";
+import { clamp01, ease, pop } from "../anim";
 import { Lines, SceneShell } from "../components/Scene";
 import type { Labels, SceneCtx } from "../types";
 
@@ -62,6 +62,17 @@ export const ProofScene: React.FC<{ ctx: SceneCtx; proof: Labels["proof"] }> = (
   const top = Math.round((Y.sceneTop + 30 + Y.sceneBottom - cardH) / 2);
   const at = ctx.cue("proof", ctx.start + 4);
   const cardP = pop(frame, at - 6, fps, 140, 17);
+  // the fact the narrator is saying right now (cues "proof.fact.<i>" from the script) gets an amber highlight
+  let focus = -1;
+  let focusAt = -1;
+  proof.facts.forEach((_, i) => {
+    const c = ctx.cue(`proof.fact.${i}`, -1);
+    if (c >= 0 && frame >= c && c > focusAt) {
+      focus = i;
+      focusAt = c;
+    }
+  });
+  const focusP = focus >= 0 ? ease(frame, focusAt, 6) : 0;
 
   return (
     <SceneShell ctx={ctx}>
@@ -115,6 +126,7 @@ export const ProofScene: React.FC<{ ctx: SceneCtx; proof: Labels["proof"] }> = (
               {r.map((i) => {
                 const f = facts[i];
                 const q = pop(frame, at + 6 + i * 6, fps, 170, 15);
+                const hi = i === focus ? focusP : 0;
                 return (
                   <div
                     key={i}
@@ -123,10 +135,11 @@ export const ProofScene: React.FC<{ ctx: SceneCtx; proof: Labels["proof"] }> = (
                       boxSizing: "border-box",
                       padding: FACT_PAD,
                       borderRadius: 22,
-                      background: "rgba(255,255,255,0.05)",
-                      border: `2px solid ${C.line}`,
+                      background: hi > 0 ? tint(C.amber, 0.05 + 0.07 * hi) : "rgba(255,255,255,0.05)",
+                      border: `2px solid ${hi > 0 ? tint(C.amber, 0.3 + 0.7 * hi) : C.line}`,
+                      boxShadow: hi > 0 ? `0 0 ${28 * hi}px ${tint(C.amber, 0.3)}` : "none",
                       opacity: clamp01(q * 1.5),
-                      transform: `translateY(${(1 - q) * 20}px)`,
+                      transform: `translateY(${(1 - q) * 20}px) scale(${1 + 0.02 * hi})`,
                     }}
                   >
                     <Lines fit={f.value} weight={800} color={C.amber} lineHeight={1.08} />

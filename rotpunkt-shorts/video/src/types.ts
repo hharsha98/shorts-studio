@@ -8,18 +8,20 @@ export type CaptionChunk = { start: number; end: number; words: Word[] };
 export type SceneWindow = { key: SceneKey; start: number; end: number };
 
 export type PainLabels =
-  | { kind: "ruleOfTen"; title: string; chips: string[]; columns: string[]; multipliers: string[]; note: string }
-  | { kind: "scattered"; title: string; center: string; tiles: string[]; searching: string }
+  | { kind: "ruleOfTen"; title: string; chips: string[]; columns: string[]; multipliers: string[]; note: string; photo?: string }
+  | { kind: "scattered"; title: string; center: string; tiles: string[]; searching: string; photo?: string }
   | { kind: "bottleneck"; title: string; chips: string[]; experts: string; newcomers: string; flow: string };
 
 export type ArchNode = { id: string; icon: string; title: string; sub: string; link?: "arrow" | "both" };
 
 export type Labels = {
+  /** Source credit shown small on every product photo. */
+  credit: string;
   top: { badge: string; topic: string; right: string };
-  hook: { icon: string; lines: Run[][]; sub: string };
+  hook: { icon: string; lines: Run[][]; sub: string; photo?: string };
   evidence: { title: string; cards: { role: string; quote: string; gist?: string }[]; note: string };
   pain: PainLabels;
-  idea: { icon: string; kicker: string; title: string; sub: string };
+  idea: { icon: string; kicker: string; title: string; sub: string; photo?: string };
   arch: { title: string; nodes: ArchNode[]; badges: { icon: string; text: string }[] };
   proof: {
     kicker: string;
