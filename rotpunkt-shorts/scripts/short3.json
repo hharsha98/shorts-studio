@@ -57,7 +57,9 @@
         "scene": "proof",
         "text": "In published research at FAU, a local system like this reached 0.97 faithfulness to its sources.",
         "cues": {
-          "proof": "published"
+          "proof": "published",
+          "proof.fact.3": "local",
+          "proof.fact.0": "0.97"
         }
       },
       {
@@ -106,7 +108,8 @@
             }
           ]
         ],
-        "sub": "An AI idea based on your current job postings"
+        "sub": "An AI idea based on your current job postings",
+        "photo": "products/s3-hook.jpg"
       },
       "evidence": {
         "title": "From your current job postings",
@@ -145,7 +148,8 @@
         "icon": "chat",
         "kicker": "One idea",
         "title": "A knowledge assistant",
-        "sub": "answers from your own documents, always with the source"
+        "sub": "answers from your own documents, always with the source",
+        "photo": "products/s3-idea.webp"
       },
       "arch": {
         "title": "How it could work",
@@ -261,7 +265,8 @@
         "series": "Challenge 3 of 3 · Know-how on demand",
         "note": "Idea sketch based on public job postings · illustrative numbers",
         "voiceNote": "AI voice"
-      }
+      },
+      "credit": "Images: rotpunkt.de"
     }
   },
   "de": {
@@ -319,7 +324,9 @@
         "scene": "proof",
         "text": "In veröffentlichter Forschung an der Uni Erlangen erreichte ein lokales System dieser Art eine Quellentreue von 0,97.",
         "cues": {
-          "proof": "veröffentlichter"
+          "proof": "veröffentlichter",
+          "proof.fact.3": "lokales",
+          "proof.fact.0": "Quellentreue"
         }
       },
       {
@@ -368,7 +375,8 @@
             }
           ]
         ],
-        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen"
+        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen",
+        "photo": "products/s3-hook.jpg"
       },
       "evidence": {
         "title": "Aus Ihren aktuellen Stellenanzeigen",
@@ -404,7 +412,8 @@
         "icon": "chat",
         "kicker": "Eine Idee",
         "title": "Ein Wissensassistent",
-        "sub": "Antworten aus Ihren eigenen Dokumenten, immer mit Quelle"
+        "sub": "Antworten aus Ihren eigenen Dokumenten, immer mit Quelle",
+        "photo": "products/s3-idea.webp"
       },
       "arch": {
         "title": "So könnte es funktionieren",
@@ -520,7 +529,8 @@
         "series": "Herausforderung 3 von 3 · Wissen auf Abruf",
         "note": "Ideenskizze auf Basis öffentlicher Stellenanzeigen · Beispielwerte",
         "voiceNote": "KI-Stimme"
-      }
+      },
+      "credit": "Bilder: rotpunkt.de"
     }
   }
 }

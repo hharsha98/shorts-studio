@@ -6,12 +6,14 @@ problem that the company's **current job postings** point to and sketches an AI 
 
 Everything about Rotpunkt below comes from public job postings and press. The solutions are **ideas**, not known Rotpunkt projects.
 All before/after numbers for Rotpunkt are **illustrative** and labelled so on screen; the only real numbers are his own, from his CV.
+Each Short shows **real Rotpunkt kitchens** (product photos from rotpunkt.de, credited on every photo) inside its scenes, and every
+video has **word-by-word karaoke captions** synced to the voice.
 
 ## 1. Deliverables
 
 | File (in `/opt/cursor/artifacts/`) | What |
 |---|---|
-| `rotpunkt_short_1_en.mp4`, `rotpunkt_short_1_de.mp4` | Challenge 1: order checks (EN / DE, voice + subtle music + burned-in captions) |
+| `rotpunkt_short_1_en.mp4`, `rotpunkt_short_1_de.mp4` | Challenge 1: order checks (EN / DE, voice + subtle music + word-by-word karaoke captions + product photos) |
 | `rotpunkt_short_2_en.mp4`, `rotpunkt_short_2_de.mp4` | Challenge 2: root cause analysis for production systems and machines |
 | `rotpunkt_short_3_en.mp4`, `rotpunkt_short_3_de.mp4` | Challenge 3: specialist know-how on demand (skills gap) |
 | `rotpunkt_short_N_en_silent.mp4`, `rotpunkt_short_N_de_silent.mp4` | the same six videos without any audio track (captions only), for muted playback or a fallback |
@@ -60,7 +62,7 @@ Read side by side, the 12 postings point to five recurring problems. Quotes are 
 |---|---|---|---|---|
 | **A. Order intake and order/product data** (dealer orders with many variants, export, data exchange between systems, catalogue data for the sales process) | 6, 2, 1, 9; press | „prüfst Kundenbestellungen auf technische Umsetzbarkeit“, „insbesondere aus den Exportmärkten per Telefon und E-Mail“, „mind. 3 Jahre … Ausarbeitung von Küchenmöbelbestellungen“ (6); „Varianten, Maße, Positionierungen und Abhängigkeiten“, „Auftrags-, Produkt- und Produktionsdaten zuverlässig … ausgetauscht“, „EDI-Prozesse, Schnittstellen“ (2); „IDM Daten in mehreren Sprachvarianten“, „Digitalisierung des Sales Prozess“ (1); press: Auftragsabwicklung, Variantenreichtum, ~80 % export (Part F of the brief) | High: LLM extraction + RAG over rules and documents + validation, integrated by REST API (MARA pattern) | **Short 1** |
 | **B. Keeping production systems, interfaces and machines running** | 2, 5, 8, 3, 11; press | „gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“, „analysierst technische Probleme“, „Rückmeldungen und Workflows zwischen Maschinen und unseren Systemen“ (2); „analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“ (5); „hohe Verfügbarkeit unserer Produktionsanlagen“, „Wartungsarbeiten gemäß Wartungsplan“ (8); press: new machines arriving | Highest: exactly MARA (root cause analysis with LLM agents over manuals, error texts and logs, in production at Siemens Amberg) | **Short 2** |
-| **C. Specialist know-how that is hard to hire and slow to teach** (skills gap) | 6, 1, 2, 5, 7, 3, 10–12; HR conference talk | „mind. 3 Jahre“ (6); „Berufserfahrung in der Erstellung von IDM-Daten“, Furnidata (1); „Berufserfahrung in der Möbel- oder Küchenindustrie“, COE/GOE, MOS, Insight2020 „ein Plus“ (2); edge banders, panel saws, CNC (5); „Mehrjährige Berufserfahrung in der Möbelbranche“ (7); „schulst die Prozesse“ (3); three apprenticeships and an own training workshop; Rotpunkt HR spoke at a congress on the skills shortage (section 4) | High: local RAG with source citations and faithfulness metrics (FAU research, published), on-prem, access control | **Short 3** |
+| **C. Specialist know-how that is hard to hire and slow to teach** (skills gap) | 6, 1, 2, 5, 7, 3, 10–12; HR conference talk | „mind. 3 Jahre“ (6); „Berufserfahrung in der Erstellung von IDM-Daten“, Furnidata (1); „Berufserfahrung in der Möbel- oder Küchenindustrie“, COE/GOE, MOS, Insight2020 „ein Plus“ (2); edge banders, panel saws, CNC (5); „Mehrjährige Berufserfahrung in der Möbelbranche“ (7); „schulst die Prozesse“ (3); three apprenticeships and an own training workshop; a Rotpunkt HR officer was announced as a speaker at a congress on the skills shortage (section 4) | High: local RAG with source citations and faithfulness metrics (FAU research, published), on-prem, access control | **Short 3** |
 | D. Logistics and material flow | 4, 7, 3; press (logistics hub) | „Vollständigkeit der Auflieger durch Scannen“ (4); „teilweise JIT“, „Lieferengpässe“, „Kennzahlen“ (7); „Logistikaufträge im ERP-System“, „Materialfluss“ (3) | Medium: possible, but nothing on his CV in planning or forecasting, so it would be a weaker, less honest pitch | not chosen |
 | E. A mixed system landscape under digitalisation | 2, 3, 7, 1, 9; press (€50 m incl. IT) | ERP „vorzugsweise Cyncly Insight“ (3), „Microsoft Navision“ (7), „VBA, VBScript und Microsoft SQL“, AutoCAD (2), Furnidata (1) | Cross-cutting: every Short integrates read-only first, through APIs, with local models | built into all three |
 
@@ -119,24 +121,45 @@ Logistics (theme D) was left out on purpose: it is a real topic, but nothing on 
   PyTorch package (`kokoro` 0.9.4, model `hexgrad/Kokoro-82M`), locally and free. It returns a time for every word, so captions are exact.
 - **German voice: Microsoft "de-DE-KatjaNeural"**, through the free Edge read-aloud service (`edge-tts`, no key). Why: it is one of the two
   standard, widely used German neural voices (with Conrad), studio-recorded by a native speaker; it keeps one female narrator across both
-  languages; and in a Whisper check of all German lines Katja said every "KI" correctly, while **Conrad said "Kai" twice ("Kaj-Agenten")**,
-  which would jar in an AI pitch. Katja speaks 7 % faster than her default so each German Short stays under a minute. "EDI" and "ERP" are
-  spoken from the spelled forms "E-D-I" and "E-R-P" (she otherwise reads them as words); the captions keep EDI and ERP. The pipeline's
+  languages; and when all German lines were voiced with both and transcribed with Whisper, Katja's "KI" came back as "KI" in every line,
+  while **Conrad's came back as "Kaj" twice ("Kajassistent", "Kajagenten")**, which would jar in an AI pitch. Katja speaks 7 % faster than her default so each German Short stays under a minute. "EDI" and "ERP" are
+  spoken from the spelled forms "E-D-I" and "E-R-P" (she otherwise reads them as words), and the one "KI-Agent" in Short 1 from "K-I-Agent"
+  (she otherwise says "Kai-Agent"); the captions keep the written forms. The pipeline's
   German voice (Thorsten) was not available on this machine. Licence note: the Edge service is fine for a private interview presentation;
   for publishing, use the same voice through Azure Speech (paid) or switch to Thorsten.
 - **Music:** a quiet pad composed for these videos by the build script (no licence needed), about 18 dB under the voice and ducked further
   while she speaks; final mix −16 LUFS. The silent versions have no audio track at all.
+- **Captions:** word-by-word karaoke style in every EN and DE video. The current phrase (1–2 lines, broken at natural points) sits in a
+  dark panel; an amber pill slides onto each word exactly when the voice says it (word times come from the speech engines: Kokoro's
+  token timestamps for EN, Edge's word boundaries for DE) and the word pops slightly as it lands; spoken words turn white, coming words wait
+  dimmed. Spelled-out spoken forms (E-D-I, E-R-P) still show as EDI / ERP.
+- **Product photos (real Rotpunkt kitchens):** six photos from the company's public website, shown inside the scenes and credited small on
+  every photo as "Images: rotpunkt.de" (German videos: "Bilder: rotpunkt.de"). rotpunkt.de redirects to www.rotpunktkuechen.de, where the
+  photos are published. Every photo was fetched successfully, so no generic stand-in was needed. Each was checked by eye for logos,
+  watermarks or text (none). The **logo is not used anywhere**, so nothing looks like an official company video. The photos remain the
+  company's property: they are downloaded at build time into a git-ignored folder, not committed, and meant only for this private
+  interview presentation (ask before publishing anything with them). Sources and placement: `research/images.json`.
+
+  | Short | Scene | Photo (source URL on rotpunktkuechen.de) | What is drawn over it |
+  |---|---|---|---|
+  | 1 | cover | [wood island with steel hood](https://www.rotpunktkuechen.de/fileadmin/_processed_/8/4/csm_01-zerox-sy-ver-loft-brown-oak_gallery__1400x875_31bc567624.webp) | a dealer order sheet with one flagged line; a magnifier with "!" on the island |
+  | 1 | the problem | [island and tall units with oven niche](https://www.rotpunktkuechen.de/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK07_Hauptschuss__1200.jpg) | callouts: *Variants* on the fronts, *Dimensions* along the island, *Dependencies* at the oven niche |
+  | 2 | cover | [dark-oak kitchen with island](https://www.rotpunktkuechen.de/fileadmin/_processed_/5/5/csm_MK_11_Zerox_SY_VER_Loft_Dark_Oak__header__1200_94c6bedc92.webp) | "Line stopped" status pill, slowly turning gears |
+  | 2 | the problem | [green kitchen](https://www.rotpunktkuechen.de/fileadmin/_processed_/1/0/csm_06-smala-sc-velvet-green_gallery__1400x875_bc6a077a07.webp) | the stopped line in the centre, with the scattered knowledge sources around it |
+  | 3 | cover | [white and wood kitchen with glass cabinets](https://www.rotpunktkuechen.de/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK09_Hauptschuss__1200.jpg) | a question bubble and an answer card with its source |
+  | 3 | the idea | [white kitchen with wood island](https://www.rotpunktkuechen.de/fileadmin/_processed_/1/4/csm_Rotpunkt_HM01_Hauptschuss_Final__1200_7ec0652391.webp) | the knowledge assistant's chat badge |
 - **Honesty rules applied:** illustrative numbers carry an ILLUSTRATIVE / BEISPIELWERTE stamp, a footnote "Example values, not your company's
   data. To be measured in a pilot." and are called illustrative in the narration; real numbers appear only in "REAL RESULT" cards with
-  "Source: candidate's CV"; the rule of ten is labelled a general principle. No Rotpunkt logo, colours (no red dot) or name in the videos
-  (the viewers are addressed as "you"); quotes from the postings are short and attributed to the posting title. The closing card says
+  "Source: candidate's CV"; the rule of ten is labelled a general principle. No Rotpunkt logo or brand colours (no red dot); the company
+  name appears only in the photo credit (the viewers are addressed as "you"); product photos are credited on screen; quotes from the
+  postings are short and attributed to the posting title. The closing card says
   "AI Solution Engineer candidate", never that he works there, and labels the AI voice. The interviewers are not named or shown.
   Third-party product names from the postings stay out of the videos.
 
 ## 7. Short 1 — Order checks ("Catch order errors before production")
 
 - **Problem:** experienced staff check every dealer order (often from export markets, by phone and e-mail) for technical feasibility; with
-  many variants, dimensions and dependencies, a missed detail becomes rework in production or a late truck.
+  many variants, dimensions and dependencies, one missed detail means rework, and the later it is found the more it costs.
 - **Idea:** an order check assistant. An AI agent reads each order (EDI, PDF, e-mail, any language) and extracts the lines; it checks them
   against the company's own product rules and catalogue/master data (RAG); fixed rule checks flag each conflict with its source; a clerk
   decides; only approved orders reach the ERP. Local LLM, read-only first, GDPR in mind.
@@ -148,17 +171,17 @@ Logistics (theme D) was left out on purpose: it is a real topic, but nothing on 
 <!-- AUTO:short1:scenes -->
 | # | Scene | EN | DE | On screen (EN labels; DE uses the German labels) |
 |---|---|---|---|---|
-| 1 | Hook (cover, frame 0) | 0:00.0–0:04.2 | 0:00.0–0:04.6 | Catch order errors / before production — An AI idea based on your current job postings |
+| 1 | Hook (cover, frame 0) | 0:00.0–0:04.2 | 0:00.0–0:04.6 | Catch order errors / before production — An AI idea based on your current job postings — **product photo** `s1-hook.webp` (Images: rotpunkt.de) |
 | 2 | Evidence: quotes from the postings | 0:04.2–0:11.2 | 0:04.6–0:11.1 | Sachbearbeiter in der Kundenbetreuung: „Berufserfahrung (mind. 3 Jahre) in der Ausarbeitung von Küchenmöbelbestellungen“; Sachbearbeiter in der Kundenbetreuung: „…du prüfst Kundenbestellungen auf technische Umsetzbarkeit“; Sachbearbeiter in der Kundenbetreuung: „…insbesondere aus den Exportmärkten per Telefon und E-Mail“ |
-| 3 | The problem | 0:11.2–0:15.8 | 0:11.1–0:16.7 | The later an error is found, the more it costs: Desk check ×1 · Production ×10 · At the customer ×100 |
+| 3 | The problem | 0:11.2–0:15.8 | 0:11.1–0:16.7 | The later an error is found, the more it costs: Desk check ×1 · Production ×10 · At the customer ×100 — **product photo** `s1-pain.jpg` (Images: rotpunkt.de) |
 | 4 | The idea | 0:15.8–0:18.5 | 0:16.7–0:20.5 | One idea: An order check assistant (AI agent + your product rules + human approval) |
-| 5 | Architecture, built step by step | 0:18.5–0:35.9 | 0:20.5–0:40.3 | Incoming order → AI agent (LLM) → Your product rules (RAG) → Rule checks + clerk → ERP → production; badges: Local LLM · Read-only first · GDPR in mind · Human decides |
-| 6 | Pilot targets (stamped ILLUSTRATIVE) | 0:35.9–0:43.0 | 0:40.3–0:47.2 | [ILLUSTRATIVE] Checking time per order: 20 → 5 min; Errors found only in production (index): 100 → 25 — Example values, not your company's data. To be measured in a pilot. |
+| 5 | Architecture, built step by step | 0:18.5–0:35.9 | 0:20.5–0:40.4 | Incoming order → AI agent (LLM) → Your product rules (RAG) → Rule checks + clerk → ERP → production; badges: Local LLM · Read-only first · GDPR in mind · Human decides |
+| 6 | Pilot targets (stamped ILLUSTRATIVE) | 0:35.9–0:43.0 | 0:40.4–0:47.2 | [ILLUSTRATIVE] Checking time per order: 20 → 5 min; Errors found only in production (index): 100 → 25 — Example values, not your company's data. To be measured in a pilot. |
 | 7 | Built before (REAL RESULT, from the CV) | 0:43.0–0:47.3 | 0:47.2–0:51.5 | [REAL RESULT] MARA · Siemens Amberg: 12 LLM agents working together; < 200 ms retrieval over manuals and logs; On-prem LLMs, for data protection; ~78 % of suggestions accepted at first review — Source: candidate's CV |
-| 8 | A first pilot | 0:47.3–0:49.9 | 0:51.5–0:54.6 | A first pilot: One product line · Read-only, next to the team · Success measured with the department |
-| 9 | Closing card | 0:49.9–0:53.9 | 0:54.6–0:58.6 | Hanumanthu Harsha Vardhan — AI Solution Engineer candidate — github.com/hharsha98 (Idea sketch based on public job postings · illustrative numbers · AI voice) |
+| 8 | A first pilot | 0:47.3–0:49.9 | 0:51.5–0:54.7 | A first pilot: One product line · Read-only, next to the team · Success measured with the department |
+| 9 | Closing card | 0:49.9–0:53.9 | 0:54.7–0:58.7 | Hanumanthu Harsha Vardhan — AI Solution Engineer candidate — github.com/hharsha98 (Idea sketch based on public job postings · illustrative numbers · AI voice) |
 
-Length: **EN 53.9 s**, **DE 58.6 s** (narration plus a 2.5 s hold on the closing card).
+Length: **EN 53.9 s**, **DE 58.7 s** (narration plus a 2.5 s hold on the closing card).
 <!-- /AUTO -->
 
 **English narration**
@@ -188,15 +211,15 @@ Length: **EN 53.9 s**, **DE 58.6 s** (narration plus a 2.5 s hold on the closing
 3. `0:11.1–0:16.2` *(pain)* Varianten, Maße, Abhängigkeiten: Ein übersehenes Detail heißt Nacharbeit.
 4. `0:16.7–0:20.0` *(idea)* Eine Idee: ein KI-Assistent für die Auftragsprüfung.
 5. `0:20.5–0:25.5` *(arch)* Er liest jede Bestellung, per EDI, als PDF oder E-Mail, in jeder Sprache.
-6. `0:25.8–0:30.0` *(arch)* Ein KI-Agent erfasst die Positionen und prüft sie gegen Ihre Produktregeln.
-7. `0:30.3–0:34.0` *(arch)* Konflikte werden mit Quelle markiert, die Entscheidung trifft der Mensch.
-8. `0:34.3–0:39.8` *(arch)* Nur freigegebene Aufträge gehen ins ERP, mit lokalen Modellen und der DSGVO im Blick.
-9. `0:40.3–0:46.7` *(metrics)* Beispielhafte Pilotziele: Prüfzeit von zwanzig auf fünf Minuten, deutlich weniger Fehler in der Fertigung.
+6. `0:25.8–0:30.1` *(arch)* Ein KI-Agent erfasst die Positionen und prüft sie gegen Ihre Produktregeln.
+7. `0:30.3–0:34.1` *(arch)* Konflikte werden mit Quelle markiert, die Entscheidung trifft der Mensch.
+8. `0:34.3–0:39.9` *(arch)* Nur freigegebene Aufträge gehen ins ERP, mit lokalen Modellen und der DSGVO im Blick.
+9. `0:40.4–0:46.7` *(metrics)* Beispielhafte Pilotziele: Prüfzeit von zwanzig auf fünf Minuten, deutlich weniger Fehler in der Fertigung.
 10. `0:47.2–0:51.0` *(proof)* Die gleichen Bausteine laufen bereits produktiv bei Siemens in Amberg.
-11. `0:51.5–0:54.1` *(pilot)* Ein Pilot könnte mit einer Produktlinie starten.
-12. `0:54.6–0:56.1` *(closing)* Mehr dazu gern im Gespräch.
+11. `0:51.5–0:54.2` *(pilot)* Ein Pilot könnte mit einer Produktlinie starten.
+12. `0:54.7–0:56.2` *(closing)* Mehr dazu gern im Gespräch.
 
-121 words, 56.1 s of narration. Voice: `edge:de-DE-KatjaNeural@+7%`.
+121 words, 56.2 s of narration. Voice: `edge:de-DE-KatjaNeural@+7%`.
 <!-- /AUTO -->
 
 ## 8. Short 2 — Root cause analysis ("Root cause in minutes, not hours")
@@ -214,9 +237,9 @@ Length: **EN 53.9 s**, **DE 58.6 s** (narration plus a 2.5 s hold on the closing
 <!-- AUTO:short2:scenes -->
 | # | Scene | EN | DE | On screen (EN labels; DE uses the German labels) |
 |---|---|---|---|---|
-| 1 | Hook (cover, frame 0) | 0:00.0–0:04.6 | 0:00.0–0:05.8 | Root cause in / minutes, not hours — An AI idea based on your current job postings |
+| 1 | Hook (cover, frame 0) | 0:00.0–0:04.6 | 0:00.0–0:05.8 | Root cause in / minutes, not hours — An AI idea based on your current job postings — **product photo** `s2-hook.webp` (Images: rotpunkt.de) |
 | 2 | Evidence: quotes from the postings | 0:04.6–0:08.8 | 0:05.8–0:11.4 | IT-Applikationsmanager (Produktionssysteme): „…gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“; Maschinenbediener: „…analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“; Elektriker/ Elektroniker am Standort Getmold: „…stellst eine hohe Verfügbarkeit unserer Produktionsanlagen sicher“ |
-| 3 | The problem | 0:08.8–0:13.9 | 0:11.4–0:17.4 | Where the answer hides today: Line stopped ← Manuals · Machine and interface logs · Old tickets · Experienced colleagues |
+| 3 | The problem | 0:08.8–0:13.9 | 0:11.4–0:17.4 | Where the answer hides today: Line stopped ← Manuals · Machine and interface logs · Old tickets · Experienced colleagues — **product photo** `s2-pain.webp` (Images: rotpunkt.de) |
 | 4 | The idea | 0:13.9–0:16.6 | 0:17.4–0:21.4 | One idea: A root cause assistant (AI agents + your manuals and logs + a technician who confirms) |
 | 5 | Architecture, built step by step | 0:16.6–0:29.7 | 0:21.4–0:35.5 | Fault reported → Knowledge search (RAG) → AI agents (LLM) → Technician confirms → The fix becomes knowledge; badges: Local LLM · Data stays on site · Every answer traceable · Human decides |
 | 6 | Built before (REAL RESULT, from the CV) | 0:29.7–0:39.5 | 0:35.5–0:45.3 | [REAL RESULT] MARA · Siemens Amberg: 30–120 → 8–15 min root cause analysis per fault; 16 SMT machines on the line; 12 LLM agents working together; 82.2 % root-cause hits on 1,811 historical error codes — Source: candidate's CV |
@@ -278,10 +301,10 @@ Length: **EN 50.7 s**, **DE 58.2 s** (narration plus a 2.5 s hold on the closing
 <!-- AUTO:short3:scenes -->
 | # | Scene | EN | DE | On screen (EN labels; DE uses the German labels) |
 |---|---|---|---|---|
-| 1 | Hook (cover, frame 0) | 0:00.0–0:04.7 | 0:00.0–0:04.8 | Years of know-how, / one question away — An AI idea based on your current job postings |
+| 1 | Hook (cover, frame 0) | 0:00.0–0:04.7 | 0:00.0–0:04.8 | Years of know-how, / one question away — An AI idea based on your current job postings — **product photo** `s3-hook.jpg` (Images: rotpunkt.de) |
 | 2 | Evidence: quotes from the postings | 0:04.7–0:08.2 | 0:04.8–0:09.1 | Sachbearbeiter in der Kundenbetreuung: „Berufserfahrung (mind. 3 Jahre) in der Ausarbeitung von Küchenmöbelbestellungen“; Datenmanager IDM: „Berufserfahrung in der Erstellung von IDM-Daten oder im Umgang mit Stammdaten“; Maschinenbediener: „Erfahrung mit industriellen Kantenanleim-Maschinen“ |
 | 3 | The problem | 0:08.2–0:12.9 | 0:09.1–0:14.9 | Specialist know-how today: Hard to hire · Slow to teach · With a few experts; Few experts ← questions · interruptions ← New colleagues |
-| 4 | The idea | 0:12.9–0:17.5 | 0:14.9–0:19.8 | One idea: A knowledge assistant (answers from your own documents, always with the source) |
+| 4 | The idea | 0:12.9–0:17.5 | 0:14.9–0:19.8 | One idea: A knowledge assistant (answers from your own documents, always with the source) — **product photo** `s3-idea.webp` (Images: rotpunkt.de) |
 | 5 | Architecture, built step by step | 0:17.5–0:34.1 | 0:19.8–0:37.2 | A colleague asks → Your documents (RAG) → Answer with its source → Not covered? It says so; badges: On your servers · Access rights respected · GDPR in mind · Never rates people |
 | 6 | Built before (REAL RESULT, from the CV) | 0:34.1–0:41.6 | 0:37.2–0:44.9 | [REAL RESULT] Local RAG · FAU Erlangen-Nürnberg: 0.97 faithfulness to the source documents; 85 → 92 % answer accuracy; 500 → 150 ms query latency; Local stack: Ollama · FAISS · Docker — Source: candidate's CV · DOI 10.53192/EBL20260344 |
 | 7 | Pilot targets (stamped ILLUSTRATIVE) | 0:41.6–0:46.6 | 0:44.9–0:50.4 | [ILLUSTRATIVE] Questions to experts per week, per team: 40 → 15; Weeks until a new colleague works independently: 12 → 8 weeks — Example values, not your company's data. To be measured in a pilot. |
@@ -334,8 +357,20 @@ Length: **EN 54.3 s**, **DE 59.1 s** (narration plus a 2.5 s hold on the closing
   says" step) → Remotion 4.0.534 (the pinned template from [media-studio](https://github.com/hharsha98/media-studio), cloned as a reference)
   renders the animated diagrams and word-highlighted captions → ffmpeg mixes voice and music → frame sheets reviewed by eye.
   MoneyPrinterTurbo was not needed: it assembles stock footage, and these Shorts are pure motion graphics (no stock clips, so no hidden logos).
-- **Checks done:** every video 50–60 s, 1080x1920, H.264 + AAC; mix at −16 LUFS; still frames of every scene in both languages reviewed for
-  fit, overlap and readability; Whisper transcripts match the scripts (remaining differences are recogniser quirks such as split German
-  compounds "Stellen anzeigen", "KI Assistent", or "gerne" for "gern").
+- **Checks done:**
+  - Format: all twelve files are 1080x1920, 30 fps, H.264; the voiced ones have AAC audio with the mix at −16 LUFS, and the silent ones have
+    no audio track. Lengths: EN 53.9 / 50.7 / 54.3 s, DE 58.7 / 58.2 / 59.1 s.
+  - Frames: a contact sheet (one frame every 2 s) of every video, still frames at the end of every scene in both languages, frames just
+    after every scene change, and caption crops at word midpoints (the pill sits on the spoken word) were all reviewed by eye. Text
+    that did not fit, overlaps and covered credits were fixed before the final render.
+  - Independent review: an AI video model watched the final EN Short 1 and found no issue (captions in sync, photos sharp, credits visible,
+    callouts on the right objects, no logo, ILLUSTRATIVE clearly visible, clean audio). On a downscaled copy of DE Short 3 it reported two
+    caption overlaps (0:32–0:36, 0:46–0:49). The full-resolution frames show no overlap: the badges end about 175 px and the footnote
+    about 115 px above the caption panel.
+  - Voice: Whisper checks every line twice (whole narration and the line on its own). English matches the script, apart from
+    recogniser spellings ("catalog"). In German, one real slip was found and fixed: Katja read "KI-Agent" as "Kai-Agent" in Short 1, so that
+    line is now spoken from "K-I-Agent" and re-checked as exact. "KI-Assistent" and "KI-Agenten" are read correctly as written (the
+    spelled form would make them worse: "Kei Assistent", "Keine Agenten"). The remaining German differences are recogniser quirks: split
+    compounds ("Stellen anzeigen"), "gerne" for "gern", the letter names in DSGVO, and the German final sound in "Logs".
 - **Suggested use in the interview:** show Short 2 first if the talk turns to his MARA thesis, Short 1 when processes and ERP come up, Short 3
   when HR or onboarding comes up; end with the question from his cover letter: "Welchen Geschäftsprozess möchten Sie als Erstes mit AI automatisieren?"

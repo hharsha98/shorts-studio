@@ -59,7 +59,9 @@
         "scene": "proof",
         "text": "Real result at Siemens Amberg: on 16 machines, root cause analysis went from 30 to 120 minutes per fault, down to 8 to 15.",
         "cues": {
-          "proof": "Real"
+          "proof": "Real",
+          "proof.fact.1": "16",
+          "proof.fact.0": "root"
         }
       },
       {
@@ -108,7 +110,8 @@
             }
           ]
         ],
-        "sub": "An AI idea based on your current job postings"
+        "sub": "An AI idea based on your current job postings",
+        "photo": "products/s2-hook.webp"
       },
       "evidence": {
         "title": "From your current job postings",
@@ -141,7 +144,8 @@
           "Old tickets",
           "Experienced colleagues"
         ],
-        "searching": "Searching…"
+        "searching": "Searching…",
+        "photo": "products/s2-pain.webp"
       },
       "idea": {
         "icon": "search",
@@ -272,7 +276,8 @@
         "series": "Challenge 2 of 3 · Root cause analysis",
         "note": "Idea sketch based on public job postings · illustrative numbers",
         "voiceNote": "AI voice"
-      }
+      },
+      "credit": "Images: rotpunkt.de"
     }
   },
   "de": {
@@ -332,7 +337,9 @@
         "scene": "proof",
         "text": "Echtes Ergebnis bei Siemens in Amberg: An 16 Maschinen sank die Ursachenanalyse von 30 bis 120 auf 8 bis 15 Minuten pro Störung.",
         "cues": {
-          "proof": "Echtes"
+          "proof": "Echtes",
+          "proof.fact.1": "16",
+          "proof.fact.0": "Ursachenanalyse"
         }
       },
       {
@@ -381,7 +388,8 @@
             }
           ]
         ],
-        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen"
+        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen",
+        "photo": "products/s2-hook.webp"
       },
       "evidence": {
         "title": "Aus Ihren aktuellen Stellenanzeigen",
@@ -411,7 +419,8 @@
           "Alte Tickets",
           "Erfahrene Fachleute"
         ],
-        "searching": "Suche läuft…"
+        "searching": "Suche läuft…",
+        "photo": "products/s2-pain.webp"
       },
       "idea": {
         "icon": "search",
@@ -542,7 +551,8 @@
         "series": "Herausforderung 2 von 3 · Ursachenanalyse",
         "note": "Ideenskizze auf Basis öffentlicher Stellenanzeigen · Beispielwerte",
         "voiceNote": "KI-Stimme"
-      }
+      },
+      "credit": "Bilder: rotpunkt.de"
     }
   }
 }

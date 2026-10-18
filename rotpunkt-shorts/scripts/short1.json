@@ -114,7 +114,8 @@
             }
           ]
         ],
-        "sub": "An AI idea based on your current job postings"
+        "sub": "An AI idea based on your current job postings",
+        "photo": "products/s1-hook.webp"
       },
       "evidence": {
         "title": "From your current job postings",
@@ -155,7 +156,8 @@
           "×10",
           "×100"
         ],
-        "note": "Rule of ten: a general quality principle, not company data"
+        "note": "Rule of ten: a general quality principle, not company data",
+        "photo": "products/s1-pain.jpg"
       },
       "idea": {
         "icon": "agent",
@@ -284,7 +286,8 @@
         "series": "Challenge 1 of 3 · Order checks",
         "note": "Idea sketch based on public job postings · illustrative numbers",
         "voiceNote": "AI voice"
-      }
+      },
+      "credit": "Images: rotpunkt.de"
     }
   },
   "de": {
@@ -330,7 +333,8 @@
         "cues": {
           "arch.agent": "KI-Agent",
           "arch.rules": "Produktregeln"
-        }
+        },
+        "say": "Ein K-I-Agent erfasst die Positionen und prüft sie gegen Ihre Produktregeln."
       },
       {
         "scene": "arch",
@@ -401,7 +405,8 @@
             }
           ]
         ],
-        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen"
+        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen",
+        "photo": "products/s1-hook.webp"
       },
       "evidence": {
         "title": "Aus Ihren aktuellen Stellenanzeigen",
@@ -439,7 +444,8 @@
           "×10",
           "×100"
         ],
-        "note": "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"
+        "note": "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten",
+        "photo": "products/s1-pain.jpg"
       },
       "idea": {
         "icon": "agent",
@@ -568,7 +574,8 @@
         "series": "Herausforderung 1 von 3 · Auftragsprüfung",
         "note": "Ideenskizze auf Basis öffentlicher Stellenanzeigen · Beispielwerte",
         "voiceNote": "KI-Stimme"
-      }
+      },
+      "credit": "Bilder: rotpunkt.de"
     }
   }
 }
