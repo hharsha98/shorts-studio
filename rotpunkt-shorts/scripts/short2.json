@@ -1,0 +1,548 @@
+{
+  "id": "short2",
+  "index": 2,
+  "slug": "root-cause",
+  "en": {
+    "lines": [
+      {
+        "scene": "hook",
+        "text": "When a machine or interface stops, every minute of searching costs output."
+      },
+      {
+        "scene": "evidence",
+        "text": "Your postings ask for people who find the root cause when something sticks.",
+        "cues": {
+          "evidence.0": "ask",
+          "evidence.1": "root",
+          "evidence.2": "sticks"
+        }
+      },
+      {
+        "scene": "pain",
+        "text": "The answers sit in manuals, logs, old tickets, and a few experienced heads.",
+        "cues": {
+          "pain.0": "manuals",
+          "pain.1": "logs",
+          "pain.2": "tickets",
+          "pain.3": "experienced"
+        }
+      },
+      {
+        "scene": "idea",
+        "text": "One idea: a root cause assistant."
+      },
+      {
+        "scene": "arch",
+        "text": "It reads the error and the logs, and searches manuals and past fixes.",
+        "cues": {
+          "arch.inputs": "reads",
+          "arch.search": "searches"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "AI agents rank likely causes, each with evidence and a next check.",
+        "cues": {
+          "arch.agents": "agents"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "A technician confirms, and the fix becomes knowledge for the next shift.",
+        "cues": {
+          "arch.human": "technician",
+          "arch.learn": "knowledge",
+          "arch.badges": "shift"
+        }
+      },
+      {
+        "scene": "proof",
+        "text": "Real result at Siemens Amberg: on 16 machines, root cause analysis went from 30 to 120 minutes per fault, down to 8 to 15.",
+        "cues": {
+          "proof": "Real"
+        }
+      },
+      {
+        "scene": "metrics",
+        "text": "Here, the numbers stay illustrative until a pilot measures them.",
+        "cues": {
+          "metrics.0": "numbers",
+          "metrics.1": "until"
+        }
+      },
+      {
+        "scene": "pilot",
+        "text": "A pilot could start with one line and its top faults.",
+        "cues": {
+          "pilot.0": "pilot",
+          "pilot.1": "line",
+          "pilot.2": "faults"
+        }
+      },
+      {
+        "scene": "closing",
+        "text": "Happy to explore it with you."
+      }
+    ],
+    "labels": {
+      "top": {
+        "badge": "2/3",
+        "topic": "Root cause analysis",
+        "right": "AI idea sketch"
+      },
+      "hook": {
+        "icon": "machine",
+        "lines": [
+          [
+            {
+              "text": "Root cause in"
+            }
+          ],
+          [
+            {
+              "text": "minutes",
+              "accent": true
+            },
+            {
+              "text": ", not hours"
+            }
+          ]
+        ],
+        "sub": "An AI idea based on your current job postings"
+      },
+      "evidence": {
+        "title": "From your current job postings",
+        "cards": [
+          {
+            "role": "IT-Applikationsmanager (Produktionssysteme)",
+            "quote": "„…gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“",
+            "gist": "gets to the root cause when something sticks"
+          },
+          {
+            "role": "Maschinenbediener",
+            "quote": "„…analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“",
+            "gist": "analyses, fixes and documents machine faults"
+          },
+          {
+            "role": "Elektriker/ Elektroniker am Standort Getmold",
+            "quote": "„…stellst eine hohe Verfügbarkeit unserer Produktionsanlagen sicher“",
+            "gist": "keeps the production plant available"
+          }
+        ],
+        "note": "Quotes from your careers page, October 2026"
+      },
+      "pain": {
+        "kind": "scattered",
+        "title": "Where the answer hides today",
+        "center": "Line stopped",
+        "tiles": [
+          "Manuals",
+          "Machine and interface logs",
+          "Old tickets",
+          "Experienced colleagues"
+        ],
+        "searching": "Searching…"
+      },
+      "idea": {
+        "icon": "search",
+        "kicker": "One idea",
+        "title": "A root cause assistant",
+        "sub": "AI agents + your manuals and logs + a technician who confirms"
+      },
+      "arch": {
+        "title": "How it could work",
+        "nodes": [
+          {
+            "id": "inputs",
+            "icon": "alert",
+            "title": "Fault reported",
+            "sub": "error text + machine and interface logs",
+            "link": "arrow"
+          },
+          {
+            "id": "search",
+            "icon": "book",
+            "title": "Knowledge search (RAG)",
+            "sub": "manuals · past fixes · tickets",
+            "link": "arrow"
+          },
+          {
+            "id": "agents",
+            "icon": "agent",
+            "title": "AI agents (LLM)",
+            "sub": "rank likely causes, with evidence",
+            "link": "arrow"
+          },
+          {
+            "id": "human",
+            "icon": "usercheck",
+            "title": "Technician confirms",
+            "sub": "next check, then the fix",
+            "link": "arrow"
+          },
+          {
+            "id": "learn",
+            "icon": "loop",
+            "title": "The fix becomes knowledge",
+            "sub": "ready for the next shift"
+          }
+        ],
+        "badges": [
+          {
+            "icon": "server",
+            "text": "Local LLM"
+          },
+          {
+            "icon": "lock",
+            "text": "Data stays on site"
+          },
+          {
+            "icon": "eye",
+            "text": "Every answer traceable"
+          },
+          {
+            "icon": "user",
+            "text": "Human decides"
+          }
+        ]
+      },
+      "proof": {
+        "kicker": "Built before",
+        "badge": "REAL RESULT",
+        "title": "MARA · Siemens Amberg",
+        "sub": "Master's thesis · running in production",
+        "facts": [
+          {
+            "value": "30–120 → 8–15 min",
+            "label": "root cause analysis per fault",
+            "wide": true
+          },
+          {
+            "value": "16",
+            "label": "SMT machines on the line"
+          },
+          {
+            "value": "12",
+            "label": "LLM agents working together"
+          },
+          {
+            "value": "82.2 %",
+            "label": "root-cause hits on 1,811 historical error codes",
+            "wide": true
+          }
+        ],
+        "source": "Source: candidate's CV"
+      },
+      "metrics": {
+        "title": "Pilot targets",
+        "stamp": "ILLUSTRATIVE",
+        "legend": [
+          "Today (example)",
+          "With assistant (target)"
+        ],
+        "items": [
+          {
+            "label": "Time to root cause per fault",
+            "before": 60,
+            "after": 20,
+            "unit": "min"
+          },
+          {
+            "label": "Faults solved without an expert call",
+            "before": 40,
+            "after": 70,
+            "unit": "%"
+          }
+        ],
+        "footnote": "Example values, not your company's data. To be measured in a pilot."
+      },
+      "pilot": {
+        "title": "A first pilot",
+        "sub": "Small, safe and measurable",
+        "items": [
+          "One line and its most frequent faults",
+          "Read-only access to logs",
+          "Measured with maintenance and IT"
+        ]
+      },
+      "closing": {
+        "name": "Hanumanthu Harsha Vardhan",
+        "role": "AI Solution Engineer candidate",
+        "link": "github.com/hharsha98",
+        "series": "Challenge 2 of 3 · Root cause analysis",
+        "note": "Idea sketch based on public job postings · illustrative numbers",
+        "voiceNote": "AI voice"
+      }
+    }
+  },
+  "de": {
+    "lines": [
+      {
+        "scene": "hook",
+        "text": "Steht eine Maschine oder eine Schnittstelle, kostet jede Minute Fehlersuche bares Geld."
+      },
+      {
+        "scene": "evidence",
+        "text": "Ihre Stellenanzeigen suchen Menschen, die den Ursachen auf den Grund gehen, wenn etwas hakt.",
+        "cues": {
+          "evidence.0": "suchen",
+          "evidence.1": "Ursachen",
+          "evidence.2": "hakt"
+        }
+      },
+      {
+        "scene": "pain",
+        "text": "Die Antworten stecken in Handbüchern, Logs, alten Tickets und in wenigen erfahrenen Köpfen.",
+        "cues": {
+          "pain.0": "Handbüchern",
+          "pain.1": "Logs",
+          "pain.2": "Tickets",
+          "pain.3": "erfahrenen"
+        }
+      },
+      {
+        "scene": "idea",
+        "text": "Eine Idee: ein KI-Assistent für die Ursachenanalyse."
+      },
+      {
+        "scene": "arch",
+        "text": "Er liest Fehlermeldung und Logs und durchsucht Handbücher und frühere Lösungen.",
+        "cues": {
+          "arch.inputs": "liest",
+          "arch.search": "durchsucht"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "KI-Agenten bewerten mögliche Ursachen, jeweils mit Beleg und nächstem Prüfschritt.",
+        "cues": {
+          "arch.agents": "KI-Agenten"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "Das Team bestätigt, und jede Lösung wird zu Wissen für die nächste Schicht.",
+        "cues": {
+          "arch.human": "Team",
+          "arch.learn": "Wissen",
+          "arch.badges": "Schicht"
+        }
+      },
+      {
+        "scene": "proof",
+        "text": "Echtes Ergebnis bei Siemens in Amberg: An 16 Maschinen sank die Ursachenanalyse von 30 bis 120 auf 8 bis 15 Minuten pro Störung.",
+        "cues": {
+          "proof": "Echtes"
+        }
+      },
+      {
+        "scene": "metrics",
+        "text": "Für Ihre Linien bleiben die Zahlen Beispielwerte, bis ein Pilot sie misst.",
+        "cues": {
+          "metrics.0": "Zahlen",
+          "metrics.1": "bis"
+        }
+      },
+      {
+        "scene": "pilot",
+        "text": "Ein Pilot könnte mit einer Linie und ihren häufigsten Störungen starten.",
+        "cues": {
+          "pilot.0": "Pilot",
+          "pilot.1": "Linie",
+          "pilot.2": "Störungen"
+        }
+      },
+      {
+        "scene": "closing",
+        "text": "Mehr dazu gern im Gespräch."
+      }
+    ],
+    "labels": {
+      "top": {
+        "badge": "2/3",
+        "topic": "Ursachenanalyse",
+        "right": "KI-Ideenskizze"
+      },
+      "hook": {
+        "icon": "machine",
+        "lines": [
+          [
+            {
+              "text": "Störungsursache in"
+            }
+          ],
+          [
+            {
+              "text": "Minuten",
+              "accent": true
+            },
+            {
+              "text": " statt Stunden"
+            }
+          ]
+        ],
+        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen"
+      },
+      "evidence": {
+        "title": "Aus Ihren aktuellen Stellenanzeigen",
+        "cards": [
+          {
+            "role": "IT-Applikationsmanager (Produktionssysteme)",
+            "quote": "„…gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“"
+          },
+          {
+            "role": "Maschinenbediener",
+            "quote": "„…analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“"
+          },
+          {
+            "role": "Elektriker/ Elektroniker am Standort Getmold",
+            "quote": "„…stellst eine hohe Verfügbarkeit unserer Produktionsanlagen sicher“"
+          }
+        ],
+        "note": "Zitate von Ihrer Karriereseite, Oktober 2026"
+      },
+      "pain": {
+        "kind": "scattered",
+        "title": "Wo die Antwort heute steckt",
+        "center": "Linie steht",
+        "tiles": [
+          "Handbücher",
+          "Maschinen- und Schnittstellen-Logs",
+          "Alte Tickets",
+          "Erfahrene Fachleute"
+        ],
+        "searching": "Suche läuft…"
+      },
+      "idea": {
+        "icon": "search",
+        "kicker": "Eine Idee",
+        "title": "KI-Assistent für die Ursachenanalyse",
+        "sub": "KI-Agenten + Ihre Handbücher und Logs + ein Team, das bestätigt"
+      },
+      "arch": {
+        "title": "So könnte es funktionieren",
+        "nodes": [
+          {
+            "id": "inputs",
+            "icon": "alert",
+            "title": "Störung gemeldet",
+            "sub": "Fehlertext + Maschinen- und Schnittstellen-Logs",
+            "link": "arrow"
+          },
+          {
+            "id": "search",
+            "icon": "book",
+            "title": "Wissenssuche (RAG)",
+            "sub": "Handbücher · frühere Lösungen · Tickets",
+            "link": "arrow"
+          },
+          {
+            "id": "agents",
+            "icon": "agent",
+            "title": "KI-Agenten (LLM)",
+            "sub": "bewerten Ursachen mit Belegen",
+            "link": "arrow"
+          },
+          {
+            "id": "human",
+            "icon": "usercheck",
+            "title": "Team bestätigt",
+            "sub": "nächster Prüfschritt, dann die Lösung",
+            "link": "arrow"
+          },
+          {
+            "id": "learn",
+            "icon": "loop",
+            "title": "Die Lösung wird zu Wissen",
+            "sub": "für die nächste Schicht"
+          }
+        ],
+        "badges": [
+          {
+            "icon": "server",
+            "text": "Lokales LLM"
+          },
+          {
+            "icon": "lock",
+            "text": "Daten bleiben im Werk"
+          },
+          {
+            "icon": "eye",
+            "text": "Jede Antwort nachvollziehbar"
+          },
+          {
+            "icon": "user",
+            "text": "Mensch entscheidet"
+          }
+        ]
+      },
+      "proof": {
+        "kicker": "Schon einmal gebaut",
+        "badge": "ECHTES ERGEBNIS",
+        "title": "MARA · Siemens Amberg",
+        "sub": "Masterarbeit · im Produktiveinsatz",
+        "facts": [
+          {
+            "value": "30–120 → 8–15 Min.",
+            "label": "Ursachenanalyse pro Störung",
+            "wide": true
+          },
+          {
+            "value": "16",
+            "label": "SMT-Maschinen an der Linie"
+          },
+          {
+            "value": "12",
+            "label": "KI-Agenten auf LLM-Basis"
+          },
+          {
+            "value": "82,2 %",
+            "label": "Treffer bei Ursachen, geprüft an 1.811 historischen Fehlercodes",
+            "wide": true
+          }
+        ],
+        "source": "Quelle: Lebenslauf des Bewerbers"
+      },
+      "metrics": {
+        "title": "Pilotziele",
+        "stamp": "BEISPIELWERTE",
+        "legend": [
+          "Heute (Beispiel)",
+          "Mit Assistent (Ziel)"
+        ],
+        "items": [
+          {
+            "label": "Zeit bis zur Ursache pro Störung",
+            "before": 60,
+            "after": 20,
+            "unit": "Min."
+          },
+          {
+            "label": "Störungen ohne Expertenanruf gelöst",
+            "before": 40,
+            "after": 70,
+            "unit": "%"
+          }
+        ],
+        "footnote": "Beispielwerte, keine Unternehmensdaten. Im Pilotprojekt zu messen."
+      },
+      "pilot": {
+        "title": "Ein erster Pilot",
+        "sub": "Klein, sicher und messbar",
+        "items": [
+          "Eine Linie, ihre häufigsten Störungen",
+          "Nur lesender Zugriff auf Logs",
+          "Gemeinsam mit Instandhaltung und IT messen"
+        ]
+      },
+      "closing": {
+        "name": "Hanumanthu Harsha Vardhan",
+        "role": "Bewerber als AI Solution Engineer",
+        "link": "github.com/hharsha98",
+        "series": "Herausforderung 2 von 3 · Ursachenanalyse",
+        "note": "Ideenskizze auf Basis öffentlicher Stellenanzeigen · Beispielwerte",
+        "voiceNote": "KI-Stimme"
+      }
+    }
+  }
+}
