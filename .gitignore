@@ -25,3 +25,6 @@ voice-de/server.log
 # English narrator (Kokoro af_heart): server pid/log (it borrows VoiceStudio's Python and model cache, so no venv or model here)
 voice-en/server.pid
 voice-en/server.log
+
+# Reference clone of github.com/hharsha98/media-studio (own git history; not part of this repo)
+_deps_media-studio/

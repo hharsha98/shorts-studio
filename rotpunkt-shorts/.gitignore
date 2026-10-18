@@ -1,0 +1,4 @@
+work/
+video/node_modules/
+video/public/fonts/*.ttf
+video/out/
