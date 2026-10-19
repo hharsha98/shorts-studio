@@ -42,8 +42,13 @@ def fetch(url: str, kind: str = "image") -> Path | None:
     dest = CACHE / f"{hashlib.sha256(url.encode()).hexdigest()[:20]}{ext}"
     if not dest.exists() or dest.stat().st_size < 400:
         proc = subprocess.run(
-            ["curl", "-fsSL", "--retry", "3", "--max-time", "40", "-A", "Mozilla/5.0", "-o", str(dest), url],
+            ["curl", "-fsSL", "--retry", "2", "--max-time", "40", "-A", "Mozilla/5.0", "-o", str(dest), url],
             capture_output=True, text=True)
+        if proc.returncode != 0:
+            # Some company sites present an incomplete certificate chain. Retry once without verification.
+            proc = subprocess.run(
+                ["curl", "-fsSL", "--insecure", "--retry", "2", "--max-time", "40", "-A", "Mozilla/5.0", "-o", str(dest), url],
+                capture_output=True, text=True)
         if proc.returncode != 0 or not dest.exists() or dest.stat().st_size < 400:
             dest.unlink(missing_ok=True)
             print(f"  image not fetched, scene will use the drawn graphic instead: {url}", file=sys.stderr)
