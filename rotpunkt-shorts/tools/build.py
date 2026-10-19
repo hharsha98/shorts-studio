@@ -235,34 +235,72 @@ def align(display: str, toks: list[tuple[str, float, float]], duration: float) -
     return res, False
 
 
-def voice_short(short: str, lang: str, force: bool = False) -> dict:
-    script = load_script(short)
-    lines = script[lang]["lines"]
+VOICE_CACHE = WORK / "voice-cache"
+
+
+def _line_key(engine: str, say: str, text: str) -> str:
+    return hashlib.sha256(f"{engine}\n{say}\n{text}".encode()).hexdigest()[:24]
+
+
+def _load_cached_line(engine: str, say: str, text: str):
+    """Trimmed audio and word tokens for one spoken line, reused when only another line of the script changed."""
+    key = _line_key(engine, say, text)
+    wav, meta = VOICE_CACHE / f"{key}.wav", VOICE_CACHE / f"{key}.json"
+    if not wav.exists() or not meta.exists():
+        return None
+    audio = decode_audio(wav)
+    toks = [(t["text"], t["start"], t["end"]) for t in json.loads(meta.read_text())]
+    return audio, toks
+
+
+def _store_cached_line(engine: str, say: str, text: str, audio: np.ndarray, toks: list) -> None:
+    VOICE_CACHE.mkdir(parents=True, exist_ok=True)
+    key = _line_key(engine, say, text)
+    write_wav(VOICE_CACHE / f"{key}.wav", audio)
+    (VOICE_CACHE / f"{key}.json").write_text(json.dumps([
+        {"text": t, "start": s, "end": e} for t, s, e in toks
+    ]))
+
+
+def voice_lines(name: str, lang: str, lines: list, dest: Path, force: bool = False) -> dict:
+    """Voice `lines` (the script's list for one language) into `dest`. Unchanged lines are read from the voice cache."""
+    dest.mkdir(parents=True, exist_ok=True)
     say = [ln.get("say", ln["text"]) for ln in lines]
     engine = f"kokoro:{EN_VOICE}" if lang == "en" else f"edge:{DE_VOICE}@{DE_RATE}"
     timing = [PAUSE_SAME_SCENE, PAUSE_NEW_SCENE, LEAD_IN, HOLD_AFTER]  # END_HOLD is added after the audio, so it never forces a re-voice
     key = hashlib.sha256(
         json.dumps({"engine": engine, "say": say, "text": [ln["text"] for ln in lines], "scenes": [ln["scene"] for ln in lines], "timing": timing}, ensure_ascii=False).encode()
     ).hexdigest()[:16]
-    d = out_dir(short, lang)
+    d = dest
     timeline_path = d / "timeline.json"
     if not force and timeline_path.exists():
         cached = json.loads(timeline_path.read_text())
         if cached.get("key") == key and (d / "narration.wav").exists():
             cached["totalSeconds"] = round(cached["audioSeconds"] + END_HOLD, 3)
-            print(f"{short}/{lang}: narration cached ({cached['audioSeconds']:.1f} s, video {cached['totalSeconds']:.1f} s)")
+            print(f"{name}: narration cached ({cached['audioSeconds']:.1f} s, video {cached['totalSeconds']:.1f} s)")
             return cached
-    print(f"{short}/{lang}: voicing {len(lines)} lines with {engine}")
-    tmp = d / "voice"
-    tmp.mkdir(exist_ok=True)
-    results = synth_en(say) if lang == "en" else synth_de(say, DE_VOICE, tmp)
+    cached_lines = [None if force else _load_cached_line(engine, s, ln["text"]) for ln, s in zip(lines, say)]
+    missing = [i for i, hit in enumerate(cached_lines) if hit is None]
+    fresh = []
+    if missing:
+        print(f"{name}: voicing {len(missing)} of {len(lines)} lines with {engine} ({len(lines) - len(missing)} cached)")
+        tmp = d / "voice"
+        tmp.mkdir(exist_ok=True)
+        texts = [say[i] for i in missing]
+        fresh = synth_en(texts) if lang == "en" else synth_de(texts, DE_VOICE, tmp)
+        for i, spoken in zip(missing, fresh):
+            audio, toks = trim(*spoken)
+            _store_cached_line(engine, say[i], lines[i]["text"], audio, toks)
+            cached_lines[i] = (audio, toks)
+    else:
+        print(f"{name}: all {len(lines)} lines from the voice cache")
+    results = cached_lines
 
     pieces: list[np.ndarray] = [np.zeros(int(LEAD_IN * SR), np.float32)]
     t = LEAD_IN
     out_lines = []
     warnings = []
     for i, (ln, (audio, toks)) in enumerate(zip(lines, results)):
-        audio, toks = trim(audio, toks)
         dur = len(audio) / SR
         words, aligned = align(ln["text"], toks, dur)
         if not aligned:
@@ -299,6 +337,11 @@ def voice_short(short: str, lang: str, force: bool = False) -> dict:
         print("  WARNING", w)
     print(f"  narration {timeline['audioSeconds']:.1f} s, video {timeline['totalSeconds']:.1f} s")
     return timeline
+
+
+def voice_short(short: str, lang: str, force: bool = False) -> dict:
+    script = load_script(short)
+    return voice_lines(f"{short}/{lang}", lang, script[lang]["lines"], out_dir(short, lang), force)
 
 
 # ---------------------------------------------------------------------------------------------------- props
@@ -342,8 +385,8 @@ def chunk_captions(words: list[dict], max_chars: int = 36, max_words: int = 7, m
     return [{"start": c[0]["start"], "end": c[-1]["end"], "words": c} for c in merged]
 
 
-def build_props(short: str, lang: str, timeline: dict, voice: bool = True) -> Path:
-    script = load_script(short)
+def props_for(name: str, lang: str, labels: dict, timeline: dict, dest: Path, voice: bool = True) -> Path:
+    """Remotion props for one language. `labels` is the on-screen copy; timings come from the narration."""
     lines = timeline["lines"]
     total = timeline["totalSeconds"]
     scenes = []
@@ -356,25 +399,30 @@ def build_props(short: str, lang: str, timeline: dict, voice: bool = True) -> Pa
     scenes[-1]["end"] = total
     cues: dict[str, float] = {}
     for ln in lines:
-        for name, word in ln.get("cues", {}).items():
+        for cue_name, word in ln.get("cues", {}).items():
             target = norm(word)
             hit = next((w for w in ln["words"] if norm(w["text"]).startswith(target)), None)
             if hit is None:
-                raise SystemExit(f"{short}/{lang}: cue {name!r} word {word!r} not found in line {ln['i'] + 1}: {ln['text']}")
-            cues[name] = round(max(0.0, hit["start"] - 0.05), 3)
+                raise SystemExit(f"{name}: cue {cue_name!r} word {word!r} not found in line {ln['i'] + 1}: {ln['text']}")
+            cues[cue_name] = round(max(0.0, hit["start"] - 0.05), 3)
     words = [w for ln in lines for w in ln["words"]]
     props = {
         "lang": lang,
         "voice": voice,
         "durationSeconds": total,
-        "labels": script[lang]["labels"],
+        "labels": labels,
         "scenes": scenes,
         "cues": cues,
         "captions": chunk_captions(words),
     }
-    path = out_dir(short, lang) / ("props.json" if voice else "props-silent.json")
+    path = dest / ("props.json" if voice else "props-silent.json")
     path.write_text(json.dumps(props, ensure_ascii=False, indent=1))
     return path
+
+
+def build_props(short: str, lang: str, timeline: dict, voice: bool = True) -> Path:
+    script = load_script(short)
+    return props_for(f"{short}/{lang}", lang, script[lang]["labels"], timeline, out_dir(short, lang), voice)
 
 
 # ---------------------------------------------------------------------------------------------------- music
@@ -437,8 +485,7 @@ def render(short: str, lang: str, props: Path, out: Path) -> None:
     )
 
 
-def mix(short: str, lang: str, timeline: dict, music: Path, out: Path) -> None:
-    d = out_dir(short, lang)
+def mix_audio(narration: Path, timeline: dict, music: Path, out: Path) -> None:
     total = timeline["totalSeconds"]
     fade = total - 2.6
     filt = (
@@ -448,7 +495,11 @@ def mix(short: str, lang: str, timeline: dict, music: Path, out: Path) -> None:
         f"[v]pan=stereo|c0=c0|c1=c0[vs];"
         f"[vs][md]amix=inputs=2:normalize=0:duration=first,loudnorm=I=-16:TP=-1.5:LRA=11[out]"
     )
-    run(["ffmpeg", "-y", "-v", "error", "-i", str(d / "narration.wav"), "-i", str(music), "-filter_complex", filt, "-map", "[out]", "-ar", "48000", "-ac", "2", str(out)])
+    run(["ffmpeg", "-y", "-v", "error", "-i", str(narration), "-i", str(music), "-filter_complex", filt, "-map", "[out]", "-ar", "48000", "-ac", "2", str(out)])
+
+
+def mix(short: str, lang: str, timeline: dict, music: Path, out: Path) -> None:
+    mix_audio(out_dir(short, lang) / "narration.wav", timeline, music, out)
 
 
 def mux(video: Path, audio: Path, out: Path) -> None:

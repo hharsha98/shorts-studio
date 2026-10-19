@@ -22,7 +22,7 @@ if [ ! -x "$VENV/bin/python" ]; then
   python3 -m venv "$VENV"
   "$VENV/bin/pip" install -q --upgrade pip
   "$VENV/bin/pip" install -q torch --index-url https://download.pytorch.org/whl/cpu
-  "$VENV/bin/pip" install -q "kokoro>=0.9.4" soundfile edge-tts faster-whisper
+  "$VENV/bin/pip" install -q "kokoro>=0.9.4" soundfile edge-tts faster-whisper pyyaml
 fi
 
 echo "== Remotion (exact versions from package-lock.json) and its headless browser"
