@@ -1,5 +1,5 @@
 # Regression config: the Rotpunkt order-check Short (v2), without the job-posting scene.
-# Proof (MARA), the safety badges and the closing card are added by the template.
+# Proof (the Siemens system), the safety badges and the closing card are added by the template.
 version: 1
 company:
   slug: rotpunkt
@@ -95,8 +95,9 @@ problems:
            cues: {arch.erp: approved, arch.badges: local}}
         - {scene: metrics, text: "Illustrative pilot targets: checking time from twenty minutes to five, and far fewer errors found in production.",
            cues: {metrics.0: checking, metrics.1: fewer}}
-        - {scene: proof, text: "The same building blocks already run in production at Siemens Amberg.",
-           cues: {proof: same}}
+        - {scene: proof, text: "A multi-agent system with LangGraph that I built at Siemens already runs in production in Amberg.",
+           say: "A multi-agent system with Lang Graph that I built at Siemens already runs in production in Amberg.",
+           cues: {proof: LangGraph}}
         - {scene: pilot, text: "A pilot could start with one product line.",
            cues: {pilot.0: pilot, pilot.1: start, pilot.2: product}}
         - {scene: closing, text: "Happy to explore it with you."}
@@ -118,8 +119,9 @@ problems:
            cues: {arch.erp: freigegebene, arch.badges: lokalen}}
         - {scene: metrics, text: "Beispielhafte Pilotziele: Prüfzeit von zwanzig auf fünf Minuten, deutlich weniger Fehler in der Fertigung.",
            cues: {metrics.0: Prüfzeit, metrics.1: deutlich}}
-        - {scene: proof, text: "Die gleichen Bausteine laufen bereits produktiv bei Siemens in Amberg.",
-           cues: {proof: gleichen}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
         - {scene: pilot, text: "Ein Pilot könnte mit einer Produktlinie starten.",
            cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Produktlinie}}
         - {scene: closing, text: "Mehr dazu gern im Gespräch."}

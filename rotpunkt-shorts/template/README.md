@@ -1,7 +1,7 @@
 # Company Shorts template
 
 One YAML file per company. The same scenes as the Rotpunkt v2 videos (karaoke captions, natural pace,
-product photos, logo closing card, MARA as the only real proof) are filled from that file. A new company
+product photos, logo closing card, the Siemens proof card as the only real proof) are filled from that file. A new company
 does not need a code change.
 
 Run these from `rotpunkt-shorts/` with the voice environment (`bash tools/setup.sh` once).
@@ -38,12 +38,12 @@ images are cached by URL, and the whole video is skipped when its props have not
 ## What every video contains
 
 - Hook, the problem (a cost chart), one idea, an architecture diagram, illustrative before/after bars,
-  the MARA proof card, an optional pilot, and the closing card.
+  the Siemens proof card, an optional pilot, and the closing card.
 - Closing card: the company logo, "An idea for <Company>" / "Eine Idee für <Company>",
   "Concept by Hanumanthu Harsha Vardhan", and a line that it is a concept, not an official project.
 - Photos credited "Images: <domain>" / "Bilder: <domain>". A photo that cannot be fetched is dropped
   and the scene uses the drawn graphic instead. The log says so.
-- Before/after numbers are stamped ILLUSTRATIVE / BEISPIELWERTE. MARA's numbers are fixed in
+- Before/after numbers are stamped ILLUSTRATIVE / BEISPIELWERTE. The Siemens proof numbers are fixed in
   `template/copy.py` and cannot be edited from the config.
 - No "AI idea sketch" label, and the compiler rejects the words "job posting" and "Stellenanzeige".
 

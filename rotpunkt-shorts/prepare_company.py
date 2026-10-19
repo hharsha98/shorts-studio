@@ -4,7 +4,7 @@
   ~/.venvs/kokoro/bin/python prepare_company.py <job_url> --company-site https://example.com
 
 Downloads the logo and up to six images into the asset cache, and writes companies/<slug>.yaml
-with the pictures filled in and the story left as TODOs. The scenes, the MARA proof and the closing
+with the pictures filled in and the story left as TODOs. The scenes, the Siemens proof card and the closing
 card are already wired, so filling the TODOs needs no code changes.
 
 One compact LLM call is made only when OPENAI_API_KEY or ANTHROPIC_API_KEY is set. Otherwise the

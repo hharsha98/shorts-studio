@@ -75,8 +75,9 @@ problems:
            cues: {arch.erp: freigegebene, arch.badges: lokalen}}
         - {scene: metrics, text: "Beispielhafte Pilotziele: Erstsicht von zwanzig auf fünf Minuten, deutlich weniger Rückläufer.",
            cues: {metrics.0: Erstsicht, metrics.1: deutlich}}
-        - {scene: proof, text: "Die gleichen Bausteine laufen bereits produktiv bei Siemens in Amberg.",
-           cues: {proof: gleichen}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
         - {scene: pilot, text: "Ein Pilot könnte mit einer Belegart starten.",
            cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Belegart}}
         - {scene: closing, text: "Mehr dazu gern im Gespräch."}

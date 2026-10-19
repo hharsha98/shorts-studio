@@ -11,7 +11,7 @@ video has **word-by-word karaoke captions** synced to the voice.
 
 **v2 (19 Oct 2026), the version to show.** Narration stays at a natural pace and each finished card holds long enough to read
 (about 60–75 s). The "AI idea sketch" corner label is gone. Short 2 is no longer a generic machine story: a front comes back and
-the cause is traced to edge banding, the panel cut or the surface, with MARA shown only as proof of the pattern. Short 3 no longer
+the cause is traced to edge banding, the panel cut or the surface, with the Siemens multi-agent system shown only as proof of the pattern. Short 3 no longer
 says the idea came from their job postings. Every video ends on their public logo with "An idea for Rotpunkt Küchen" and
 "Concept by Hanumanthu Harsha Vardhan", and says it is a concept, not an official project.
 
@@ -68,8 +68,8 @@ Read side by side, the 12 postings point to five recurring problems. Quotes are 
 
 | Theme | Postings | Evidence | AI fit with his proven work | Chosen |
 |---|---|---|---|---|
-| **A. Order intake and order/product data** (dealer orders with many variants, export, data exchange between systems, catalogue data for the sales process) | 6, 2, 1, 9; press | „prüfst Kundenbestellungen auf technische Umsetzbarkeit“, „insbesondere aus den Exportmärkten per Telefon und E-Mail“, „mind. 3 Jahre … Ausarbeitung von Küchenmöbelbestellungen“ (6); „Varianten, Maße, Positionierungen und Abhängigkeiten“, „Auftrags-, Produkt- und Produktionsdaten zuverlässig … ausgetauscht“, „EDI-Prozesse, Schnittstellen“ (2); „IDM Daten in mehreren Sprachvarianten“, „Digitalisierung des Sales Prozess“ (1); press: Auftragsabwicklung, Variantenreichtum, ~80 % export (Part F of the brief) | High: LLM extraction + RAG over rules and documents + validation, integrated by REST API (MARA pattern) | **Short 1** |
-| **B. Keeping production systems, interfaces and machines running** | 2, 5, 8, 3, 11; press | „gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“, „analysierst technische Probleme“, „Rückmeldungen und Workflows zwischen Maschinen und unseren Systemen“ (2); „analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“ (5); „hohe Verfügbarkeit unserer Produktionsanlagen“, „Wartungsarbeiten gemäß Wartungsplan“ (8); press: new machines arriving | Highest: exactly MARA (root cause analysis with LLM agents over manuals, error texts and logs, in production at Siemens Amberg) | **Short 2** |
+| **A. Order intake and order/product data** (dealer orders with many variants, export, data exchange between systems, catalogue data for the sales process) | 6, 2, 1, 9; press | „prüfst Kundenbestellungen auf technische Umsetzbarkeit“, „insbesondere aus den Exportmärkten per Telefon und E-Mail“, „mind. 3 Jahre … Ausarbeitung von Küchenmöbelbestellungen“ (6); „Varianten, Maße, Positionierungen und Abhängigkeiten“, „Auftrags-, Produkt- und Produktionsdaten zuverlässig … ausgetauscht“, „EDI-Prozesse, Schnittstellen“ (2); „IDM Daten in mehreren Sprachvarianten“, „Digitalisierung des Sales Prozess“ (1); press: Auftragsabwicklung, Variantenreichtum, ~80 % export (Part F of the brief) | High: LLM extraction + RAG over rules and documents + validation, integrated by REST API (the same multi-agent pattern) | **Short 1** |
+| **B. Keeping production systems, interfaces and machines running** | 2, 5, 8, 3, 11; press | „gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“, „analysierst technische Probleme“, „Rückmeldungen und Workflows zwischen Maschinen und unseren Systemen“ (2); „analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“ (5); „hohe Verfügbarkeit unserer Produktionsanlagen“, „Wartungsarbeiten gemäß Wartungsplan“ (8); press: new machines arriving | Highest: exactly that multi-agent system with LangGraph (root cause analysis with LLM agents over manuals, error texts and logs, in production at Siemens Amberg) | **Short 2** |
 | **C. Specialist know-how that is hard to hire and slow to teach** (skills gap) | 6, 1, 2, 5, 7, 3, 10–12; HR conference talk | „mind. 3 Jahre“ (6); „Berufserfahrung in der Erstellung von IDM-Daten“, Furnidata (1); „Berufserfahrung in der Möbel- oder Küchenindustrie“, COE/GOE, MOS, Insight2020 „ein Plus“ (2); edge banders, panel saws, CNC (5); „Mehrjährige Berufserfahrung in der Möbelbranche“ (7); „schulst die Prozesse“ (3); three apprenticeships and an own training workshop; a Rotpunkt HR officer was announced as a speaker at a congress on the skills shortage (section 4) | High: local RAG with source citations and faithfulness metrics (FAU research, published), on-prem, access control | **Short 3** |
 | D. Logistics and material flow | 4, 7, 3; press (logistics hub) | „Vollständigkeit der Auflieger durch Scannen“ (4); „teilweise JIT“, „Lieferengpässe“, „Kennzahlen“ (7); „Logistikaufträge im ERP-System“, „Materialfluss“ (3) | Medium: possible, but nothing on his CV in planning or forecasting, so it would be a weaker, less honest pitch | not chosen |
 | E. A mixed system landscape under digitalisation | 2, 3, 7, 1, 9; press (€50 m incl. IT) | ERP „vorzugsweise Cyncly Insight“ (3), „Microsoft Navision“ (7), „VBA, VBScript und Microsoft SQL“, AutoCAD (2), Furnidata (1) | Cross-cutting: every Short integrates read-only first, through APIs, with local models | built into all three |
@@ -114,8 +114,8 @@ Neither person is named or shown in the videos. Only public, professional source
 
 1. **Order checks (Short 1).** The strongest business case: an order error costs little at the desk and a lot once it is in production (the
    general "rule of ten" of quality costs). Four postings and the press point to it, it sits in Mr Häring's data flows, and it uses the exact
-   building blocks of MARA (LLM agents, retrieval, validation, REST integration).
-2. **Root cause analysis (Short 2).** The best match to his real work: MARA cut root cause analysis at Siemens Amberg from 30–120 to 8–15
+   building blocks of that multi-agent system (LLM agents, retrieval, validation, REST integration).
+2. **Root cause analysis (Short 2).** The best match to his real work: That system cut root cause analysis at Siemens Amberg from 30–120 to 8–15
    minutes per fault on 16 SMT machines. The IT posting even asks for someone who "geht den Ursachen auf den Grund, wenn irgendwo etwas hakt".
 3. **Know-how on demand (Short 3).** The most cross-cutting problem: almost every posting asks for rare, multi-year experience. It speaks to
    HR as well as IT, and it rests on his published FAU research (local RAG, 0.97 faithfulness).
@@ -175,7 +175,7 @@ Logistics (theme D) was left out on purpose: it is a real topic, but nothing on 
 - **Idea:** an order check assistant. An AI agent reads each order (EDI, PDF, e-mail, any language) and extracts the lines; it checks them
   against the company's own product rules and catalogue/master data (RAG); fixed rule checks flag each conflict with its source; a clerk
   decides; only approved orders reach the ERP. Local LLM, read-only first, GDPR in mind.
-- **Built before (real):** MARA at Siemens Amberg (M.Sc. thesis, in production): 12 LLM agents, retrieval over manuals and logs in under
+- **Built before (real):** A multi-agent system with LangGraph at Siemens Amberg (M.Sc. thesis, in production): 12 LLM agents, retrieval over manuals and logs in under
   200 ms, on-prem LLMs for data protection, about 78 % of suggestions accepted at first review.
 - **Illustrative pilot targets:** checking time per order 20 → 5 min; errors found only in production, index 100 → 25.
 - **Pilot:** one product line, read-only next to the team, success measured with the department.
@@ -189,7 +189,7 @@ Logistics (theme D) was left out on purpose: it is a real topic, but nothing on 
 | 4 | The idea | 0:18.0–0:21.2 | 0:19.9–0:24.4 | One idea: An order check assistant (AI agent + your product rules + human approval) — **product photo** `s1-idea.webp` (Images: rotpunkt.de) |
 | 5 | Architecture, built step by step | 0:21.2–0:39.8 | 0:24.4–0:46.8 | Incoming order → AI agent (LLM) → Your product rules (RAG) → Rule checks + clerk → ERP → production; badges: Local LLM · Read-only first · GDPR in mind · Human decides |
 | 6 | Pilot targets (stamped ILLUSTRATIVE) | 0:39.8–0:48.0 | 0:46.8–0:55.1 | [ILLUSTRATIVE] Checking time per order: 20 → 5 min; Errors found only in production (index): 100 → 25 — Example values, not your company's data. To be measured in a pilot. |
-| 7 | Built before (REAL RESULT, from the CV) | 0:48.0–0:53.3 | 0:55.1–1:00.8 | [REAL RESULT] MARA · Siemens Amberg: 12 LLM agents working together; < 200 ms retrieval over manuals and logs; On-prem LLMs, for data protection; ~78 % of suggestions accepted at first review — Source: candidate's CV |
+| 7 | Built before (REAL RESULT, from the CV) | 0:48.0–0:53.3 | 0:55.1–1:00.8 | [REAL RESULT] Multi-agent system with LangGraph · Siemens Amberg: 12 LLM agents working together; < 200 ms retrieval over manuals and logs; On-prem LLMs, for data protection; ~78 % of suggestions accepted at first review — Source: candidate's CV |
 | 8 | A first pilot | 0:53.3–0:56.0 | 1:00.8–1:04.2 | A first pilot: One product line · Read-only, next to the team · Success measured with the department |
 | 9 | Closing card | 0:56.0–1:02.1 | 1:04.2–1:10.3 | Hanumanthu Harsha Vardhan — Concept by — github.com/hharsha98 (A concept, not an official Rotpunkt project · illustrative numbers · AI voice) |
 
@@ -243,7 +243,7 @@ say "A scenario, not a known defect".
   finish, and the trail runs through batch records, machine logs, old complaints and a few experienced people.
 - **Idea:** trace that one complaint back to the line. The assistant reads the complaint and the photos, searches past cases and work
   instructions, and AI agents rank the likely causes with the evidence. The quality team confirms, and the fix is saved for the next batch.
-- **Built before (real):** the same pattern, MARA at Siemens Amberg, on an electronics line: 30–120 → 8–15 min per fault, 16 machines,
+- **Built before (real):** the same pattern, a multi-agent system with LangGraph at Siemens Amberg, on an electronics line: 30–120 → 8–15 min per fault, 16 machines,
   12 LLM agents, 82.2 % root-cause hits on 1,811 historical error codes. The card says this is a real result there, not a Rotpunkt figure.
 - **Illustrative pilot targets:** days to trace one front complaint 5 → 1; repeat defects that still ship, index 100 → 40.
 - **Pilot:** one front family, complaints and batch data read-only, measured with quality and production.
@@ -256,7 +256,7 @@ say "A scenario, not a known defect".
 | 3 | The problem | 0:08.6–0:15.4 | 0:09.5–0:17.9 | Where the answer hides: Front came back ← Batch records · Machine logs · Old complaints · Experienced people — **product photo** `s2-front.jpg` (Images: rotpunkt.de) |
 | 4 | The idea | 0:15.4–0:19.1 | 0:17.9–0:22.9 | One idea: Trace it back to the line (complaint, batch and instructions, then a person confirms) — **product photo** `s2-idea.jpg` (Images: rotpunkt.de) |
 | 5 | Architecture, built step by step | 0:19.1–0:34.2 | 0:22.9–0:39.7 | Complaint comes in → Past cases (RAG) → AI agents (LLM) → Quality team confirms → Saved for the next batch; badges: Local LLM · Data stays in the plant · Every answer traceable · Human decides |
-| 6 | Built before (REAL RESULT, from the CV) | 0:34.2–0:45.9 | 0:39.7–0:50.7 | [REAL RESULT] MARA · Siemens Amberg: 30–120 → 8–15 min root cause analysis per fault; 16 machines on the line; 12 LLM agents working together; 82.2 % root-cause hits on 1,811 historical error codes — Source: candidate's CV. A real result there, not a Rotpunkt figure. |
+| 6 | Built before (REAL RESULT, from the CV) | 0:34.2–0:45.9 | 0:39.7–0:50.7 | [REAL RESULT] Multi-agent system with LangGraph · Siemens Amberg: 30–120 → 8–15 min root cause analysis per fault; 16 machines on the line; 12 LLM agents working together; 82.2 % root-cause hits on 1,811 historical error codes — Source: candidate's CV. A real result there, not a Rotpunkt figure. |
 | 7 | Pilot targets (stamped ILLUSTRATIVE) | 0:45.9–0:51.8 | 0:50.7–0:56.9 | [ILLUSTRATIVE] Days to trace one front complaint: 5 → 1 days; Repeat defects that still ship (index): 100 → 40 — Example values, not your company's data. To be measured in a pilot. |
 | 8 | A first pilot | 0:51.8–0:55.5 | 0:56.9–1:01.8 | A first pilot: One front family · Complaints and batch data, read-only · Measured with quality and production |
 | 9 | Closing card | 0:55.5–1:01.6 | 1:01.8–1:07.9 | Hanumanthu Harsha Vardhan — Concept by — github.com/hharsha98 (A concept, not an official Rotpunkt project · illustrative numbers · AI voice) |
@@ -391,5 +391,5 @@ Length: **EN 60.1 s**, **DE 68.0 s** (narration plus a 4.6 s hold on the closing
     line is now spoken from "K-I-Agent" and re-checked as exact. "KI-Assistent" and "KI-Agenten" are read correctly as written (the
     spelled form would make them worse: "Kei Assistent", "Keine Agenten"). The remaining German differences are recogniser quirks: split
     compounds ("Stellen anzeigen"), "gerne" for "gern", the letter names in DSGVO, and the German final sound in "Logs".
-- **Suggested use in the interview:** show Short 2 first if the talk turns to his MARA thesis, Short 1 when processes and ERP come up, Short 3
+- **Suggested use in the interview:** show Short 2 first if the talk turns to his Siemens thesis, Short 1 when processes and ERP come up, Short 3
   when HR or onboarding comes up; end with the question from his cover letter: "Welchen Geschäftsprozess möchten Sie als Erstes mit AI automatisieren?"

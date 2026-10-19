@@ -77,8 +77,8 @@
       "proof": {
         "kicker": "Built before",
         "badge": "REAL RESULT",
-        "title": "MARA · Siemens Amberg",
-        "sub": "The same pattern, on an electronics line",
+        "title": "A multi-agent system with LangGraph",
+        "sub": "The same pattern, on an electronics line at Siemens Amberg",
         "facts": [
           { "value": "30–120 → 8–15 min", "label": "root cause analysis per fault", "wide": true },
           { "value": "16", "label": "machines on the line" },
@@ -189,8 +189,8 @@
       "proof": {
         "kicker": "Schon einmal gebaut",
         "badge": "ECHTES ERGEBNIS",
-        "title": "MARA · Siemens Amberg",
-        "sub": "Dasselbe Muster, an einer Elektroniklinie",
+        "title": "Multi-Agenten-System mit LangGraph",
+        "sub": "Dasselbe Muster, an einer Elektroniklinie bei Siemens in Amberg",
         "facts": [
           { "value": "30–120 → 8–15 Min.", "label": "Ursachenanalyse pro Störung", "wide": true },
           { "value": "16", "label": "Maschinen an der Linie" },

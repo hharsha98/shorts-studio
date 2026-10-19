@@ -1,6 +1,6 @@
 """Turn a company YAML config into the script dict the Remotion Short already renders.
 
-A new company needs only the YAML. Scene components, MARA proof, safety badges and the closing card
+A new company needs only the YAML. Scene components, the Siemens proof card, safety badges and the closing card
 are filled in here. Nothing in video/src has to change.
 """
 
@@ -149,7 +149,7 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             "icon": (hook.get("icon") if isinstance(hook, dict) else None) or "order",
             "lines": hook_lines,
             "sub": hook_sub,
-            **({"photo": photos[hook["image"]]} if isinstance(hook, dict) and hook.get("image") else {}),
+            **(_photo(photos, hook.get("image") if isinstance(hook, dict) else None)),
             **({"status": text(hook.get("status"), lang, f"{slug}.hook.status")} if isinstance(hook, dict) and hook.get("status") else {}),
         },
         "pain": {
@@ -159,14 +159,14 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             "columns": columns,
             "multipliers": ["×1", "×10", "×100"],
             "note": pain_note,
-            **({"photo": photos[pain["image"]]} if pain.get("image") else {}),
+            **(_photo(photos, pain.get("image"))),
         },
         "idea": {
             "icon": idea.get("icon") or "agent",
             "kicker": kicker,
             "title": idea_title,
             "sub": idea_sub,
-            **({"photo": photos[idea["image"]]} if idea.get("image") else {}),
+            **(_photo(photos, idea.get("image"))),
         },
         "arch": {"title": text(problem.get("arch_title"), lang, f"{slug}.arch_title") if problem.get("arch_title") else ARCH_TITLE[lang],
                  "nodes": nodes, "badges": BADGES[lang]},
@@ -189,6 +189,13 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
     blob = " ".join(ln["text"] for ln in narration) + " " + hook_sub + " " + title
     _reject_forbidden(blob, f"{slug}/{lang}")
     return {"lines": narration, "labels": labels}
+
+
+def _photo(photos: dict, key) -> dict:
+    """Attach a fetched photo. A named image that failed to download falls back to the drawn scene."""
+    if key and key in photos:
+        return {"photo": photos[key]}
+    return {}
 
 
 def _str_list(value, lang: str, where: str) -> list[str]:
@@ -222,7 +229,10 @@ def _narration(problem: dict, lang: str, slug: str, pilot_items: list[str]) -> l
     if pilot_items and "pilot" not in have:
         raise ConfigError(f"{slug}.narration.{lang}: pilot items are set, so add a 'pilot' line")
     if "proof" not in have:
-        lines.append({"scene": "proof", "text": PROOF[lang]["line"], "cues": {"proof": PROOF[lang]["cue"]}})
+        item = {"scene": "proof", "text": PROOF[lang]["line"], "cues": {"proof": PROOF[lang]["cue"]}}
+        if PROOF[lang].get("say"):
+            item["say"] = PROOF[lang]["say"]
+        lines.append(item)
     if "closing" not in have:
         lines.append({"scene": "closing", "text": CLOSING_LINE[lang]})
     # Proof and closing stay last, in that order, whatever order the author listed the middle in.

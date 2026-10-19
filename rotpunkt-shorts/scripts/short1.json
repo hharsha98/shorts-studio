@@ -249,8 +249,8 @@
       "proof": {
         "kicker": "Built before",
         "badge": "REAL RESULT",
-        "title": "MARA · Siemens Amberg",
-        "sub": "Master's thesis · running in production",
+        "title": "A multi-agent system with LangGraph",
+        "sub": "Built at Siemens Amberg · in production",
         "facts": [
           {
             "value": "12",
@@ -540,8 +540,8 @@
       "proof": {
         "kicker": "Schon einmal gebaut",
         "badge": "ECHTES ERGEBNIS",
-        "title": "MARA · Siemens Amberg",
-        "sub": "Masterarbeit · im Produktiveinsatz",
+        "title": "Multi-Agenten-System mit LangGraph",
+        "sub": "Gebaut bei Siemens in Amberg · im Produktiveinsatz",
         "facts": [
           {
             "value": "12",

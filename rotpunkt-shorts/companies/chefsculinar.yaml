@@ -76,8 +76,9 @@ problems:
            cues: {arch.erp: bestätigte, arch.badges: lokalen}}
         - {scene: metrics, text: "Beispielhafte Pilotziele: Zeit für einen Ersatz von zwölf auf zwei Minuten, deutlich weniger Fehlartikel auf der Tour.",
            cues: {metrics.0: Zeit, metrics.1: deutlich}}
-        - {scene: proof, text: "Die gleichen Bausteine laufen bereits produktiv bei Siemens in Amberg.",
-           cues: {proof: gleichen}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
         - {scene: pilot, text: "Ein Pilot könnte mit einer Warengruppe starten.",
            cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Warengruppe}}
         - {scene: closing, text: "Mehr dazu gern im Gespräch."}

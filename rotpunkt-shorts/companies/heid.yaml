@@ -1,5 +1,5 @@
 # Heid Immobilienbewertung — completeness check for incoming property files.
-# Own idea. Company metrics below are examples; MARA proof and the closing card come from the template.
+# Own idea. Company metrics below are examples; Siemens proof card and the closing card come from the template.
 version: 1
 company:
   slug: heid
@@ -78,8 +78,9 @@ problems:
            cues: {arch.erp: vollständige, arch.badges: lokalen}}
         - {scene: metrics, text: "Beispielhafte Pilotziele: Prüfzeit von vierzig auf acht Minuten, deutlich weniger Nachforderungen.",
            cues: {metrics.0: Prüfzeit, metrics.1: deutlich}}
-        - {scene: proof, text: "Die gleichen Bausteine laufen bereits produktiv bei Siemens in Amberg.",
-           cues: {proof: gleichen}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
         - {scene: pilot, text: "Ein Pilot könnte mit einer Objektart starten.",
            cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Objektart}}
         - {scene: closing, text: "Mehr dazu gern im Gespräch."}
