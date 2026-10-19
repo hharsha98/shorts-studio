@@ -1,0 +1,588 @@
+{
+  "id": "short1",
+  "index": 1,
+  "slug": "order-check",
+  "en": {
+    "lines": [
+      {
+        "scene": "hook",
+        "text": "Order errors are cheap at the desk, and expensive in production."
+      },
+      {
+        "scene": "evidence",
+        "text": "Your postings show who catches them today: experienced staff checking every dealer order, often for export.",
+        "cues": {
+          "evidence.0": "experienced",
+          "evidence.1": "checking",
+          "evidence.2": "export"
+        }
+      },
+      {
+        "scene": "pain",
+        "text": "Variants, dimensions, dependencies: one missed detail means rework.",
+        "cues": {
+          "pain.chips": "Variants",
+          "pain.0": "missed",
+          "pain.1": "detail",
+          "pain.2": "rework"
+        }
+      },
+      {
+        "scene": "idea",
+        "text": "One idea: an order check assistant."
+      },
+      {
+        "scene": "arch",
+        "text": "It reads each order, from EDI, PDF or email, in any language.",
+        "cues": {
+          "arch.inputs": "reads"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "An AI agent extracts the lines and checks them against your product rules.",
+        "cues": {
+          "arch.agent": "agent",
+          "arch.rules": "rules"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "Conflicts come with their source, and a clerk decides.",
+        "cues": {
+          "arch.checks": "Conflicts"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "Only approved orders reach the ERP, with local models and GDPR in mind.",
+        "cues": {
+          "arch.erp": "approved",
+          "arch.badges": "local"
+        }
+      },
+      {
+        "scene": "metrics",
+        "text": "Illustrative pilot targets: checking time from twenty minutes to five, and far fewer errors found in production.",
+        "cues": {
+          "metrics.0": "checking",
+          "metrics.1": "fewer"
+        }
+      },
+      {
+        "scene": "proof",
+        "text": "The same building blocks already run in production at Siemens Amberg.",
+        "cues": {
+          "proof": "same"
+        }
+      },
+      {
+        "scene": "pilot",
+        "text": "A pilot could start with one product line.",
+        "cues": {
+          "pilot.0": "pilot",
+          "pilot.1": "start",
+          "pilot.2": "product"
+        }
+      },
+      {
+        "scene": "closing",
+        "text": "Happy to explore it with you."
+      }
+    ],
+    "labels": {
+      "top": {
+        "badge": "1/3",
+        "topic": "Order checks",
+        "right": ""
+      },
+      "hook": {
+        "icon": "order",
+        "lines": [
+          [
+            {
+              "text": "Catch "
+            },
+            {
+              "text": "order errors",
+              "accent": true
+            }
+          ],
+          [
+            {
+              "text": "before production"
+            }
+          ]
+        ],
+        "sub": "An AI idea based on your current job postings",
+        "photo": "products/s1-hook.webp"
+      },
+      "evidence": {
+        "title": "From your current job postings",
+        "cards": [
+          {
+            "role": "Sachbearbeiter in der Kundenbetreuung",
+            "quote": "„Berufserfahrung (mind. 3 Jahre) in der Ausarbeitung von Küchenmöbelbestellungen“",
+            "gist": "3+ years of kitchen-order experience required"
+          },
+          {
+            "role": "Sachbearbeiter in der Kundenbetreuung",
+            "quote": "„…du prüfst Kundenbestellungen auf technische Umsetzbarkeit“",
+            "gist": "checks every order for technical feasibility"
+          },
+          {
+            "role": "Sachbearbeiter in der Kundenbetreuung",
+            "quote": "„…insbesondere aus den Exportmärkten per Telefon und E-Mail“",
+            "gist": "export customers, by phone and email"
+          }
+        ],
+        "note": "Quotes from your careers page, October 2026"
+      },
+      "pain": {
+        "kind": "ruleOfTen",
+        "title": "The later an error is found, the more it costs",
+        "chips": [
+          "Variants",
+          "Dimensions",
+          "Dependencies"
+        ],
+        "columns": [
+          "Desk check",
+          "Production",
+          "At the customer"
+        ],
+        "multipliers": [
+          "×1",
+          "×10",
+          "×100"
+        ],
+        "note": "Rule of ten: a general quality principle, not company data",
+        "photo": "products/s1-pain.jpg"
+      },
+      "idea": {
+        "icon": "agent",
+        "kicker": "One idea",
+        "title": "An order check assistant",
+        "sub": "AI agent + your product rules + human approval",
+        "photo": "products/s1-idea.webp"
+      },
+      "arch": {
+        "title": "How it could work",
+        "nodes": [
+          {
+            "id": "inputs",
+            "icon": "inbox",
+            "title": "Incoming order",
+            "sub": "EDI · PDF · email · any language",
+            "link": "arrow"
+          },
+          {
+            "id": "agent",
+            "icon": "agent",
+            "title": "AI agent (LLM)",
+            "sub": "extracts the order lines",
+            "link": "both"
+          },
+          {
+            "id": "rules",
+            "icon": "db",
+            "title": "Your product rules (RAG)",
+            "sub": "catalogue and master data",
+            "link": "arrow"
+          },
+          {
+            "id": "checks",
+            "icon": "shield",
+            "title": "Rule checks + clerk",
+            "sub": "each conflict shown with its source",
+            "link": "arrow"
+          },
+          {
+            "id": "erp",
+            "icon": "factory",
+            "title": "ERP → production",
+            "sub": "only approved orders"
+          }
+        ],
+        "badges": [
+          {
+            "icon": "server",
+            "text": "Local LLM"
+          },
+          {
+            "icon": "eye",
+            "text": "Read-only first"
+          },
+          {
+            "icon": "lock",
+            "text": "GDPR in mind"
+          },
+          {
+            "icon": "user",
+            "text": "Human decides"
+          }
+        ]
+      },
+      "metrics": {
+        "title": "Pilot targets",
+        "stamp": "ILLUSTRATIVE",
+        "legend": [
+          "Today (example)",
+          "With assistant (target)"
+        ],
+        "items": [
+          {
+            "label": "Checking time per order",
+            "before": 20,
+            "after": 5,
+            "unit": "min"
+          },
+          {
+            "label": "Errors found only in production (index)",
+            "before": 100,
+            "after": 25,
+            "unit": ""
+          }
+        ],
+        "footnote": "Example values, not your company's data. To be measured in a pilot."
+      },
+      "proof": {
+        "kicker": "Built before",
+        "badge": "REAL RESULT",
+        "title": "A multi-agent system with LangGraph",
+        "sub": "Built at Siemens Amberg · in production",
+        "facts": [
+          {
+            "value": "12",
+            "label": "LLM agents working together"
+          },
+          {
+            "value": "< 200 ms",
+            "label": "retrieval over manuals and logs"
+          },
+          {
+            "value": "On-prem",
+            "label": "LLMs, for data protection"
+          },
+          {
+            "value": "~78 %",
+            "label": "of suggestions accepted at first review"
+          }
+        ],
+        "source": "Source: candidate's CV"
+      },
+      "pilot": {
+        "title": "A first pilot",
+        "sub": "Small, safe and measurable",
+        "items": [
+          "One product line",
+          "Read-only, next to the team",
+          "Success measured with the department"
+        ]
+      },
+      "closing": {
+        "name": "Hanumanthu Harsha Vardhan",
+        "role": "Concept by",
+        "link": "github.com/hharsha98",
+        "series": "Challenge 1 of 3 · Order checks",
+        "note": "A concept, not an official Rotpunkt project · illustrative numbers",
+        "voiceNote": "AI voice",
+        "forLine": "An idea for Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg"
+      },
+      "credit": "Images: rotpunkt.de"
+    }
+  },
+  "de": {
+    "lines": [
+      {
+        "scene": "hook",
+        "text": "Ein Bestellfehler kostet am Schreibtisch wenig, in der Fertigung viel."
+      },
+      {
+        "scene": "evidence",
+        "text": "Ihre Stellenanzeigen zeigen: Erfahrene Fachleute prüfen jede Händlerbestellung, oft für den Export.",
+        "cues": {
+          "evidence.0": "Erfahrene",
+          "evidence.1": "prüfen",
+          "evidence.2": "Export"
+        }
+      },
+      {
+        "scene": "pain",
+        "text": "Varianten, Maße, Abhängigkeiten: Ein übersehenes Detail heißt Nacharbeit.",
+        "cues": {
+          "pain.chips": "Varianten",
+          "pain.0": "übersehenes",
+          "pain.1": "Detail",
+          "pain.2": "Nacharbeit"
+        }
+      },
+      {
+        "scene": "idea",
+        "text": "Eine Idee: ein KI-Assistent für die Auftragsprüfung."
+      },
+      {
+        "scene": "arch",
+        "text": "Er liest jede Bestellung, per EDI, als PDF oder E-Mail, in jeder Sprache.",
+        "say": "Er liest jede Bestellung, per E-D-I, als PDF oder E-Mail, in jeder Sprache.",
+        "cues": {
+          "arch.inputs": "liest"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "Ein KI-Agent erfasst die Positionen und prüft sie gegen Ihre Produktregeln.",
+        "cues": {
+          "arch.agent": "KI-Agent",
+          "arch.rules": "Produktregeln"
+        },
+        "say": "Ein K-I-Agent erfasst die Positionen und prüft sie gegen Ihre Produktregeln."
+      },
+      {
+        "scene": "arch",
+        "text": "Konflikte werden mit Quelle markiert, die Entscheidung trifft der Mensch.",
+        "cues": {
+          "arch.checks": "Konflikte"
+        }
+      },
+      {
+        "scene": "arch",
+        "text": "Nur freigegebene Aufträge gehen ins ERP, mit lokalen Modellen und der DSGVO im Blick.",
+        "cues": {
+          "arch.erp": "freigegebene",
+          "arch.badges": "lokalen"
+        },
+        "say": "Nur freigegebene Aufträge gehen ins E-R-P, mit lokalen Modellen und der DSGVO im Blick."
+      },
+      {
+        "scene": "metrics",
+        "text": "Beispielhafte Pilotziele: Prüfzeit von zwanzig auf fünf Minuten, deutlich weniger Fehler in der Fertigung.",
+        "cues": {
+          "metrics.0": "Prüfzeit",
+          "metrics.1": "deutlich"
+        }
+      },
+      {
+        "scene": "proof",
+        "text": "Die gleichen Bausteine laufen bereits produktiv bei Siemens in Amberg.",
+        "cues": {
+          "proof": "gleichen"
+        }
+      },
+      {
+        "scene": "pilot",
+        "text": "Ein Pilot könnte mit einer Produktlinie starten.",
+        "cues": {
+          "pilot.0": "Pilot",
+          "pilot.1": "könnte",
+          "pilot.2": "Produktlinie"
+        }
+      },
+      {
+        "scene": "closing",
+        "text": "Mehr dazu gern im Gespräch."
+      }
+    ],
+    "labels": {
+      "top": {
+        "badge": "1/3",
+        "topic": "Auftragsprüfung",
+        "right": ""
+      },
+      "hook": {
+        "icon": "order",
+        "lines": [
+          [
+            {
+              "text": "Bestellfehler",
+              "accent": true
+            },
+            {
+              "text": " finden,"
+            }
+          ],
+          [
+            {
+              "text": "bevor sie teuer werden"
+            }
+          ]
+        ],
+        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen",
+        "photo": "products/s1-hook.webp"
+      },
+      "evidence": {
+        "title": "Aus Ihren aktuellen Stellenanzeigen",
+        "cards": [
+          {
+            "role": "Sachbearbeiter in der Kundenbetreuung",
+            "quote": "„Berufserfahrung (mind. 3 Jahre) in der Ausarbeitung von Küchenmöbelbestellungen“"
+          },
+          {
+            "role": "Sachbearbeiter in der Kundenbetreuung",
+            "quote": "„…du prüfst Kundenbestellungen auf technische Umsetzbarkeit“"
+          },
+          {
+            "role": "Sachbearbeiter in der Kundenbetreuung",
+            "quote": "„…insbesondere aus den Exportmärkten per Telefon und E-Mail“"
+          }
+        ],
+        "note": "Zitate von Ihrer Karriereseite, Oktober 2026"
+      },
+      "pain": {
+        "kind": "ruleOfTen",
+        "title": "Je später ein Fehler auffällt, desto teurer wird er",
+        "chips": [
+          "Varianten",
+          "Maße",
+          "Abhängigkeiten"
+        ],
+        "columns": [
+          "Am Schreibtisch",
+          "In der Fertigung",
+          "Beim Kunden"
+        ],
+        "multipliers": [
+          "×1",
+          "×10",
+          "×100"
+        ],
+        "note": "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten",
+        "photo": "products/s1-pain.jpg"
+      },
+      "idea": {
+        "icon": "agent",
+        "kicker": "Eine Idee",
+        "title": "KI-Assistent für die Auftragsprüfung",
+        "sub": "KI-Agent + Ihre Produktregeln + Freigabe durch Menschen",
+        "photo": "products/s1-idea.webp"
+      },
+      "arch": {
+        "title": "So könnte es funktionieren",
+        "nodes": [
+          {
+            "id": "inputs",
+            "icon": "inbox",
+            "title": "Eingehende Bestellung",
+            "sub": "EDI · PDF · E-Mail · jede Sprache",
+            "link": "arrow"
+          },
+          {
+            "id": "agent",
+            "icon": "agent",
+            "title": "KI-Agent (LLM)",
+            "sub": "erfasst die Positionen",
+            "link": "both"
+          },
+          {
+            "id": "rules",
+            "icon": "db",
+            "title": "Ihre Produktregeln (RAG)",
+            "sub": "Katalog- und Stammdaten",
+            "link": "arrow"
+          },
+          {
+            "id": "checks",
+            "icon": "shield",
+            "title": "Regelprüfung + Mensch",
+            "sub": "jeder Konflikt mit Quelle",
+            "link": "arrow"
+          },
+          {
+            "id": "erp",
+            "icon": "factory",
+            "title": "ERP → Fertigung",
+            "sub": "nur freigegebene Aufträge"
+          }
+        ],
+        "badges": [
+          {
+            "icon": "server",
+            "text": "Lokales LLM"
+          },
+          {
+            "icon": "eye",
+            "text": "Zuerst nur lesend"
+          },
+          {
+            "icon": "lock",
+            "text": "DSGVO im Blick"
+          },
+          {
+            "icon": "user",
+            "text": "Mensch entscheidet"
+          }
+        ]
+      },
+      "metrics": {
+        "title": "Pilotziele",
+        "stamp": "BEISPIELWERTE",
+        "legend": [
+          "Heute (Beispiel)",
+          "Mit Assistent (Ziel)"
+        ],
+        "items": [
+          {
+            "label": "Prüfzeit pro Auftrag",
+            "before": 20,
+            "after": 5,
+            "unit": "Min."
+          },
+          {
+            "label": "Fehler, die erst in der Fertigung auffallen (Index)",
+            "before": 100,
+            "after": 25,
+            "unit": ""
+          }
+        ],
+        "footnote": "Beispielwerte, keine Unternehmensdaten. Im Pilotprojekt zu messen."
+      },
+      "proof": {
+        "kicker": "Schon einmal gebaut",
+        "badge": "ECHTES ERGEBNIS",
+        "title": "Multi-Agenten-System mit LangGraph",
+        "sub": "Gebaut bei Siemens in Amberg · im Produktiveinsatz",
+        "facts": [
+          {
+            "value": "12",
+            "label": "KI-Agenten auf LLM-Basis"
+          },
+          {
+            "value": "< 200 ms",
+            "label": "Suche in Handbüchern und Logs"
+          },
+          {
+            "value": "On-Premise",
+            "label": "LLMs für den Datenschutz"
+          },
+          {
+            "value": "~78 %",
+            "label": "der Vorschläge im ersten Review angenommen"
+          }
+        ],
+        "source": "Quelle: Lebenslauf des Bewerbers"
+      },
+      "pilot": {
+        "title": "Ein erster Pilot",
+        "sub": "Klein, sicher und messbar",
+        "items": [
+          "Eine Produktlinie",
+          "Nur lesend, parallel zum Team",
+          "Erfolg gemeinsam mit dem Fachbereich messen"
+        ]
+      },
+      "closing": {
+        "name": "Hanumanthu Harsha Vardhan",
+        "role": "Konzept von",
+        "link": "github.com/hharsha98",
+        "series": "Herausforderung 1 von 3 · Auftragsprüfung",
+        "note": "Ein Konzept, kein offizielles Rotpunkt-Projekt · Beispielwerte",
+        "voiceNote": "KI-Stimme",
+        "forLine": "Eine Idee für Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg"
+      },
+      "credit": "Bilder: rotpunkt.de"
+    }
+  },
+  "artifact": "rotpunkt_short_1"
+}

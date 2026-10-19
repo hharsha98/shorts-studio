@@ -1,0 +1,87 @@
+# Worked example: a concept, not an official project. Figures are illustrative.
+# api GmbH — match incoming customer orders to the article catalogue before they hit the ERP.
+version: 1
+company:
+  slug: api
+  name: api
+  domain: api.de
+  logo_url: https://www.api.de/typo3conf/ext/site_config/Resources/Public/images/Logo_api_cmyk_small.png
+  logo_plate: light
+  images:
+    hook: https://www.api.de/fileadmin/user_upload/csm__DSC7546-HDR_18608deb32.jpg
+    pain: https://www.api.de/fileadmin/user_upload/csm__DSC7546-HDR_18608deb32.jpg
+    idea: https://www.api.de/fileadmin/_processed_/5/b/csm_csm__DSC7546-HDR_18608deb32_ce7556510c.jpg
+
+problems:
+  - slug: bestellabgleich
+    title: {de: Bestellabgleich}
+    hook:
+      icon: order
+      image: hook
+      sub: {de: Artikelnummern fangen, bevor sie ins System wandern}
+      de:
+        - [{text: "Artikelnummern", accent: true}]
+        - ["am Katalog prüfen"]
+    pain:
+      image: pain
+      title: {de: Je später eine falsche Position auffällt, desto teurer wird die Lieferung}
+      chips: {de: [Nummern, Varianten, Mengen]}
+      columns: {de: [Am Eingang, Im System, Beim Kunden]}
+      note: {de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"}
+    idea:
+      icon: agent
+      image: idea
+      title: {de: Assistent für den Bestellabgleich}
+      sub: {de: KI-Agent + Ihr Katalog + Freigabe durch Menschen}
+    steps:
+      - {id: inputs, icon: inbox, link: arrow,
+         title: {de: Eingehende Bestellung},
+         sub: {de: "EDI · PDF · E-Mail"}}
+      - {id: agent, icon: agent, link: both,
+         title: {de: "KI-Agent (LLM)"},
+         sub: {de: erfasst die Positionen}}
+      - {id: rules, icon: db, link: arrow,
+         title: {de: Ihr Katalog},
+         sub: {de: Artikel- und Stammdaten}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {de: Abweichung + Mensch},
+         sub: {de: jede Abweichung mit Quelle}}
+      - {id: erp, icon: check,
+         title: {de: "ERP, nur freigegeben"},
+         sub: {de: weiter zur Lieferung}}
+    before_after:
+      - label: {de: Erfassungszeit pro Bestellung}
+        before: 15
+        after: 4
+        unit: {de: "Min."}
+      - label: {de: "Fehlzuordnungen (Index)"}
+        before: 100
+        after: 25
+        unit: ""
+    pilot:
+      de: ["Eine Warengruppe", "Nur lesend, parallel zum Team", "Erfolg gemeinsam mit dem Fachbereich messen"]
+    narration:
+      de:
+        - {scene: hook, text: "Eine falsche Artikelnummer kostet am Schreibtisch wenig und auf dem Weg zum Kunden viel."}
+        - {scene: pain, text: "Nummern, Varianten, Mengen: Eine Abweichung heißt Fehlversand.",
+           cues: {pain.chips: Nummern, pain.0: Abweichung, pain.1: heißt, pain.2: Fehlversand}}
+        - {scene: idea, text: "Eine Idee: ein Assistent für den Bestellabgleich."}
+        - {scene: arch, text: "Er liest jede Bestellung, per EDI, als PDF oder E-Mail.",
+           say: "Er liest jede Bestellung, per E-D-I, als PDF oder E-Mail.",
+           cues: {arch.inputs: liest}}
+        - {scene: arch, text: "Ein KI-Agent erfasst die Positionen und prüft sie gegen Ihren Katalog.",
+           say: "Ein K-I-Agent erfasst die Positionen und prüft sie gegen Ihren Katalog.",
+           cues: {arch.agent: KI-Agent, arch.rules: Katalog}}
+        - {scene: arch, text: "Abweichungen werden mit Quelle markiert, die Entscheidung trifft der Mensch.",
+           cues: {arch.checks: Abweichungen}}
+        - {scene: arch, text: "Nur freigegebene Aufträge gehen ins ERP, mit lokalen Modellen und der DSGVO im Blick.",
+           say: "Nur freigegebene Aufträge gehen ins E-R-P, mit lokalen Modellen und der DSGVO im Blick.",
+           cues: {arch.erp: freigegebene, arch.badges: lokalen}}
+        - {scene: metrics, text: "Beispielhafte Pilotziele: Erfassungszeit von fünfzehn auf vier Minuten, deutlich weniger Fehlzuordnungen.",
+           cues: {metrics.0: Erfassungszeit, metrics.1: deutlich}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
+        - {scene: pilot, text: "Ein Pilot könnte mit einer Warengruppe starten.",
+           cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Warengruppe}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

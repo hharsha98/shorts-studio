@@ -1,0 +1,128 @@
+# Worked example. A concept, not an official Rotpunkt Küchen project. Numbers below are illustrative.
+# The scripts, the storyboard and the photo list live next to this file in companies/rotpunkt/.
+# The scenes, the proof card and the closing card come from the template.
+version: 1
+company:
+  slug: rotpunkt
+  name: Rotpunkt Küchen
+  domain: rotpunkt.de
+  logo_url: https://www.rotpunktkuechen.de/_assets/3b6d3762df46d796681ba251631c1b03/Media/rotpunkt-kuechen-logo.svg
+  images:
+    hook: https://www.rotpunktkuechen.de/fileadmin/_processed_/8/4/csm_01-zerox-sy-ver-loft-brown-oak_gallery__1400x875_31bc567624.webp
+    pain: https://www.rotpunktkuechen.de/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK07_Hauptschuss__1200.jpg
+    idea: https://www.rotpunktkuechen.de/fileadmin/_processed_/6/e/csm_MK_02_Memory_RI_Beach_Grey_Zerox_SY_VER_Scandinavian_Oak2__header__1200_460dc71601.webp
+
+problems:
+  - slug: order-checks
+    title: {en: Order checks, de: Auftragsprüfung}
+    hook:
+      icon: order
+      image: hook
+      sub:
+        en: Catch a wrong order before it is built
+        de: Einen falschen Auftrag abfangen, bevor er gebaut wird
+      en:
+        - [{text: "Catch "}, {text: "order errors", accent: true}]
+        - ["before production"]
+      de:
+        - [{text: "Bestellfehler", accent: true}, {text: " finden,"}]
+        - ["bevor sie teuer werden"]
+    pain:
+      kind: ruleOfTen
+      image: pain
+      title:
+        en: The later an error is found, the more it costs
+        de: Je später ein Fehler auffällt, desto teurer wird er
+      chips:
+        en: [Variants, Dimensions, Dependencies]
+        de: [Varianten, Maße, Abhängigkeiten]
+      columns:
+        en: [Desk check, Production, At the customer]
+        de: [Am Schreibtisch, In der Fertigung, Beim Kunden]
+      note:
+        en: "Rule of ten: a general quality principle, not company data"
+        de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"
+    idea:
+      icon: agent
+      image: idea
+      kicker: {en: One idea, de: Eine Idee}
+      title: {en: An order check assistant, de: KI-Assistent für die Auftragsprüfung}
+      sub:
+        en: AI agent + your product rules + human approval
+        de: KI-Agent + Ihre Produktregeln + Freigabe durch Menschen
+    steps:
+      - {id: inputs, icon: inbox, link: arrow,
+         title: {en: Incoming order, de: Eingehende Bestellung},
+         sub: {en: "EDI · PDF · email · any language", de: "EDI · PDF · E-Mail · jede Sprache"}}
+      - {id: agent, icon: agent, link: both,
+         title: {en: "AI agent (LLM)", de: "KI-Agent (LLM)"},
+         sub: {en: extracts the order lines, de: erfasst die Positionen}}
+      - {id: rules, icon: db, link: arrow,
+         title: {en: "Your product rules (RAG)", de: "Ihre Produktregeln (RAG)"},
+         sub: {en: catalogue and master data, de: Katalog- und Stammdaten}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {en: "Rule checks + clerk", de: "Regelprüfung + Mensch"},
+         sub: {en: each conflict shown with its source, de: jeder Konflikt mit Quelle}}
+      - {id: erp, icon: factory,
+         title: {en: "ERP → production", de: "ERP → Fertigung"},
+         sub: {en: only approved orders, de: nur freigegebene Aufträge}}
+    before_after:
+      - label: {en: Checking time per order, de: Prüfzeit pro Auftrag}
+        before: 20
+        after: 5
+        unit: {en: min, de: "Min."}
+      - label:
+          en: Errors found only in production (index)
+          de: "Fehler, die erst in der Fertigung auffallen (Index)"
+        before: 100
+        after: 25
+        unit: ""
+    pilot:
+      en: ["One product line", "Read-only, next to the team", "Success measured with the department"]
+      de: ["Eine Produktlinie", "Nur lesend, parallel zum Team", "Erfolg gemeinsam mit dem Fachbereich messen"]
+    narration:
+      en:
+        - {scene: hook, text: "Order errors are cheap at the desk, and expensive in production."}
+        - {scene: pain, text: "Variants, dimensions, dependencies: one missed detail means rework.",
+           cues: {pain.chips: Variants, pain.0: missed, pain.1: detail, pain.2: rework}}
+        - {scene: idea, text: "One idea: an order check assistant."}
+        - {scene: arch, text: "It reads each order, from EDI, PDF or email, in any language.",
+           cues: {arch.inputs: reads}}
+        - {scene: arch, text: "An AI agent extracts the lines and checks them against your product rules.",
+           cues: {arch.agent: agent, arch.rules: rules}}
+        - {scene: arch, text: "Conflicts come with their source, and a clerk decides.",
+           cues: {arch.checks: Conflicts}}
+        - {scene: arch, text: "Only approved orders reach the ERP, with local models and GDPR in mind.",
+           cues: {arch.erp: approved, arch.badges: local}}
+        - {scene: metrics, text: "Illustrative pilot targets: checking time from twenty minutes to five, and far fewer errors found in production.",
+           cues: {metrics.0: checking, metrics.1: fewer}}
+        - {scene: proof, text: "A multi-agent system with LangGraph that I built at Siemens already runs in production in Amberg.",
+           say: "A multi-agent system with Lang Graph that I built at Siemens already runs in production in Amberg.",
+           cues: {proof: LangGraph}}
+        - {scene: pilot, text: "A pilot could start with one product line.",
+           cues: {pilot.0: pilot, pilot.1: start, pilot.2: product}}
+        - {scene: closing, text: "Happy to explore it with you."}
+      de:
+        - {scene: hook, text: "Ein Bestellfehler kostet am Schreibtisch wenig, in der Fertigung viel."}
+        - {scene: pain, text: "Varianten, Maße, Abhängigkeiten: Ein übersehenes Detail heißt Nacharbeit.",
+           cues: {pain.chips: Varianten, pain.0: übersehenes, pain.1: Detail, pain.2: Nacharbeit}}
+        - {scene: idea, text: "Eine Idee: ein KI-Assistent für die Auftragsprüfung."}
+        - {scene: arch, text: "Er liest jede Bestellung, per EDI, als PDF oder E-Mail, in jeder Sprache.",
+           say: "Er liest jede Bestellung, per E-D-I, als PDF oder E-Mail, in jeder Sprache.",
+           cues: {arch.inputs: liest}}
+        - {scene: arch, text: "Ein KI-Agent erfasst die Positionen und prüft sie gegen Ihre Produktregeln.",
+           say: "Ein K-I-Agent erfasst die Positionen und prüft sie gegen Ihre Produktregeln.",
+           cues: {arch.agent: KI-Agent, arch.rules: Produktregeln}}
+        - {scene: arch, text: "Konflikte werden mit Quelle markiert, die Entscheidung trifft der Mensch.",
+           cues: {arch.checks: Konflikte}}
+        - {scene: arch, text: "Nur freigegebene Aufträge gehen ins ERP, mit lokalen Modellen und der DSGVO im Blick.",
+           say: "Nur freigegebene Aufträge gehen ins E-R-P, mit lokalen Modellen und der DSGVO im Blick.",
+           cues: {arch.erp: freigegebene, arch.badges: lokalen}}
+        - {scene: metrics, text: "Beispielhafte Pilotziele: Prüfzeit von zwanzig auf fünf Minuten, deutlich weniger Fehler in der Fertigung.",
+           cues: {metrics.0: Prüfzeit, metrics.1: deutlich}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
+        - {scene: pilot, text: "Ein Pilot könnte mit einer Produktlinie starten.",
+           cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Produktlinie}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

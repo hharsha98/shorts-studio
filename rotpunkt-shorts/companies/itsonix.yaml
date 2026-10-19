@@ -1,0 +1,84 @@
+# Worked example: a concept, not an official project. Figures are illustrative.
+# IT Sonix — answer a project question from the customer's own specs and tickets, with the source.
+version: 1
+company:
+  slug: itsonix
+  name: IT Sonix
+  domain: itsonix.eu
+  logo_url: https://itsonix.eu/wp-content/uploads/2026/05/ITSonix_Logo_White.svg
+  images:
+    hook: https://itsonix.eu/wp-content/uploads/2026/05/Blogbeitrag-Header-Softwareentwicklung_KI.jpg
+    pain: https://itsonix.eu/wp-content/uploads/2026/05/Blogbeitrag_Header-ZAP.jpg
+    idea: https://itsonix.eu/wp-content/uploads/2026/03/Blogbeitrag_Header-BarrierefreiesFE.jpg
+
+problems:
+  - slug: projektwissen
+    title: {de: Projektwissen}
+    hook:
+      icon: knowledge
+      image: hook
+      sub: {de: Eine Projektfrage beantworten, bevor die Suche den Tag frisst}
+      de:
+        - [{text: "Wissen", accent: true}, {text: " finden"}]
+        - ["mit Quelle"]
+    pain:
+      image: pain
+      title: {de: Je später die richtige Stelle auftaucht, desto länger steht die Arbeit}
+      chips: {de: [Tickets, Spezifikationen, Beschlüsse]}
+      columns: {de: [In der Suche, Im Team, Beim Kunden]}
+      note: {de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"}
+    idea:
+      icon: agent
+      image: idea
+      title: {de: Assistent für das Projektwissen}
+      sub: {de: KI-Agent + Ihre Unterlagen + Freigabe durch Menschen}
+    steps:
+      - {id: inputs, icon: chat, link: arrow,
+         title: {de: Frage des Teams},
+         sub: {de: aus dem laufenden Projekt}}
+      - {id: agent, icon: agent, link: both,
+         title: {de: "KI-Agent (LLM)"},
+         sub: {de: sucht und fasst zusammen}}
+      - {id: rules, icon: db, link: arrow,
+         title: {de: Ihre Unterlagen},
+         sub: {de: Tickets, Specs, Beschlüsse}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {de: Stelle + Mensch},
+         sub: {de: jede Aussage mit Quelle}}
+      - {id: erp, icon: check,
+         title: {de: Zurück ins Team},
+         sub: {de: nur geprüfte Antworten}}
+    before_after:
+      - label: {de: Suchzeit pro Frage}
+        before: 15
+        after: 2
+        unit: {de: "Min."}
+      - label: {de: "Antworten ohne Quelle (Index)"}
+        before: 100
+        after: 25
+        unit: ""
+    pilot:
+      de: ["Ein Kundenprojekt", "Nur lesend, parallel zum Team", "Erfolg gemeinsam mit dem Team messen"]
+    narration:
+      de:
+        - {scene: hook, text: "Eine Antwort, die in den Unterlagen vergraben liegt, hält das Projekt auf."}
+        - {scene: pain, text: "Tickets, Spezifikationen, Beschlüsse: Ohne Quelle bleibt die Antwort unsicher.",
+           cues: {pain.chips: Tickets, pain.0: Ohne, pain.1: Quelle, pain.2: unsicher}}
+        - {scene: idea, text: "Eine Idee: ein Assistent für das Projektwissen."}
+        - {scene: arch, text: "Er liest die Frage des Teams und sucht in den Projektunterlagen.",
+           cues: {arch.inputs: liest}}
+        - {scene: arch, text: "Ein KI-Agent fasst die Stellen zusammen und nennt die Quelle.",
+           say: "Ein K-I-Agent fasst die Stellen zusammen und nennt die Quelle.",
+           cues: {arch.agent: KI-Agent, arch.rules: Quelle}}
+        - {scene: arch, text: "Unsichere Stellen werden markiert, die Entscheidung trifft der Mensch.",
+           cues: {arch.checks: Unsichere}}
+        - {scene: arch, text: "Nur geprüfte Antworten gehen zurück ins Team, mit lokalen Modellen und der DSGVO im Blick.",
+           cues: {arch.erp: geprüfte, arch.badges: lokalen}}
+        - {scene: metrics, text: "Beispielhafte Pilotziele: Suchzeit von fünfzehn auf zwei Minuten, deutlich weniger Antworten ohne Quelle.",
+           cues: {metrics.0: Suchzeit, metrics.1: deutlich}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
+        - {scene: pilot, text: "Ein Pilot könnte mit einem Kundenprojekt starten.",
+           cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Kundenprojekt}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

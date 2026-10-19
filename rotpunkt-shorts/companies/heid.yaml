@@ -1,0 +1,87 @@
+# Worked example: a concept, not an official project. Figures are illustrative.
+# Heid Immobilienbewertung — completeness check for incoming property files.
+# Own idea. Company metrics below are examples; Siemens proof card and the closing card come from the template.
+version: 1
+company:
+  slug: heid
+  name: Heid Immobilien
+  domain: heid-immobilienbewertung.de
+  logo_url: https://www.heid-immobilienbewertung.de/assets/img/svg/heid-logo.svg
+  logo_plate: light
+  images:
+    hook: https://www.heid-immobilienbewertung.de/uploads/wohnhaus.jpeg
+    pain: https://www.heid-immobilienbewertung.de/uploads/immobilie-bewerten.jpg
+    idea: https://www.heid-immobilienbewertung.de/uploads/immobilienbewertung.jpeg
+
+problems:
+  - slug: unterlagen
+    title: {de: Unterlagenprüfung}
+    hook:
+      icon: order
+      image: hook
+      sub: {de: Eine Akte vollständig machen, bevor bewertet wird}
+      de:
+        - [{text: "Fehlende "}, {text: "Unterlagen", accent: true}]
+        - ["vor dem Gutachten"]
+    pain:
+      image: pain
+      title: {de: Je später eine Lücke auffällt, desto teurer wird die Bewertung}
+      chips: {de: [Pläne, Fotos, Nachweise]}
+      columns: {de: [Am Eingang, In der Prüfung, Beim Kunden]}
+      note: {de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"}
+    idea:
+      icon: agent
+      image: idea
+      kicker: {de: Eine Idee}
+      title: {de: Assistent für die Aktenprüfung}
+      sub: {de: KI-Agent + Ihre Checkliste + Freigabe durch Menschen}
+    steps:
+      - {id: inputs, icon: inbox, link: arrow,
+         title: {de: Eingehende Unterlagen},
+         sub: {de: "PDF · E-Mail · Portal"}}
+      - {id: agent, icon: agent, link: both,
+         title: {de: "KI-Agent (LLM)"},
+         sub: {de: erfasst die Dokumente}}
+      - {id: rules, icon: db, link: arrow,
+         title: {de: Ihre Checkliste},
+         sub: {de: was zu einem Objekt gehört}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {de: Lücken + Mensch},
+         sub: {de: jede Lücke mit Quelle}}
+      - {id: erp, icon: check,
+         title: {de: Freigabe zur Bewertung},
+         sub: {de: nur vollständige Akten}}
+    before_after:
+      - label: {de: Prüfzeit pro Akte}
+        before: 40
+        after: 8
+        unit: {de: "Min."}
+      - label: {de: "Nachforderungen (Index)"}
+        before: 100
+        after: 30
+        unit: ""
+    pilot:
+      de: ["Eine Objektart", "Nur lesend, parallel zum Team", "Erfolg gemeinsam mit dem Fachbereich messen"]
+    narration:
+      de:
+        - {scene: hook, text: "Eine unvollständige Objektakte kostet am Anfang wenig und später viel Zeit."}
+        - {scene: pain, text: "Pläne, Fotos, Nachweise: Eine Lücke heißt Rückfrage und Verzug.",
+           cues: {pain.chips: Pläne, pain.0: Lücke, pain.1: Rückfrage, pain.2: Verzug}}
+        - {scene: idea, text: "Eine Idee: ein Assistent für die Aktenprüfung."}
+        - {scene: arch, text: "Er liest jede eingehende Unterlage, ob als PDF oder per E-Mail.",
+           cues: {arch.inputs: liest}}
+        - {scene: arch, text: "Ein KI-Agent erfasst die Dokumente und prüft sie gegen Ihre Checkliste.",
+           say: "Ein K-I-Agent erfasst die Dokumente und prüft sie gegen Ihre Checkliste.",
+           cues: {arch.agent: KI-Agent, arch.rules: Checkliste}}
+        - {scene: arch, text: "Lücken werden mit Quelle markiert, die Entscheidung trifft der Mensch.",
+           cues: {arch.checks: Lücken}}
+        - {scene: arch, text: "Nur vollständige Akten gehen in die Bewertung, mit lokalen Modellen und der DSGVO im Blick.",
+           cues: {arch.erp: vollständige, arch.badges: lokalen}}
+        - {scene: metrics, text: "Beispielhafte Pilotziele: Prüfzeit von vierzig auf acht Minuten, deutlich weniger Nachforderungen.",
+           cues: {metrics.0: Prüfzeit, metrics.1: deutlich}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
+        - {scene: pilot, text: "Ein Pilot könnte mit einer Objektart starten.",
+           cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Objektart}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

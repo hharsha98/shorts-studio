@@ -1,0 +1,22 @@
+{
+  "name": "media-studio-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remotion project used by the media-studio Claude Code plugin. Exact versions on purpose: upgrade deliberately, then re-test.",
+  "dependencies": {
+    "@remotion/cli": "4.0.534",
+    "@remotion/media": "4.0.534",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.534"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "typecheck": "tsc"
+  }
+}

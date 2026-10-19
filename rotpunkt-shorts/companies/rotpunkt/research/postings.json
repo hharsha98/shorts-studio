@@ -1,0 +1,165 @@
+{
+  "fetched": "2026-10-18 21:55-22:05 UTC",
+  "method": "Official list from the job widget embedded on rotpunktkuechen.de/karriere/fachkraefte (Connectoor widget id 6a7af22645b909b7b58b4e76, API https://api.connectoor.de/find?s=6a7af22645b909b7b58b4e76&o=0&q= and /jobdetail), plus Connectoor job pages, ZipRecruiter/SimplyHired/Indeed mirrors and the careers pages. Dates are the Connectoor created_at values (UTC) unless a mirror date is named.",
+  "postings": [
+    {
+      "title": "Datenmanager IDM (m/w/d)",
+      "site": "Bünde",
+      "created": "2026-10-12",
+      "urls": ["https://app.connectoor.de/jobview?jobid=6acce3be45b90924b38b73d1"],
+      "quotes": [
+        "du pflegst und legst IDM Daten in mehreren Sprachvarianten an",
+        "du pflegst Artikelgruppen, Textbausteine und IDM-Daten für die Preisliste",
+        "du unterstützt die Digitalisierung des Sales Prozess mit dem Fokus auf Nutzung des branchenspezifischen Datenmodells IDM",
+        "du übernimmst die Schnittstellenarbeit zwischen Produktentwicklung und Produktanlage auf Datenebene",
+        "Berufserfahrung in der Erstellung von IDM-Daten oder im Umgang mit Stammdaten",
+        "Kenntnisse im Umgang mit der Branchenlösung Furnidata zur Erstellung von Produktdaten im IDM-Format"
+      ]
+    },
+    {
+      "title": "IT-Applikationsmanager (Produktionssysteme) (m/w/d)",
+      "site": "Bünde",
+      "created": "2026-08-31 (ZipRecruiter mirror dated 2026-10-03)",
+      "urls": [
+        "https://app.connectoor.de/jobview?jobid=6a955fdb45b90999418bbee6",
+        "https://www.ziprecruiter.de/jobs/615827602-it-applikationsmanager-produktionssysteme-m-w-d-bei-rotpunkt-kuechen"
+      ],
+      "quotes": [
+        "du betreust unsere produktionsnahen Anwendungen und sorgst dafür, dass sie im täglichen Betrieb zuverlässig funktionieren",
+        "du unterstützt unsere Anwender, analysierst technische Probleme und findest Lösungen, wenn Prozesse oder Systeme einmal nicht so funktionieren wie geplant",
+        "du pflegst technische Stammdaten, Varianten, Maße, Positionierungen und Abhängigkeiten",
+        "du entwickelst automatisierte Abläufe, Rückmeldungen und Workflows zwischen Maschinen und unseren Systemen weiter",
+        "du überwachst automatische Prozesse und gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt",
+        "du sorgst dafür, dass Auftrags-, Produkt- und Produktionsdaten zuverlässig zwischen unseren Systemen ausgetauscht werden",
+        "du betreust und entwickelst EDI-Prozesse, Schnittstellen und bestehende Automatisierungslösungen weiter",
+        "VBA, VBScript und Microsoft SQL",
+        "Kenntnisse in COE/GOE, MOS, Insight2020 oder vergleichbaren Produktions- und Branchensystemen sind ein Plus"
+      ]
+    },
+    {
+      "title": "Teamleiter Produktion (m/w/d)",
+      "site": "Bünde",
+      "created": "2026-08-20",
+      "urls": ["https://app.connectoor.de/jobview?jobid=6a86b81945b909b22d8b79cc"],
+      "quotes": [
+        "du pflegst die Logistikaufträge im ERP- System",
+        "du führst und betreust ein Team mit rund 15 Mitarbeitenden",
+        "du organisierst und stellst den reibungslosen Ablauf des Materialflusses in der Produktion sicher",
+        "du überprüfst, optimierst und schulst die Prozesse",
+        "Kenntnisse in der Anwendung von ERP-Systemen (vorzugsweise Cyncly Insight)"
+      ]
+    },
+    {
+      "title": "Verlader (m/w/d)",
+      "site": "Bünde",
+      "created": "2026-08-20",
+      "urls": ["https://app.connectoor.de/jobview?jobid=6a86c4c045b909727e8b9266"],
+      "quotes": ["du bist verantwortlich für die Vollständigkeit der Auflieger durch Scannen von Möbel- und Zubehörteilen"]
+    },
+    {
+      "title": "Maschinenbediener (m/w/d)",
+      "site": "Bünde",
+      "created": "2026-08-18",
+      "urls": ["https://app.connectoor.de/jobview?jobid=6a84589245b909f8448b8c7d"],
+      "quotes": [
+        "du analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen und tauschst gegebenenfalls defekte Teile aus",
+        "du verantwortest die Pflege und Instandhaltung von Maschinen",
+        "Erfahrung mit industriellen Kantenanleim-Maschinen, doppelseitig/einseitig (IMA, Homag)",
+        "Erfahrung mit Plattenaufteil-Anlagen (Schelling)",
+        "Erfahrung mit CNC-Bearbeitungszentren (IMA, Homag)"
+      ]
+    },
+    {
+      "title": "Sachbearbeiter in der Kundenbetreuung (m/w/d)",
+      "site": "Bünde",
+      "created": "2026-08-11 (ZipRecruiter mirror dated 2026-09-24)",
+      "urls": [
+        "https://app.connectoor.de/jobview?jobid=6a7aff1b45b90929ff8b54bc",
+        "https://www.ziprecruiter.de/jobs/606641169-sachbearbeiter-in-der-kundenbetreuung-m-w-d-bei-rotpunkt-kuechen"
+      ],
+      "quotes": [
+        "du erfasst Kundenaufträge termingerecht",
+        "du prüfst Kundenbestellungen auf technische Umsetzbarkeit",
+        "du berätst unsere Fachhändler bei Problemen, Produktfragen und Preisen",
+        "du betreust unsere Kunden, insbesondere aus den Exportmärkten per Telefon und E-Mail",
+        "Berufserfahrung (mind. 3 Jahre) in der Ausarbeitung von Küchenmöbelbestellungen",
+        "Gute Englischkenntnisse in Wort und Schrift"
+      ]
+    },
+    {
+      "title": "Materialdisponent (m/w/d)",
+      "site": "Bünde",
+      "created": "2026-08-11",
+      "urls": ["https://app.connectoor.de/jobview?jobid=6a7afe5645b909ea958b49ba"],
+      "quotes": [
+        "du erstellst Kennzahlen und erarbeitest KVP Maßnahmen und Prozessverbesserungen im Zuge der Optimierung der Supply Chain",
+        "du disponierst Teile/ Materialien mengen- und termingerecht, teilweise JIT",
+        "du beseitigst Lieferengpässe, du klärst Liefersituationen ab und mahnst Lieferungen an",
+        "Mehrjährige Berufserfahrung in der Möbelbranche (wünschenswert)",
+        "Kenntnisse in Microsoft Navision (wünschenswert)"
+      ]
+    },
+    {
+      "title": "Elektriker/ Elektroniker am Standort Getmold (m/w/d)",
+      "site": "Preußisch Oldendorf (Getmold)",
+      "created": "2026-08-11",
+      "urls": ["https://app.connectoor.de/jobview?jobid=6a7afcbd45b909727e8b6c7e"],
+      "quotes": [
+        "du stellst eine hohe Verfügbarkeit unserer Produktionsanlagen sicher",
+        "du reparierst und hältst eigenverantwortlich unsere Anlagen, Haus- sowie Gebäudetechnik in Stand",
+        "du führst Wartungsarbeiten gemäß Wartungsplan durch"
+      ]
+    },
+    {
+      "title": "AI Solution Engineer (m/w/d)",
+      "site": "Bünde",
+      "created": "Indeed: posted 2026-09-20 (not in the careers-page widget list at fetch time; live on Connectoor)",
+      "urls": [
+        "https://app.connectoor.de/jobview?jobid=6aaf8faf45b90998048b79fe",
+        "https://de.indeed.com/viewjob?jk=54b6a3713d326641",
+        "https://www.simplyhired.de/job/iSk0ke8n5Pr8ZyrQG64PtogeVe3FdBqUbN-1WCbWlVndErnRq4cm_A"
+      ],
+      "quotes": [
+        "du analysierst Anforderungen unserer Fachbereiche und entwickelst innovative AI-Lösungen für unsere Unternehmensprozesse",
+        "du automatisierst wiederkehrende Abläufe mithilfe moderner AI-Technologien",
+        "du integrierst AI-Lösungen in unsere bestehende Systemlandschaft und Geschäftsprozesse",
+        "du unterstützt Kolleginnen und Kollegen bei der Anwendung neuer AI-Anwendungen",
+        "Datenschutz, Informationssicherheit sowie die Einhaltung der DSGVO"
+      ]
+    },
+    {
+      "title": "Ausbildung zum Industriekaufmann (m/w/d), start 01.08.2027",
+      "site": "Bünde",
+      "created": "ZipRecruiter mirror dated 2026-10-08",
+      "urls": ["https://www.ziprecruiter.de/jobs/619824806-ausbildung-zum-industriekaufmann-m-w-d-bei-rotpunkt-kuechen", "https://www.rotpunktkuechen.de/karriere/ausbildung"],
+      "quotes": ["Erwerb des international anerkannten Telc-Zertifikats in Englisch"]
+    },
+    {
+      "title": "Ausbildung Elektroniker für Betriebstechnik (m/w/d), start 01.08.2027",
+      "site": "Bünde",
+      "created": "ZipRecruiter mirror dated 2026-10-08",
+      "urls": ["https://www.ziprecruiter.de/jobs/619824810-ausbildung-elektroniker-fuer-betriebstechnik-m-w-d-bei-rotpunkt-kuechen", "https://www.rotpunktkuechen.de/karriere/ausbildung"],
+      "quotes": ["du übernimmst vielfältige Aufgaben - und stellst einen elektrotechnisch reibungslosen Ablauf der Produktion sicher"]
+    },
+    {
+      "title": "Ausbildung Holzmechaniker (m/w/d), start 01.08.2027",
+      "site": "Bünde",
+      "created": "listed on the careers page (PDF download) and stellenangebote.info",
+      "urls": ["https://www.rotpunktkuechen.de/karriere/ausbildung", "https://www.stellenangebote.info/jobs-rotpunkt-kuechen-gmbh.html"],
+      "quotes": ["In unserer eigenen Lehrwerkstatt arbeitest du während deiner Ausbildung tagtäglich mit Holz"]
+    }
+  ],
+  "checked_without_extra_postings": [
+    { "where": "Indeed company page", "url": "https://de.indeed.com/cmp/Rotpunkt-K%C3%BCchen/jobs", "result": "\"Aktuell gibt es keine offenen Stellen bei Rotpunkt Küchen.\" (the AI posting is still reachable by its own Indeed link)" },
+    { "where": "XING company page", "url": "https://www.xing.com/pages/rotpunkt-kuechen-gmbh", "result": "\"There aren't any vacancies available right now.\"" },
+    { "where": "LinkedIn company jobs", "url": "https://www.linkedin.com/company/rotpunkt-kuchen-gmbh/jobs/", "result": "not reachable without login (404 for an anonymous fetch); not verified" },
+    { "where": "StepStone company page", "url": "https://www.stepstone.de/cmp/de/rotpunkt-kuechen-gmbh-171493/jobs", "result": "server error 500 on fetch; not verified" },
+    { "where": "stellenangebote.info", "url": "https://www.stellenangebote.info/jobs-rotpunkt-kuechen-gmbh.html", "result": "504 on fetch; the search snippet lists 6 positions including the three apprenticeships" }
+  ],
+  "press": [
+    { "fact": "About EUR 50 m invested since late 2023 in a logistics hub, the machine park and the digitalisation of all business areas; 374 staff at end of 2025; 2026 revenue target EUR 110 m", "url": "https://www.moebelfertigung.com/news/rekordumsatz-trotz-schwieriger-marktlage" },
+    { "fact": "\"interne Abläufe neu geordnet und effizienter gestaltet. Davon profitiert der Fachhandel direkt. In der Auftragsabwicklung ebenso wie im Produktsortiment\"; collection 2026 stresses \"Variantenreichtum und einfache Planbarkeit\"", "url": "https://www.moebelfertigung.com/news/kollektion-2026-wird-zum-baukasten-fuer-zukunftsfaehigkeit" },
+    { "fact": "\"mehr Lkw neue Maschinen bei uns anliefern, als Küchen das Werk verlassen\" (Andreas Wagner)", "url": "https://hk-magazin.com/allgemein/rotpunkt-kuechen-starke-entwicklung-im-ersten-quartal/" },
+    { "fact": "Revenue 2025 about EUR 103.7 m, export-driven growth", "url": "https://www.woodandpanel.com/woodnews/article/rotpunkt-kuchen-achieves-e103-7-million-in-sales-for-2025-boosted-by-export-growth-and-strategic-investments/" }
+  ]
+}

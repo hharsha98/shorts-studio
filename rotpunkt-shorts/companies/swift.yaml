@@ -1,0 +1,83 @@
+# Worked example: a concept, not an official project. Figures are illustrative.
+# SWIFT GmbH — flag outliers in a measurement run while the test is still running.
+version: 1
+company:
+  slug: swift
+  name: SWIFT
+  domain: swift-online.de
+  logo_url: https://swift-online.de/wp-content/uploads/2019/04/SWIFT_Logo.png
+  images:
+    hook: https://swift-online.de/wp-content/uploads/2019/06/Messwerterfassungssysteme-Swift.jpg
+    pain: https://swift-online.de/wp-content/uploads/2019/05/SWIFT-AIDA-Recorder.jpg
+    idea: https://swift-online.de/wp-content/uploads/2019/07/swift-header.jpg
+
+problems:
+  - slug: messausreisser
+    title: {de: Messüberwachung}
+    hook:
+      icon: machine
+      image: hook
+      sub: {de: Eine Messreihe überwachen, bevor der Versuch umsonst war}
+      de:
+        - [{text: "Ausreißer", accent: true}, {text: " sehen"}]
+        - ["noch im Versuch"]
+    pain:
+      image: pain
+      title: {de: Je später ein Ausreißer auffällt, desto teurer wird der Versuch}
+      chips: {de: [Kanäle, Grenzwerte, Verläufe]}
+      columns: {de: [Am Gerät, In der Analyse, Beim Kunden]}
+      note: {de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"}
+    idea:
+      icon: agent
+      image: idea
+      title: {de: Assistent für die Messüberwachung}
+      sub: {de: Modell am Gerät + Ihre Grenzwerte + Freigabe durch Menschen}
+    steps:
+      - {id: inputs, icon: inbox, link: arrow,
+         title: {de: Messdaten vom Versuch},
+         sub: {de: Sensoren, laufend}}
+      - {id: agent, icon: server, link: both,
+         title: {de: Prüfung am Gerät},
+         sub: {de: nahe an der Messung}}
+      - {id: rules, icon: db, link: arrow,
+         title: {de: Ihre Grenzwerte},
+         sub: {de: aus früheren Versuchen}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {de: Hinweis + Ingenieur},
+         sub: {de: jeder Hinweis mit Quelle}}
+      - {id: erp, icon: check,
+         title: {de: In die Auswertung},
+         sub: {de: nur geprüfte Markierungen}}
+    before_after:
+      - label: {de: Zeit bis zum ersten Hinweis}
+        before: 30
+        after: 5
+        unit: {de: "Min."}
+      - label: {de: "Übersehene Ausreißer (Index)"}
+        before: 100
+        after: 40
+        unit: ""
+    pilot:
+      de: ["Ein Prüfstand", "Nur lesend, parallel zum Team", "Erfolg gemeinsam mit dem Fachbereich messen"]
+    narration:
+      de:
+        - {scene: hook, text: "Ein Ausreißer im Versuch kostet früh wenig und spät den ganzen Lauf."}
+        - {scene: pain, text: "Kanäle, Grenzwerte, Verläufe: Ein übersehenes Signal heißt Wiederholung.",
+           cues: {pain.chips: Kanäle, pain.0: übersehenes, pain.1: Signal, pain.2: Wiederholung}}
+        - {scene: idea, text: "Eine Idee: ein Assistent für die Messüberwachung."}
+        - {scene: arch, text: "Er liest die Messdaten schon während des Versuchs.",
+           cues: {arch.inputs: liest}}
+        - {scene: arch, text: "Ein Modell am Gerät vergleicht sie mit Ihren Grenzwerten.",
+           cues: {arch.agent: Modell, arch.rules: Grenzwerten}}
+        - {scene: arch, text: "Hinweise werden mit Quelle markiert, die Entscheidung trifft der Ingenieur.",
+           cues: {arch.checks: Hinweise}}
+        - {scene: arch, text: "Nur geprüfte Markierungen gehen in die Auswertung, mit lokalen Modellen und der DSGVO im Blick.",
+           cues: {arch.erp: geprüfte, arch.badges: lokalen}}
+        - {scene: metrics, text: "Beispielhafte Pilotziele: Zeit bis zum Hinweis von dreißig auf fünf Minuten, deutlich weniger übersehene Ausreißer.",
+           cues: {metrics.0: Zeit, metrics.1: deutlich}}
+        - {scene: proof, text: "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           say: "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+           cues: {proof: LangGraph}}
+        - {scene: pilot, text: "Ein Pilot könnte mit einem Prüfstand starten.",
+           cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Prüfstand}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}
