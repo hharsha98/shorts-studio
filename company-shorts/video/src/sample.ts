@@ -57,7 +57,7 @@ export const sampleProps: ShortProps = {
       kicker: "Built before",
       badge: "REAL RESULT",
       title: "A multi-agent system with LangGraph",
-      sub: "Built at Siemens Amberg · in production",
+      sub: "Already running in production",
       facts: [
         { value: "12", label: "LLM agents working together" },
         { value: "< 200 ms", label: "retrieval over manuals and logs" },

@@ -36,12 +36,12 @@ images are cached by URL, and the whole video is skipped when its props have not
 ## What every video contains
 
 - Problem, root cause (a cost chart), solution, flow, illustrative before/after result,
-  the Siemens proof card, an optional pilot, and the closing card.
+  the proof card, an optional pilot, and the closing card.
 - Closing card: the company logo, "An idea for <Company>" / "Eine Idee für <Company>",
   "Concept by Hanumanthu Harsha Vardhan", and a line that it is a concept, not an official project.
 - Photos credited "Images: <domain>" / "Bilder: <domain>". A photo that cannot be fetched is dropped
   and the scene uses the drawn graphic instead. The log says so.
-- Before/after numbers are stamped ILLUSTRATIVE / BEISPIELWERTE. The Siemens proof numbers are fixed in
+- Before/after numbers are stamped ILLUSTRATIVE / BEISPIELWERTE. The proof-card numbers are fixed in
   `template/copy.py` and cannot be edited from the config.
 - No "AI idea sketch" label, and the compiler rejects the words "job posting" and "Stellenanzeige".
 
@@ -50,14 +50,14 @@ images are cached by URL, and the whole video is skipped when its props have not
 ```yaml
 version: 1
 company:
-  slug: acme            # file and cache name
-  name: Acme GmbH       # used in "An idea for Acme GmbH"
-  domain: acme.example  # used in the photo credit
-  logo_url: https://acme.example/logo.svg   # or local:companies/logos/acme.svg
+  slug: example         # file and cache name
+  name: Example         # used in "An idea for Example"
+  domain: example.invalid  # used in the photo credit
+  logo_url: https://example.invalid/logo.svg   # or local:companies/logos/example.svg
   logo_plate: light     # optional white chip, for a dark wordmark on the dark closing card
   images:               # named URLs, referenced by the problem
-    hook: https://acme.example/hero.jpg
-    pain: https://acme.example/line.jpg
+    hook: https://example.invalid/hero.jpg
+    pain: https://example.invalid/line.jpg
 
 problems:               # 1 or 2; each becomes its own 60–70 s video
   - slug: document-checks

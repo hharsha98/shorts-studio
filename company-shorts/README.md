@@ -1,7 +1,7 @@
 # Company Shorts
 
 The project overview, stills and quickstart are in the [repository README](../README.md).
-Worked examples are labelled in [`companies/README.md`](companies/README.md).
+The only committed config is the fictional example in [`companies/_example.yaml`](companies/_example.yaml).
 
 One YAML file renders a vertical Short (1080x1920). The scenes are the same for every company:
 the problem, the root cause, the solution, the flow, the result, a proof card, an optional pilot, and the closing card.
@@ -16,7 +16,7 @@ Run the commands below from this directory.
 `companies/_example.yaml` is a neutral skeleton. A finished company file is `companies/<slug>.yaml`.
 The schema, the voice notes and the honesty rules are in [`template/README.md`](template/README.md).
 
-The proof card is a real result from the CV: a multi-agent system with LangGraph, built at Siemens in Amberg.
+The proof card is a real result from the CV: a multi-agent system with LangGraph, already running in production.
 It does not use an internal project name. Before/after numbers for the company are stamped as examples.
 
 ## Layout

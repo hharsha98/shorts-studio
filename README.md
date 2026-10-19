@@ -74,13 +74,12 @@ flowchart TD
 ├── LICENSE
 ├── CONTRIBUTING.md
 ├── docs/                          stills from the neutral example
-└── rotpunkt-shorts/
+└── company-shorts/
     ├── make_company_short.py      compile, voice, render, mix
     ├── prepare_company.py         optional draft from a page and a site
     ├── companies/
-    │   ├── _example.yaml          neutral schema
-    │   ├── README.md              worked examples, labelled as concepts
-    │   └── rotpunkt/              one worked example: scripts and storyboard
+    │   ├── _example.yaml          fictional schema example
+    │   └── README.md
     ├── template/                  compiler, fixed proof card, asset cache
     ├── tools/
     │   ├── setup.sh               fonts, Python env, Remotion browser
@@ -92,10 +91,10 @@ flowchart TD
 
 ## Quickstart
 
-From `rotpunkt-shorts/`. `tools/setup.sh` installs the Be Vietnam Pro fonts, a Python environment at `~/.venvs/kokoro` (override with `KOKORO_VENV`), the packages that environment needs (`torch` CPU, `kokoro`, `soundfile`, `edge-tts`, `faster-whisper`, `pyyaml`), and the Remotion packages pinned in `video/package-lock.json`, including its headless browser. ffmpeg and espeak-ng are installed with apt if they are missing. Node.js and npm need to be on the path already.
+From `company-shorts/`. `tools/setup.sh` installs the Be Vietnam Pro fonts, a Python environment at `~/.venvs/kokoro` (override with `KOKORO_VENV`), the packages that environment needs (`torch` CPU, `kokoro`, `soundfile`, `edge-tts`, `faster-whisper`, `pyyaml`), and the Remotion packages pinned in `video/package-lock.json`, including its headless browser. ffmpeg and espeak-ng are installed with apt if they are missing. Node.js and npm need to be on the path already.
 
 ```bash
-cd rotpunkt-shorts
+cd company-shorts
 bash tools/setup.sh
 ```
 
@@ -117,7 +116,7 @@ The first English render downloads the Kokoro-82M weights. German narration call
 
 ## Config example
 
-The full neutral file is [`rotpunkt-shorts/companies/_example.yaml`](rotpunkt-shorts/companies/_example.yaml). This is its opening:
+The full neutral file is [`company-shorts/companies/_example.yaml`](company-shorts/companies/_example.yaml). This is its opening:
 
 ```yaml
 version: 1
@@ -163,7 +162,7 @@ A German line can add `say` when the voice would misread the written words. The 
    cues: {arch.agent: KI-Agent, arch.rules: Regeln}}
 ```
 
-The schema, the icon names and the cue rules are in [`rotpunkt-shorts/template/README.md`](rotpunkt-shorts/template/README.md).
+The schema, the icon names and the cue rules are in [`company-shorts/template/README.md`](company-shorts/template/README.md).
 
 ## Caching
 
@@ -171,7 +170,7 @@ Nothing is re-voiced or re-rendered when the inputs have not changed.
 
 | What | Where | When it is reused |
 |---|---|---|
-| Logo and photos | `rotpunkt-shorts/work/asset-cache/`, named by a hash of the URL | The file is already there and at least 400 bytes. A failed download is retried once, including a retry when the site's certificate chain is incomplete. `local:companies/logos/mark.svg` copies a file from the repo instead. |
+| Logo and photos | `company-shorts/work/asset-cache/`, named by a hash of the URL | The file is already there and at least 400 bytes. A failed download is retried once, including a retry when the site's certificate chain is incomplete. `local:companies/logos/mark.svg` copies a file from the repo instead. |
 | One spoken line | `work/voice-cache/<hash>.wav` and a sidecar `.json` | The engine, the spoken text and the display text match. Editing another line does not re-voice this one. |
 | The whole narration | `timeline.json` next to the film, plus `narration.wav` | The engine, every line, the scene order and the pause constants match. |
 | The picture | `render.json` stores a hash of `props.json` | That hash matches and the MP4 is already there. `--force` bypasses the voice cache and this skip. |
@@ -185,12 +184,12 @@ These are enforced by the template, not left to the author of a config.
 
 - Before/after figures are labelled `ILLUSTRATIVE` / `BEISPIELWERTE`, with a footnote that they are not this company's data and are there to be measured in a pilot.
 - The root-cause chart is the general "rule of ten", and it says so. It is not company data.
-- The proof card is a real earlier result: a multi-agent system with LangGraph, built at Siemens in Amberg (12 agents, retrieval under 200 ms, on-prem models, about 78% of suggestions accepted at first review). The wording and the numbers live in `template/copy.py`. A config cannot change them. The card cites the author's CV and says the figures are not this company's.
+- The proof card is a real earlier result from the author's own work: a multi-agent system with LangGraph (12 agents, retrieval under 200 ms, on-prem models, about 78% of suggestions accepted at first review). The wording and the numbers live in `template/copy.py`. A config cannot change them. The card cites the author's CV and says the figures are not this company's.
 - The closing line says the film is a concept, not an official project of the company named in the config.
 - The compiler rejects narration that calls the idea a job posting (`job posting`, `Stellenanzeige`, and the related phrases in `template/copy.py`) or that puts an "AI idea sketch" label on screen.
 - Photos carry the company domain as credit. The voice is labelled on the closing card.
 
-Worked examples under `rotpunkt-shorts/companies/` are concepts for those companies. They are not official projects, and they are not endorsements. See [`companies/README.md`](rotpunkt-shorts/companies/README.md).
+The only company config in this repository is the fictional example. Do not commit a real company's name, logo, or photos. See [`companies/README.md`](company-shorts/companies/README.md).
 
 ## Roadmap
 

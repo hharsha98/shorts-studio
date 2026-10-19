@@ -1,6 +1,6 @@
 """Fixed on-screen copy that every company Short shares. A config cannot change these proof numbers.
 
-The Siemens system is described only as a multi-agent system with LangGraph. Do not put an internal project name on the card or in the narration.
+The system is described only as a multi-agent system with LangGraph. Do not name an employer or an internal project on the card or in the narration.
 """
 
 PROOF = {
@@ -8,7 +8,7 @@ PROOF = {
         "kicker": "Built before",
         "badge": "REAL RESULT",
         "title": "A multi-agent system with LangGraph",
-        "sub": "Built at Siemens Amberg · in production",
+        "sub": "Already running in production",
         "facts": [
             {"value": "12", "label": "LLM agents working together"},
             {"value": "< 200 ms", "label": "retrieval over manuals and logs"},
@@ -16,15 +16,15 @@ PROOF = {
             {"value": "~78 %", "label": "of suggestions accepted at first review"},
         ],
         "source": "Source: candidate's CV. A real result there, not a figure for this company.",
-        "line": "A multi-agent system with LangGraph that I built at Siemens already runs in production in Amberg.",
-        "say": "A multi-agent system with Lang Graph that I built at Siemens already runs in production in Amberg.",
+        "line": "A multi-agent system with LangGraph that I built already runs in production.",
+        "say": "A multi-agent system with Lang Graph that I built already runs in production.",
         "cue": "LangGraph",
     },
     "de": {
         "kicker": "Schon einmal gebaut",
         "badge": "ECHTES ERGEBNIS",
         "title": "Multi-Agenten-System mit LangGraph",
-        "sub": "Gebaut bei Siemens in Amberg · im Produktiveinsatz",
+        "sub": "Bereits im Produktiveinsatz",
         "facts": [
             {"value": "12", "label": "KI-Agenten auf LLM-Basis"},
             {"value": "< 200 ms", "label": "Suche in Handbüchern und Logs"},
@@ -32,8 +32,8 @@ PROOF = {
             {"value": "~78 %", "label": "der Vorschläge im ersten Review angenommen"},
         ],
         "source": "Quelle: Lebenslauf des Bewerbers. Ein echtes Ergebnis dort, keine Zahl dieses Unternehmens.",
-        "line": "Ein Multi-Agenten-System mit LangGraph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
-        "say": "Ein Multi-Agenten-System mit Lang-Graph, das ich bei Siemens gebaut habe, läuft bereits produktiv in Amberg.",
+        "line": "Ein Multi-Agenten-System mit LangGraph, das ich gebaut habe, läuft bereits produktiv.",
+        "say": "Ein Multi-Agenten-System mit Lang-Graph, das ich gebaut habe, läuft bereits produktiv.",
         "cue": "LangGraph",
     },
 }

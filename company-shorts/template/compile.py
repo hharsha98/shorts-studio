@@ -1,6 +1,6 @@
 """Turn a company YAML config into the script dict the Remotion Short already renders.
 
-A new company needs only the YAML. Scene components, the Siemens proof card, safety badges and the closing card
+A new company needs only the YAML. Scene components, the proof card, safety badges and the closing card
 are filled in here. Nothing in video/src has to change.
 """
 
