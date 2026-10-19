@@ -4,6 +4,9 @@ Three animated vertical Shorts (1080x1920, EN + DE) for the AI Solution Engineer
 Each Short takes one problem that the company's current job postings point to and sketches an AI solution built from the candidate's
 real work. The storyboard, sources, interviewer notes and both narration scripts are in [`STORYBOARD.md`](STORYBOARD.md).
 
+The same scenes also render any company from one YAML file, with no code changes.
+The three commands and the config schema are in [`template/README.md`](template/README.md).
+
 ## Layout
 
 ```text
