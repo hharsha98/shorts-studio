@@ -1,0 +1,82 @@
+# Scopeland — natural-language questions over an application's own data model.
+version: 1
+company:
+  slug: scopeland
+  name: Scopeland
+  domain: scopeland.de
+  logo_url: https://www.scopeland.de/wp-content/uploads/2026/06/Scopeland-Logo-1.svg
+  images:
+    hook: https://www.scopeland.de/wp-content/uploads/2025/08/Low-Code-Developer-Teambesprechung_Header_Startseite_BH-1920x685.jpg
+    pain: https://www.scopeland.de/wp-content/uploads/2026/03/Komplexe-Dokumente_Header.jpg
+    idea: https://www.scopeland.de/wp-content/uploads/2026/01/Agentic-AI_Header.jpg
+
+problems:
+  - slug: datenfragen
+    title: {de: Datenfragen}
+    hook:
+      icon: knowledge
+      image: hook
+      sub: {de: Eine Fachfrage beantworten, bevor ein Entwickler eingreifen muss}
+      de:
+        - [{text: "Fragen", accent: true}, {text: " an die Daten"}]
+        - ["ohne Umweg"]
+    pain:
+      image: pain
+      title: {de: Je später eine Datenfrage liegen bleibt, desto später die Entscheidung}
+      chips: {de: [Tabellen, Regeln, Berichte]}
+      columns: {de: [Im Fachbereich, In der Entwicklung, Beim Entscheider]}
+      note: {de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"}
+    idea:
+      icon: agent
+      image: idea
+      title: {de: Assistent für Datenfragen}
+      sub: {de: Sprachmodell + Ihr Datenmodell + Freigabe durch Menschen}
+    steps:
+      - {id: inputs, icon: chat, link: arrow,
+         title: {de: Frage der Fachabteilung},
+         sub: {de: auf Deutsch, im Alltag}}
+      - {id: agent, icon: agent, link: both,
+         title: {de: "KI-Agent (LLM)"},
+         sub: {de: versteht die Frage}}
+      - {id: rules, icon: db, link: arrow,
+         title: {de: Ihr Datenmodell},
+         sub: {de: Tabellen, Regeln, Rechte}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {de: Antwort + Mensch},
+         sub: {de: jede Stelle mit Quelle}}
+      - {id: erp, icon: check,
+         title: {de: Zurück in die Anwendung},
+         sub: {de: nur geprüfte Antworten}}
+    before_after:
+      - label: {de: Zeit bis zur Antwort}
+        before: 25
+        after: 3
+        unit: {de: "Min."}
+      - label: {de: "Rückfragen an die Entwicklung (Index)"}
+        before: 100
+        after: 35
+        unit: ""
+    pilot:
+      de: ["Eine Anwendung", "Nur lesend, parallel zum Team", "Erfolg gemeinsam mit dem Fachbereich messen"]
+    narration:
+      de:
+        - {scene: hook, text: "Eine Fachfrage, die liegen bleibt, verzögert die Entscheidung."}
+        - {scene: pain, text: "Tabellen, Regeln, Berichte: Ohne Antwort stockt die Arbeit.",
+           cues: {pain.chips: Tabellen, pain.0: Ohne, pain.1: Antwort, pain.2: stockt}}
+        - {scene: idea, text: "Eine Idee: ein Assistent für Datenfragen."}
+        - {scene: arch, text: "Er nimmt die Frage der Fachabteilung auf, auf Deutsch, im Arbeitsalltag.",
+           cues: {arch.inputs: nimmt}}
+        - {scene: arch, text: "Ein KI-Agent versteht die Frage und sucht in Ihrem Datenmodell.",
+           say: "Ein K-I-Agent versteht die Frage und sucht in Ihrem Datenmodell.",
+           cues: {arch.agent: KI-Agent, arch.rules: Datenmodell}}
+        - {scene: arch, text: "Die Antwort kommt mit Quelle, die Freigabe trifft der Mensch.",
+           cues: {arch.checks: Antwort}}
+        - {scene: arch, text: "Nur geprüfte Antworten gehen zurück in die Anwendung, mit lokalen Modellen und der DSGVO im Blick.",
+           cues: {arch.erp: geprüfte, arch.badges: lokalen}}
+        - {scene: metrics, text: "Beispielhafte Pilotziele: Antwortzeit von fünfundzwanzig auf drei Minuten, deutlich weniger Rückfragen an die Entwicklung.",
+           cues: {metrics.0: Antwortzeit, metrics.1: deutlich}}
+        - {scene: proof, text: "Die gleichen Bausteine laufen bereits produktiv bei Siemens in Amberg.",
+           cues: {proof: gleichen}}
+        - {scene: pilot, text: "Ein Pilot könnte mit einer Anwendung starten.",
+           cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Anwendung}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

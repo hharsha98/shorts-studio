@@ -22,7 +22,21 @@ def _ext(url: str, kind: str) -> str:
 
 
 def fetch(url: str, kind: str = "image") -> Path | None:
-    """Cached download. Returns None when the URL fails or the file is too small to be a real picture."""
+    """Cached download. Returns None when the URL fails or the file is too small to be a real picture.
+
+    `local:companies/logos/mark.svg` copies a file that lives in this project (used when the
+    public site only inlines the logo and there is no stable image URL).
+    """
+    if url.startswith("local:"):
+        src = (ROOT / url.split(":", 1)[1]).resolve()
+        root = ROOT.resolve()
+        if root != src and root not in src.parents:
+            print(f"  local asset is outside the project, skipped: {url}", file=sys.stderr)
+            return None
+        if not src.exists() or src.stat().st_size < 100:
+            print(f"  local asset missing: {url}", file=sys.stderr)
+            return None
+        return src
     CACHE.mkdir(parents=True, exist_ok=True)
     ext = _ext(url, kind)
     dest = CACHE / f"{hashlib.sha256(url.encode()).hexdigest()[:20]}{ext}"

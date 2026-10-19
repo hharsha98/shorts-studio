@@ -181,6 +181,7 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             "series": title,
             "note": NOT_OFFICIAL[lang].format(name=name),
             "voiceNote": VOICE_NOTE[lang],
+            **({"logoPlate": "light"} if str(company.get("logo_plate") or "") == "light" else {}),
         },
     }
     if pilot_items:

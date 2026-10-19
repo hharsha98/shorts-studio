@@ -24,7 +24,8 @@ export const ClosingScene: React.FC<{ ctx: SceneCtx; closing: Labels["closing"];
       note: fitText(note, { max: 26, min: 20, maxW: INNER, maxLines: 3, weight: 500 }),
     };
   }, [closing, note]);
-  const logoH = closing.logo ? 168 : 0;
+  const plate = closing.logoPlate === "light";
+  const logoH = closing.logo ? (plate ? 148 : 168) : 0;
   const cardH =
     PAD * 2 +
     f.series.size * 1.15 +
@@ -69,7 +70,23 @@ export const ClosingScene: React.FC<{ ctx: SceneCtx; closing: Labels["closing"];
         <div style={{ height: 22 }} />
         {closing.logo ? (
           <div style={{ display: "flex", justifyContent: "center", opacity: clamp01(cardP * 1.4) }}>
-            <Img src={staticFile(closing.logo)} style={{ height: logoH, width: "auto" }} />
+            <div
+              style={{
+                background: plate ? "#FFFFFF" : "transparent",
+                borderRadius: plate ? 18 : 0,
+                padding: plate ? "12px 20px" : 0,
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Img
+                src={staticFile(closing.logo)}
+                style={{ height: plate ? 104 : logoH, width: "auto", maxWidth: INNER - (plate ? 40 : 0), objectFit: "contain" }}
+              />
+            </div>
           </div>
         ) : null}
         {closing.forLine ? (

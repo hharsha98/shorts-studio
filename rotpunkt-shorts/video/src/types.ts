@@ -39,7 +39,18 @@ export type Labels = {
     footnote: string;
   };
   pilot: { title: string; sub: string; items: string[] };
-  closing: { name: string; role: string; link: string; series: string; note: string; voiceNote: string; forLine?: string; logo?: string };
+  closing: {
+    name: string;
+    role: string;
+    link: string;
+    series: string;
+    note: string;
+    voiceNote: string;
+    forLine?: string;
+    logo?: string;
+    /** "light" puts the logo on a white chip so a dark wordmark stays readable on the dark card. */
+    logoPlate?: string;
+  };
 };
 
 export type ShortProps = {

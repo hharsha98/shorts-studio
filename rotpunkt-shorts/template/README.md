@@ -55,7 +55,8 @@ company:
   slug: acme            # file and cache name
   name: Acme GmbH       # used in "An idea for Acme GmbH"
   domain: acme.example  # used in the photo credit
-  logo_url: https://acme.example/logo.svg
+  logo_url: https://acme.example/logo.svg   # or local:companies/logos/acme.svg
+  logo_plate: light     # optional white chip, for a dark wordmark on the dark closing card
   images:               # named URLs, referenced by the problem
     hook: https://acme.example/hero.jpg
     pain: https://acme.example/line.jpg
