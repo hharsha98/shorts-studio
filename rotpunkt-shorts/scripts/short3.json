@@ -6,23 +6,23 @@
     "lines": [
       {
         "scene": "hook",
-        "text": "Many of your open roles ask for years of very specific experience."
+        "text": "In a kitchen factory, the hardest knowledge takes years to learn."
       },
       {
         "scene": "evidence",
-        "text": "Kitchen orders, catalogue data, edge banding machines.",
+        "text": "Order rules, finishes, and how a machine is set up.",
         "cues": {
-          "evidence.0": "Kitchen",
-          "evidence.1": "catalogue",
-          "evidence.2": "edge"
+          "evidence.0": "Order",
+          "evidence.1": "finishes",
+          "evidence.2": "machine"
         }
       },
       {
         "scene": "pain",
-        "text": "That know-how is hard to hire, slow to teach, and sits with a few experts.",
+        "text": "It is slow to teach, and it sits with a few people.",
         "cues": {
-          "pain.0": "hard",
-          "pain.1": "slow",
+          "pain.0": "slow",
+          "pain.1": "teach",
           "pain.2": "few"
         }
       },
@@ -88,7 +88,7 @@
       "top": {
         "badge": "3/3",
         "topic": "Know-how on demand",
-        "right": "AI idea sketch"
+        "right": ""
       },
       "hook": {
         "icon": "knowledge",
@@ -108,37 +108,34 @@
             }
           ]
         ],
-        "sub": "An AI idea based on your current job postings",
+        "sub": "One way to keep specialist knowledge on the line",
         "photo": "products/s3-hook.jpg"
       },
       "evidence": {
-        "title": "From your current job postings",
+        "title": "Knowledge that takes years",
         "cards": [
           {
-            "role": "Sachbearbeiter in der Kundenbetreuung",
-            "quote": "„Berufserfahrung (mind. 3 Jahre) in der Ausarbeitung von Küchenmöbelbestellungen“",
-            "gist": "3+ years of kitchen-order experience"
+            "role": "Order rules",
+            "quote": "Which front fits which carcass, and what may never be combined"
           },
           {
-            "role": "Datenmanager IDM",
-            "quote": "„Berufserfahrung in der Erstellung von IDM-Daten oder im Umgang mit Stammdaten“",
-            "gist": "experience creating catalogue data (IDM)"
+            "role": "Finishes",
+            "quote": "Colours, batches, and what the eye notices"
           },
           {
-            "role": "Maschinenbediener",
-            "quote": "„Erfahrung mit industriellen Kantenanleim-Maschinen“",
-            "gist": "experience with edge banding machines"
+            "role": "The machines",
+            "quote": "Setup that lives in a few people's heads"
           }
         ],
-        "note": "Quotes from your careers page, October 2026"
+        "note": "A common pattern in kitchen manufacturing"
       },
       "pain": {
         "kind": "bottleneck",
-        "title": "Specialist know-how today",
+        "title": "Specialist knowledge today",
         "chips": [
-          "Hard to hire",
-          "Slow to teach",
-          "With a few experts"
+          "Years to learn",
+          "Slow to pass on",
+          "Held by a few"
         ],
         "experts": "Few experts",
         "newcomers": "New colleagues",
@@ -260,11 +257,13 @@
       },
       "closing": {
         "name": "Hanumanthu Harsha Vardhan",
-        "role": "AI Solution Engineer candidate",
+        "role": "Concept by",
         "link": "github.com/hharsha98",
         "series": "Challenge 3 of 3 · Know-how on demand",
-        "note": "Idea sketch based on public job postings · illustrative numbers",
-        "voiceNote": "AI voice"
+        "note": "A concept, not an official Rotpunkt project · illustrative numbers",
+        "voiceNote": "AI voice",
+        "forLine": "An idea for Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg"
       },
       "credit": "Images: rotpunkt.de"
     }
@@ -273,23 +272,23 @@
     "lines": [
       {
         "scene": "hook",
-        "text": "Viele Ihrer offenen Stellen verlangen jahrelange, sehr spezielle Erfahrung."
+        "text": "In einer Küchenfertigung braucht das wichtigste Wissen Jahre."
       },
       {
         "scene": "evidence",
-        "text": "Küchenbestellungen, Katalogdaten, Kantenanleimmaschinen.",
+        "text": "Auftragsregeln, Oberflächen, und wie eine Maschine eingerichtet wird.",
         "cues": {
-          "evidence.0": "Küchenbestellungen",
-          "evidence.1": "Katalogdaten",
-          "evidence.2": "Kantenanleimmaschinen"
+          "evidence.0": "Auftragsregeln",
+          "evidence.1": "Oberflächen",
+          "evidence.2": "Maschine"
         }
       },
       {
         "scene": "pain",
-        "text": "Dieses Wissen ist schwer zu finden, braucht lange Einarbeitung und liegt bei wenigen Fachleuten.",
+        "text": "Die Einarbeitung dauert, und das Wissen liegt bei wenigen Leuten.",
         "cues": {
-          "pain.0": "schwer",
-          "pain.1": "Einarbeitung",
+          "pain.0": "Einarbeitung",
+          "pain.1": "Wissen",
           "pain.2": "wenigen"
         }
       },
@@ -355,7 +354,7 @@
       "top": {
         "badge": "3/3",
         "topic": "Wissen auf Abruf",
-        "right": "KI-Ideenskizze"
+        "right": ""
       },
       "hook": {
         "icon": "knowledge",
@@ -375,34 +374,34 @@
             }
           ]
         ],
-        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen",
+        "sub": "Spezialwissen an der Linie halten",
         "photo": "products/s3-hook.jpg"
       },
       "evidence": {
-        "title": "Aus Ihren aktuellen Stellenanzeigen",
+        "title": "Wissen, das Jahre braucht",
         "cards": [
           {
-            "role": "Sachbearbeiter in der Kundenbetreuung",
-            "quote": "„Berufserfahrung (mind. 3 Jahre) in der Ausarbeitung von Küchenmöbelbestellungen“"
+            "role": "Auftragsregeln",
+            "quote": "Welche Front zu welchem Korpus passt, und was nie zusammen darf"
           },
           {
-            "role": "Datenmanager IDM",
-            "quote": "„Berufserfahrung in der Erstellung von IDM-Daten oder im Umgang mit Stammdaten“"
+            "role": "Oberflächen",
+            "quote": "Farben, Chargen, und was das Auge sofort sieht"
           },
           {
-            "role": "Maschinenbediener",
-            "quote": "„Erfahrung mit industriellen Kantenanleim-Maschinen“"
+            "role": "Die Maschinen",
+            "quote": "Einrichtung, die in wenigen Köpfen steckt"
           }
         ],
-        "note": "Zitate von Ihrer Karriereseite, Oktober 2026"
+        "note": "Ein typisches Muster in der Küchenfertigung"
       },
       "pain": {
         "kind": "bottleneck",
         "title": "Spezialwissen heute",
         "chips": [
-          "Schwer zu finden",
-          "Lange Einarbeitung",
-          "Bei wenigen Fachleuten"
+          "Jahre an Erfahrung",
+          "Schwer weiterzugeben",
+          "Bei wenigen Leuten"
         ],
         "experts": "Wenige Fachleute",
         "newcomers": "Neue im Team",
@@ -524,11 +523,13 @@
       },
       "closing": {
         "name": "Hanumanthu Harsha Vardhan",
-        "role": "Bewerber als AI Solution Engineer",
+        "role": "Konzept von",
         "link": "github.com/hharsha98",
         "series": "Herausforderung 3 von 3 · Wissen auf Abruf",
-        "note": "Ideenskizze auf Basis öffentlicher Stellenanzeigen · Beispielwerte",
-        "voiceNote": "KI-Stimme"
+        "note": "Ein Konzept, kein offizielles Rotpunkt-Projekt · Beispielwerte",
+        "voiceNote": "KI-Stimme",
+        "forLine": "Eine Idee für Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg"
       },
       "credit": "Bilder: rotpunkt.de"
     }

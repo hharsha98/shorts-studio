@@ -94,7 +94,7 @@
       "top": {
         "badge": "1/3",
         "topic": "Order checks",
-        "right": "AI idea sketch"
+        "right": ""
       },
       "hook": {
         "icon": "order",
@@ -163,7 +163,8 @@
         "icon": "agent",
         "kicker": "One idea",
         "title": "An order check assistant",
-        "sub": "AI agent + your product rules + human approval"
+        "sub": "AI agent + your product rules + human approval",
+        "photo": "products/s1-idea.webp"
       },
       "arch": {
         "title": "How it could work",
@@ -281,11 +282,13 @@
       },
       "closing": {
         "name": "Hanumanthu Harsha Vardhan",
-        "role": "AI Solution Engineer candidate",
+        "role": "Concept by",
         "link": "github.com/hharsha98",
         "series": "Challenge 1 of 3 · Order checks",
-        "note": "Idea sketch based on public job postings · illustrative numbers",
-        "voiceNote": "AI voice"
+        "note": "A concept, not an official Rotpunkt project · illustrative numbers",
+        "voiceNote": "AI voice",
+        "forLine": "An idea for Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg"
       },
       "credit": "Images: rotpunkt.de"
     }
@@ -385,7 +388,7 @@
       "top": {
         "badge": "1/3",
         "topic": "Auftragsprüfung",
-        "right": "KI-Ideenskizze"
+        "right": ""
       },
       "hook": {
         "icon": "order",
@@ -451,7 +454,8 @@
         "icon": "agent",
         "kicker": "Eine Idee",
         "title": "KI-Assistent für die Auftragsprüfung",
-        "sub": "KI-Agent + Ihre Produktregeln + Freigabe durch Menschen"
+        "sub": "KI-Agent + Ihre Produktregeln + Freigabe durch Menschen",
+        "photo": "products/s1-idea.webp"
       },
       "arch": {
         "title": "So könnte es funktionieren",
@@ -569,11 +573,13 @@
       },
       "closing": {
         "name": "Hanumanthu Harsha Vardhan",
-        "role": "Bewerber als AI Solution Engineer",
+        "role": "Konzept von",
         "link": "github.com/hharsha98",
         "series": "Herausforderung 1 von 3 · Auftragsprüfung",
-        "note": "Ideenskizze auf Basis öffentlicher Stellenanzeigen · Beispielwerte",
-        "voiceNote": "KI-Stimme"
+        "note": "Ein Konzept, kein offizielles Rotpunkt-Projekt · Beispielwerte",
+        "voiceNote": "KI-Stimme",
+        "forLine": "Eine Idee für Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg"
       },
       "credit": "Bilder: rotpunkt.de"
     }

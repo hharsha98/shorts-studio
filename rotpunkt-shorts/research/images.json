@@ -1,13 +1,20 @@
 {
   "fetched": "2026-10-18 23:33 UTC",
   "credit_on_screen": { "en": "Images: rotpunkt.de", "de": "Bilder: rotpunkt.de" },
-  "note": "rotpunkt.de redirects to www.rotpunktkuechen.de, the company's public website; the photos were found on its home page and on /kuechen. They are the company's images, used only inside these private interview videos with a credit on every photo; they are downloaded at build time (tools/build.py fetch_images) and never committed. No logo was used. Each photo was checked by eye: no logo, watermark or text in the picture.",
+  "note": "rotpunkt.de redirects to www.rotpunktkuechen.de. Photos are credited on screen and downloaded at build time, never committed. The public logo is used only on the closing card, with a line saying the video is a concept and not an official project. Each photo was checked by eye: no watermark or text in the picture.",
   "images": [
     { "file": "s1-hook.webp", "used_in": "Short 1 cover (order sheet and magnifier drawn over it)", "url": "https://www.rotpunktkuechen.de/fileadmin/_processed_/8/4/csm_01-zerox-sy-ver-loft-brown-oak_gallery__1400x875_31bc567624.webp" },
     { "file": "s1-pain.jpg", "used_in": "Short 1 problem scene (callouts: variants on the fronts, dimensions along the island, dependencies at the oven niche)", "url": "https://www.rotpunktkuechen.de/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK07_Hauptschuss__1200.jpg" },
-    { "file": "s2-hook.webp", "used_in": "Short 2 cover (\"Line stopped\" status and turning gears drawn over it)", "url": "https://www.rotpunktkuechen.de/fileadmin/_processed_/5/5/csm_MK_11_Zerox_SY_VER_Loft_Dark_Oak__header__1200_94c6bedc92.webp" },
-    { "file": "s2-pain.webp", "used_in": "Short 2 problem scene (the stopped line in the middle of the scattered sources)", "url": "https://www.rotpunktkuechen.de/fileadmin/_processed_/1/0/csm_06-smala-sc-velvet-green_gallery__1400x875_bc6a077a07.webp" },
+    { "file": "s2-hook.webp", "used_in": "Short 2 cover (a complaint card is drawn over it; the photo shows no defect)", "url": "https://www.rotpunktkuechen.de/fileadmin/_processed_/5/5/csm_MK_11_Zerox_SY_VER_Loft_Dark_Oak__header__1200_94c6bedc92.webp" },
     { "file": "s3-hook.jpg", "used_in": "Short 3 cover (question bubble and an answer card with a source drawn over it)", "url": "https://www.rotpunktkuechen.de/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK09_Hauptschuss__1200.jpg" },
-    { "file": "s3-idea.webp", "used_in": "Short 3 idea scene (the knowledge assistant, with the chat badge)", "url": "https://www.rotpunktkuechen.de/fileadmin/_processed_/1/4/csm_Rotpunkt_HM01_Hauptschuss_Final__1200_7ec0652391.webp" }
-  ]
+    { "file": "s3-idea.webp", "used_in": "Short 3 idea scene (the knowledge assistant, with the chat badge)", "url": "https://www.rotpunktkuechen.de/fileadmin/_processed_/1/4/csm_Rotpunkt_HM01_Hauptschuss_Final__1200_7ec0652391.webp" },
+    { "file": "s1-idea.webp", "used_in": "Short 1 idea scene", "url": "https://www.rotpunktkuechen.de/fileadmin/_processed_/6/e/csm_MK_02_Memory_RI_Beach_Grey_Zerox_SY_VER_Scandinavian_Oak2__header__1200_460dc71601.webp" },
+    { "file": "s2-idea.jpg", "used_in": "Short 2 idea scene (trace a front complaint back to the line)", "url": "https://www.rotpunktkuechen.de/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK10_Hauptschuss__1200.jpg" },
+    { "file": "s2-front.jpg", "used_in": "Short 2 problem scene (front detail; the complaint is a label, the photo shows no defect)", "url": "https://www.rotpunktkuechen.de/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK10_Detail2_Glasfronten_Fronten__1200.jpg" }
+  ],
+  "logo": {
+    "file": "brand/rotpunkt-logo.svg",
+    "used_in": "Closing card only, with 'An idea for Rotpunkt Küchen' and 'Concept by Hanumanthu Harsha Vardhan'",
+    "url": "https://www.rotpunktkuechen.de/_assets/3b6d3762df46d796681ba251631c1b03/Media/rotpunkt-kuechen-logo.svg"
+  }
 }

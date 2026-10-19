@@ -1,558 +1,229 @@
 {
   "id": "short2",
   "index": 2,
-  "slug": "root-cause",
+  "slug": "front-complaint",
   "en": {
     "lines": [
-      {
-        "scene": "hook",
-        "text": "When a machine or interface stops, every minute of searching costs output."
-      },
-      {
-        "scene": "evidence",
-        "text": "Your postings ask for people who find the root cause when something sticks.",
-        "cues": {
-          "evidence.0": "ask",
-          "evidence.1": "root",
-          "evidence.2": "sticks"
-        }
-      },
-      {
-        "scene": "pain",
-        "text": "The answers sit in manuals, logs, old tickets, and a few experienced heads.",
-        "cues": {
-          "pain.0": "manuals",
-          "pain.1": "logs",
-          "pain.2": "tickets",
-          "pain.3": "experienced"
-        }
-      },
-      {
-        "scene": "idea",
-        "text": "One idea: a root cause assistant."
-      },
-      {
-        "scene": "arch",
-        "text": "It reads the error and the logs, and searches manuals and past fixes.",
-        "cues": {
-          "arch.inputs": "reads",
-          "arch.search": "searches"
-        }
-      },
-      {
-        "scene": "arch",
-        "text": "AI agents rank likely causes, each with evidence and a next check.",
-        "cues": {
-          "arch.agents": "agents"
-        }
-      },
-      {
-        "scene": "arch",
-        "text": "A technician confirms, and the fix becomes knowledge for the next shift.",
-        "cues": {
-          "arch.human": "technician",
-          "arch.learn": "knowledge",
-          "arch.badges": "shift"
-        }
-      },
-      {
-        "scene": "proof",
-        "text": "Real result at Siemens Amberg: on 16 machines, root cause analysis went from 30 to 120 minutes per fault, down to 8 to 15.",
-        "cues": {
-          "proof": "Real",
-          "proof.fact.1": "16",
-          "proof.fact.0": "root"
-        }
-      },
-      {
-        "scene": "metrics",
-        "text": "Here, the numbers stay illustrative until a pilot measures them.",
-        "cues": {
-          "metrics.0": "numbers",
-          "metrics.1": "until"
-        }
-      },
-      {
-        "scene": "pilot",
-        "text": "A pilot could start with one line and its top faults.",
-        "cues": {
-          "pilot.0": "pilot",
-          "pilot.1": "line",
-          "pilot.2": "faults"
-        }
-      },
-      {
-        "scene": "closing",
-        "text": "Happy to explore it with you."
-      }
+      { "scene": "hook", "text": "A kitchen front comes back, and the customer is waiting." },
+      { "scene": "evidence", "text": "Was it the edge banding, the panel cut, or the surface?",
+        "cues": { "evidence.0": "edge", "evidence.1": "panel", "evidence.2": "surface" } },
+      { "scene": "pain", "text": "The answer sits in batch records, machine logs, old complaints, and a few experienced people.",
+        "cues": { "pain.0": "batch", "pain.1": "machine", "pain.2": "complaints", "pain.3": "experienced" } },
+      { "scene": "idea", "text": "One idea: trace that complaint back to the line." },
+      { "scene": "arch", "text": "It reads the complaint and the photos, and searches past cases and work instructions.",
+        "cues": { "arch.inputs": "reads", "arch.search": "searches" } },
+      { "scene": "arch", "text": "AI agents rank the likely causes, each one with the evidence behind it.",
+        "cues": { "arch.agents": "agents" } },
+      { "scene": "arch", "text": "The quality team confirms, and the fix is saved for the next batch.",
+        "cues": { "arch.human": "quality", "arch.learn": "saved", "arch.badges": "next" } },
+      { "scene": "proof", "text": "The same pattern already runs at Siemens Amberg: on 16 machines, root cause analysis went from 30 to 120 minutes per fault, down to 8 to 15.",
+        "cues": { "proof": "same", "proof.fact.1": "16", "proof.fact.0": "root" } },
+      { "scene": "metrics", "text": "For kitchen fronts, these targets stay illustrative until a pilot measures them.",
+        "cues": { "metrics.0": "targets", "metrics.1": "until" } },
+      { "scene": "pilot", "text": "A pilot could start with one front family and its complaints.",
+        "cues": { "pilot.0": "pilot", "pilot.1": "front", "pilot.2": "complaints" } },
+      { "scene": "closing", "text": "Happy to explore it with you." }
     ],
     "labels": {
-      "top": {
-        "badge": "2/3",
-        "topic": "Root cause analysis",
-        "right": "AI idea sketch"
-      },
+      "credit": "Images: rotpunkt.de",
+      "top": { "badge": "2/3", "topic": "Front complaints", "right": "" },
       "hook": {
-        "icon": "machine",
-        "lines": [
-          [
-            {
-              "text": "Root cause in"
-            }
-          ],
-          [
-            {
-              "text": "minutes",
-              "accent": true
-            },
-            {
-              "text": ", not hours"
-            }
-          ]
-        ],
-        "sub": "An AI idea based on your current job postings",
-        "photo": "products/s2-hook.webp"
+        "icon": "front",
+        "status": "Edge chipped",
+        "photo": "products/s2-hook.webp",
+        "lines": [[{ "text": "A front " }, { "text": "comes back", "accent": true }], [{ "text": "Find the cause" }]],
+        "sub": "Tracing one complaint back to the line"
       },
       "evidence": {
-        "title": "From your current job postings",
+        "title": "Where a front can fail",
         "cards": [
-          {
-            "role": "IT-Applikationsmanager (Produktionssysteme)",
-            "quote": "„…gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“",
-            "gist": "gets to the root cause when something sticks"
-          },
-          {
-            "role": "Maschinenbediener",
-            "quote": "„…analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“",
-            "gist": "analyses, fixes and documents machine faults"
-          },
-          {
-            "role": "Elektriker/ Elektroniker am Standort Getmold",
-            "quote": "„…stellst eine hohe Verfügbarkeit unserer Produktionsanlagen sicher“",
-            "gist": "keeps the production plant available"
-          }
+          { "role": "Edge banding", "quote": "The band lifts, or the edge chips after delivery" },
+          { "role": "Panel cutting", "quote": "The cut is out of size, so the front no longer fits" },
+          { "role": "Surface and finish", "quote": "The colour or the grain does not match the batch" }
         ],
-        "note": "Quotes from your careers page, October 2026"
+        "note": "A scenario, not a known defect"
       },
       "pain": {
         "kind": "scattered",
-        "title": "Where the answer hides today",
-        "center": "Line stopped",
-        "tiles": [
-          "Manuals",
-          "Machine and interface logs",
-          "Old tickets",
-          "Experienced colleagues"
-        ],
-        "searching": "Searching…",
-        "photo": "products/s2-pain.webp"
+        "title": "Where the answer hides",
+        "center": "Front came back",
+        "photo": "products/s2-front.jpg",
+        "tiles": ["Batch records", "Machine logs", "Old complaints", "Experienced people"],
+        "searching": "Tracing…"
       },
       "idea": {
         "icon": "search",
+        "photo": "products/s2-idea.jpg",
         "kicker": "One idea",
-        "title": "A root cause assistant",
-        "sub": "AI agents + your manuals and logs + a technician who confirms"
+        "title": "Trace it back to the line",
+        "sub": "complaint, batch and instructions, then a person confirms"
       },
       "arch": {
         "title": "How it could work",
         "nodes": [
-          {
-            "id": "inputs",
-            "icon": "alert",
-            "title": "Fault reported",
-            "sub": "error text + machine and interface logs",
-            "link": "arrow"
-          },
-          {
-            "id": "search",
-            "icon": "book",
-            "title": "Knowledge search (RAG)",
-            "sub": "manuals · past fixes · tickets",
-            "link": "arrow"
-          },
-          {
-            "id": "agents",
-            "icon": "agent",
-            "title": "AI agents (LLM)",
-            "sub": "rank likely causes, with evidence",
-            "link": "arrow"
-          },
-          {
-            "id": "human",
-            "icon": "usercheck",
-            "title": "Technician confirms",
-            "sub": "next check, then the fix",
-            "link": "arrow"
-          },
-          {
-            "id": "learn",
-            "icon": "loop",
-            "title": "The fix becomes knowledge",
-            "sub": "ready for the next shift"
-          }
+          { "id": "inputs", "icon": "alert", "title": "Complaint comes in", "sub": "photos, the front, the batch", "link": "arrow" },
+          { "id": "search", "icon": "book", "title": "Past cases (RAG)", "sub": "complaints, instructions, batch notes", "link": "arrow" },
+          { "id": "agents", "icon": "agent", "title": "AI agents (LLM)", "sub": "rank likely causes, with evidence", "link": "arrow" },
+          { "id": "human", "icon": "usercheck", "title": "Quality team confirms", "sub": "edge, cut or finish", "link": "arrow" },
+          { "id": "learn", "icon": "loop", "title": "Saved for the next batch", "sub": "the same front will not fail twice" }
         ],
         "badges": [
-          {
-            "icon": "server",
-            "text": "Local LLM"
-          },
-          {
-            "icon": "lock",
-            "text": "Data stays on site"
-          },
-          {
-            "icon": "eye",
-            "text": "Every answer traceable"
-          },
-          {
-            "icon": "user",
-            "text": "Human decides"
-          }
+          { "icon": "server", "text": "Local LLM" },
+          { "icon": "lock", "text": "Data stays in the plant" },
+          { "icon": "eye", "text": "Every answer traceable" },
+          { "icon": "user", "text": "Human decides" }
         ]
       },
       "proof": {
         "kicker": "Built before",
         "badge": "REAL RESULT",
         "title": "MARA · Siemens Amberg",
-        "sub": "Master's thesis · running in production",
+        "sub": "The same pattern, on an electronics line",
         "facts": [
-          {
-            "value": "30–120 → 8–15 min",
-            "label": "root cause analysis per fault",
-            "wide": true
-          },
-          {
-            "value": "16",
-            "label": "SMT machines on the line"
-          },
-          {
-            "value": "12",
-            "label": "LLM agents working together"
-          },
-          {
-            "value": "82.2 %",
-            "label": "root-cause hits on 1,811 historical error codes",
-            "wide": true
-          }
+          { "value": "30–120 → 8–15 min", "label": "root cause analysis per fault", "wide": true },
+          { "value": "16", "label": "machines on the line" },
+          { "value": "12", "label": "LLM agents working together" },
+          { "value": "82.2 %", "label": "root-cause hits on 1,811 historical error codes", "wide": true }
         ],
-        "source": "Source: candidate's CV"
+        "source": "Source: candidate's CV. A real result there, not a Rotpunkt figure."
       },
       "metrics": {
         "title": "Pilot targets",
         "stamp": "ILLUSTRATIVE",
-        "legend": [
-          "Today (example)",
-          "With assistant (target)"
-        ],
+        "legend": ["Today (example)", "With assistant (target)"],
         "items": [
-          {
-            "label": "Time to root cause per fault",
-            "before": 60,
-            "after": 20,
-            "unit": "min"
-          },
-          {
-            "label": "Faults solved without an expert call",
-            "before": 40,
-            "after": 70,
-            "unit": "%"
-          }
+          { "label": "Days to trace one front complaint", "before": 5, "after": 1, "unit": "days" },
+          { "label": "Repeat defects that still ship (index)", "before": 100, "after": 40, "unit": "" }
         ],
         "footnote": "Example values, not your company's data. To be measured in a pilot."
       },
       "pilot": {
         "title": "A first pilot",
         "sub": "Small, safe and measurable",
-        "items": [
-          "One line and its most frequent faults",
-          "Read-only access to logs",
-          "Measured with maintenance and IT"
-        ]
+        "items": ["One front family", "Complaints and batch data, read-only", "Measured with quality and production"]
       },
       "closing": {
         "name": "Hanumanthu Harsha Vardhan",
-        "role": "AI Solution Engineer candidate",
+        "role": "Concept by",
+        "forLine": "An idea for Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg",
         "link": "github.com/hharsha98",
-        "series": "Challenge 2 of 3 · Root cause analysis",
-        "note": "Idea sketch based on public job postings · illustrative numbers",
+        "series": "Challenge 2 of 3 · Front complaints",
+        "note": "A concept, not an official Rotpunkt project · illustrative numbers",
         "voiceNote": "AI voice"
-      },
-      "credit": "Images: rotpunkt.de"
+      }
     }
   },
   "de": {
     "lines": [
-      {
-        "scene": "hook",
-        "text": "Steht eine Maschine oder eine Schnittstelle, kostet jede Minute Fehlersuche bares Geld."
-      },
-      {
-        "scene": "evidence",
-        "text": "Ihre Stellenanzeigen suchen Menschen, die den Ursachen auf den Grund gehen, wenn etwas hakt.",
-        "cues": {
-          "evidence.0": "suchen",
-          "evidence.1": "Ursachen",
-          "evidence.2": "hakt"
-        }
-      },
-      {
-        "scene": "pain",
-        "text": "Die Antworten stecken in Handbüchern, Logs, alten Tickets und in wenigen erfahrenen Köpfen.",
-        "cues": {
-          "pain.0": "Handbüchern",
-          "pain.1": "Logs",
-          "pain.2": "Tickets",
-          "pain.3": "erfahrenen"
-        }
-      },
-      {
-        "scene": "idea",
-        "text": "Eine Idee: ein KI-Assistent für die Ursachenanalyse."
-      },
-      {
-        "scene": "arch",
-        "text": "Er liest Fehlermeldung und Logs und durchsucht Handbücher und frühere Lösungen.",
-        "cues": {
-          "arch.inputs": "liest",
-          "arch.search": "durchsucht"
-        }
-      },
-      {
-        "scene": "arch",
-        "text": "KI-Agenten bewerten mögliche Ursachen, jeweils mit Beleg und nächstem Prüfschritt.",
-        "cues": {
-          "arch.agents": "KI-Agenten"
-        }
-      },
-      {
-        "scene": "arch",
-        "text": "Das Team bestätigt, und jede Lösung wird zu Wissen für die nächste Schicht.",
-        "cues": {
-          "arch.human": "Team",
-          "arch.learn": "Wissen",
-          "arch.badges": "Schicht"
-        }
-      },
-      {
-        "scene": "proof",
-        "text": "Echtes Ergebnis bei Siemens in Amberg: An 16 Maschinen sank die Ursachenanalyse von 30 bis 120 auf 8 bis 15 Minuten pro Störung.",
-        "cues": {
-          "proof": "Echtes",
-          "proof.fact.1": "16",
-          "proof.fact.0": "Ursachenanalyse"
-        }
-      },
-      {
-        "scene": "metrics",
-        "text": "Für Ihre Linien bleiben die Zahlen Beispielwerte, bis ein Pilot sie misst.",
-        "cues": {
-          "metrics.0": "Zahlen",
-          "metrics.1": "bis"
-        }
-      },
-      {
-        "scene": "pilot",
-        "text": "Ein Pilot könnte mit einer Linie und ihren häufigsten Störungen starten.",
-        "cues": {
-          "pilot.0": "Pilot",
-          "pilot.1": "Linie",
-          "pilot.2": "Störungen"
-        }
-      },
-      {
-        "scene": "closing",
-        "text": "Mehr dazu gern im Gespräch."
-      }
+      { "scene": "hook", "text": "Eine Küchenfront kommt zurück, und der Kunde wartet." },
+      { "scene": "evidence", "text": "War es die Kantenleimung, der Plattenzuschnitt oder die Oberfläche?",
+        "cues": { "evidence.0": "Kantenleimung", "evidence.1": "Plattenzuschnitt", "evidence.2": "Oberfläche" } },
+      { "scene": "pain", "text": "Die Antwort steckt in Chargen, Maschinenprotokollen, alten Reklamationen und bei wenigen erfahrenen Leuten.",
+        "cues": { "pain.0": "Chargen", "pain.1": "Maschinenprotokollen", "pain.2": "Reklamationen", "pain.3": "erfahrenen" } },
+      { "scene": "idea", "text": "Eine Idee: die Reklamation bis zur Linie zurückverfolgen." },
+      { "scene": "arch", "text": "Er liest die Reklamation und die Fotos und sucht in früheren Fällen und Arbeitsanweisungen.",
+        "cues": { "arch.inputs": "liest", "arch.search": "sucht" } },
+      { "scene": "arch", "text": "KI-Agenten bewerten die wahrscheinlichen Ursachen, jeweils mit dem Beleg dazu.",
+        "cues": { "arch.agents": "KI-Agenten" } },
+      { "scene": "arch", "text": "Das Qualitätsteam bestätigt, und die Lösung gilt für die nächste Charge.",
+        "cues": { "arch.human": "Qualitätsteam", "arch.learn": "Lösung", "arch.badges": "Charge" } },
+      { "scene": "proof", "text": "Dasselbe Muster läuft bei Siemens in Amberg: An 16 Maschinen sank die Ursachenanalyse von 30 bis 120 auf 8 bis 15 Minuten.",
+        "cues": { "proof": "Dasselbe", "proof.fact.1": "16", "proof.fact.0": "Ursachenanalyse" } },
+      { "scene": "metrics", "text": "Für Küchenfronten bleiben diese Ziele Beispielwerte, bis ein Pilot sie misst.",
+        "cues": { "metrics.0": "Ziele", "metrics.1": "bis" } },
+      { "scene": "pilot", "text": "Ein Pilot könnte mit einer Frontfamilie und ihren Reklamationen starten.",
+        "cues": { "pilot.0": "Pilot", "pilot.1": "Frontfamilie", "pilot.2": "Reklamationen" } },
+      { "scene": "closing", "text": "Mehr dazu gern im Gespräch." }
     ],
     "labels": {
-      "top": {
-        "badge": "2/3",
-        "topic": "Ursachenanalyse",
-        "right": "KI-Ideenskizze"
-      },
+      "credit": "Bilder: rotpunkt.de",
+      "top": { "badge": "2/3", "topic": "Reklamationen", "right": "" },
       "hook": {
-        "icon": "machine",
-        "lines": [
-          [
-            {
-              "text": "Störungsursache in"
-            }
-          ],
-          [
-            {
-              "text": "Minuten",
-              "accent": true
-            },
-            {
-              "text": " statt Stunden"
-            }
-          ]
-        ],
-        "sub": "Eine KI-Idee auf Basis Ihrer aktuellen Stellenanzeigen",
-        "photo": "products/s2-hook.webp"
+        "icon": "front",
+        "status": "Kante beschädigt",
+        "photo": "products/s2-hook.webp",
+        "lines": [[{ "text": "Eine Front " }, { "text": "kommt zurück", "accent": true }], [{ "text": "Wo liegt die Ursache?" }]],
+        "sub": "Eine Reklamation bis zur Linie verfolgen"
       },
       "evidence": {
-        "title": "Aus Ihren aktuellen Stellenanzeigen",
+        "title": "Drei Stellen an der Front",
         "cards": [
-          {
-            "role": "IT-Applikationsmanager (Produktionssysteme)",
-            "quote": "„…gehst den Ursachen auf den Grund, wenn irgendwo etwas hakt“"
-          },
-          {
-            "role": "Maschinenbediener",
-            "quote": "„…analysierst, behebst und dokumentierst Funktionsstörungen an Maschinen“"
-          },
-          {
-            "role": "Elektriker/ Elektroniker am Standort Getmold",
-            "quote": "„…stellst eine hohe Verfügbarkeit unserer Produktionsanlagen sicher“"
-          }
+          { "role": "Kantenleimung", "quote": "Das Band löst sich, oder die Kante splittert nach der Lieferung" },
+          { "role": "Plattenzuschnitt", "quote": "Der Zuschnitt stimmt im Maß nicht, die Front passt nicht mehr" },
+          { "role": "Oberfläche", "quote": "Farbe oder Maserung weicht von der Charge ab" }
         ],
-        "note": "Zitate von Ihrer Karriereseite, Oktober 2026"
+        "note": "Ein Szenario, kein bekannter Mangel"
       },
       "pain": {
         "kind": "scattered",
-        "title": "Wo die Antwort heute steckt",
-        "center": "Linie steht",
-        "tiles": [
-          "Handbücher",
-          "Maschinen- und Schnittstellen-Logs",
-          "Alte Tickets",
-          "Erfahrene Fachleute"
-        ],
-        "searching": "Suche läuft…",
-        "photo": "products/s2-pain.webp"
+        "title": "Wo die Antwort steckt",
+        "center": "Front kam zurück",
+        "photo": "products/s2-front.jpg",
+        "tiles": ["Chargen", "Maschinenprotokolle", "Alte Reklamationen", "Erfahrene Leute"],
+        "searching": "Suche läuft…"
       },
       "idea": {
         "icon": "search",
+        "photo": "products/s2-idea.jpg",
         "kicker": "Eine Idee",
-        "title": "KI-Assistent für die Ursachenanalyse",
-        "sub": "KI-Agenten + Ihre Handbücher und Logs + ein Team, das bestätigt"
+        "title": "Zurückverfolgen bis zur Linie",
+        "sub": "Reklamation, Charge und Anweisungen, dann entscheidet ein Mensch"
       },
       "arch": {
         "title": "So könnte es funktionieren",
         "nodes": [
-          {
-            "id": "inputs",
-            "icon": "alert",
-            "title": "Störung gemeldet",
-            "sub": "Fehlertext + Maschinen- und Schnittstellen-Logs",
-            "link": "arrow"
-          },
-          {
-            "id": "search",
-            "icon": "book",
-            "title": "Wissenssuche (RAG)",
-            "sub": "Handbücher · frühere Lösungen · Tickets",
-            "link": "arrow"
-          },
-          {
-            "id": "agents",
-            "icon": "agent",
-            "title": "KI-Agenten (LLM)",
-            "sub": "bewerten Ursachen mit Belegen",
-            "link": "arrow"
-          },
-          {
-            "id": "human",
-            "icon": "usercheck",
-            "title": "Team bestätigt",
-            "sub": "nächster Prüfschritt, dann die Lösung",
-            "link": "arrow"
-          },
-          {
-            "id": "learn",
-            "icon": "loop",
-            "title": "Die Lösung wird zu Wissen",
-            "sub": "für die nächste Schicht"
-          }
+          { "id": "inputs", "icon": "alert", "title": "Reklamation kommt an", "sub": "Fotos, die Front, die Charge", "link": "arrow" },
+          { "id": "search", "icon": "book", "title": "Frühere Fälle (RAG)", "sub": "Reklamationen, Anweisungen, Chargennotizen", "link": "arrow" },
+          { "id": "agents", "icon": "agent", "title": "KI-Agenten (LLM)", "sub": "bewerten Ursachen mit Belegen", "link": "arrow" },
+          { "id": "human", "icon": "usercheck", "title": "Qualitätsteam bestätigt", "sub": "Kante, Zuschnitt oder Oberfläche", "link": "arrow" },
+          { "id": "learn", "icon": "loop", "title": "Gespeichert für die nächste Charge", "sub": "dieselbe Front fällt nicht zweimal aus" }
         ],
         "badges": [
-          {
-            "icon": "server",
-            "text": "Lokales LLM"
-          },
-          {
-            "icon": "lock",
-            "text": "Daten bleiben im Werk"
-          },
-          {
-            "icon": "eye",
-            "text": "Jede Antwort nachvollziehbar"
-          },
-          {
-            "icon": "user",
-            "text": "Mensch entscheidet"
-          }
+          { "icon": "server", "text": "Lokales LLM" },
+          { "icon": "lock", "text": "Daten bleiben im Werk" },
+          { "icon": "eye", "text": "Jede Antwort nachvollziehbar" },
+          { "icon": "user", "text": "Mensch entscheidet" }
         ]
       },
       "proof": {
         "kicker": "Schon einmal gebaut",
         "badge": "ECHTES ERGEBNIS",
         "title": "MARA · Siemens Amberg",
-        "sub": "Masterarbeit · im Produktiveinsatz",
+        "sub": "Dasselbe Muster, an einer Elektroniklinie",
         "facts": [
-          {
-            "value": "30–120 → 8–15 Min.",
-            "label": "Ursachenanalyse pro Störung",
-            "wide": true
-          },
-          {
-            "value": "16",
-            "label": "SMT-Maschinen an der Linie"
-          },
-          {
-            "value": "12",
-            "label": "KI-Agenten auf LLM-Basis"
-          },
-          {
-            "value": "82,2 %",
-            "label": "Treffer bei Ursachen, geprüft an 1.811 historischen Fehlercodes",
-            "wide": true
-          }
+          { "value": "30–120 → 8–15 Min.", "label": "Ursachenanalyse pro Störung", "wide": true },
+          { "value": "16", "label": "Maschinen an der Linie" },
+          { "value": "12", "label": "KI-Agenten auf LLM-Basis" },
+          { "value": "82,2 %", "label": "Treffer bei Ursachen, geprüft an 1.811 historischen Fehlercodes", "wide": true }
         ],
-        "source": "Quelle: Lebenslauf des Bewerbers"
+        "source": "Quelle: Lebenslauf des Bewerbers. Ein echtes Ergebnis dort, keine Zahl von Rotpunkt."
       },
       "metrics": {
         "title": "Pilotziele",
         "stamp": "BEISPIELWERTE",
-        "legend": [
-          "Heute (Beispiel)",
-          "Mit Assistent (Ziel)"
-        ],
+        "legend": ["Heute (Beispiel)", "Mit Assistent (Ziel)"],
         "items": [
-          {
-            "label": "Zeit bis zur Ursache pro Störung",
-            "before": 60,
-            "after": 20,
-            "unit": "Min."
-          },
-          {
-            "label": "Störungen ohne Expertenanruf gelöst",
-            "before": 40,
-            "after": 70,
-            "unit": "%"
-          }
+          { "label": "Tage bis zur Ursache einer Frontreklamation", "before": 5, "after": 1, "unit": "Tage" },
+          { "label": "Wiederholfehler, die noch ausgeliefert werden (Index)", "before": 100, "after": 40, "unit": "" }
         ],
         "footnote": "Beispielwerte, keine Unternehmensdaten. Im Pilotprojekt zu messen."
       },
       "pilot": {
         "title": "Ein erster Pilot",
         "sub": "Klein, sicher und messbar",
-        "items": [
-          "Eine Linie, ihre häufigsten Störungen",
-          "Nur lesender Zugriff auf Logs",
-          "Gemeinsam mit Instandhaltung und IT messen"
-        ]
+        "items": ["Eine Frontfamilie", "Reklamationen und Chargendaten, nur lesend", "Gemessen mit Qualität und Fertigung"]
       },
       "closing": {
         "name": "Hanumanthu Harsha Vardhan",
-        "role": "Bewerber als AI Solution Engineer",
+        "role": "Konzept von",
+        "forLine": "Eine Idee für Rotpunkt Küchen",
+        "logo": "brand/rotpunkt-logo.svg",
         "link": "github.com/hharsha98",
-        "series": "Herausforderung 2 von 3 · Ursachenanalyse",
-        "note": "Ideenskizze auf Basis öffentlicher Stellenanzeigen · Beispielwerte",
+        "series": "Herausforderung 2 von 3 · Reklamationen",
+        "note": "Ein Konzept, kein offizielles Rotpunkt-Projekt · Beispielwerte",
         "voiceNote": "KI-Stimme"
-      },
-      "credit": "Bilder: rotpunkt.de"
+      }
     }
   }
 }
