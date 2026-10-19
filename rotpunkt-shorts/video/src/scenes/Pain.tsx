@@ -212,8 +212,13 @@ const Scattered: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "scatt
   const to = order[(Math.floor(k) + 1) % 4];
   const local = k - Math.floor(k);
   const tc = (i: number) => ({ x: tiles[i].x + TILE_W / 2, y: tiles[i].y + TILE_H / 2 });
-  const gx = lerp(tc(from).x, tc(to).x, ease(local * hop, 0, hop * 0.7));
-  const gy = lerp(tc(from).y, tc(to).y, ease(local * hop, 0, hop * 0.7));
+  // travel between the tiles but stop short of them, so the magnifier never covers a label
+  const inner = (i: number) => {
+    const c = tc(i);
+    return { x: lerp(540, c.x, 0.42), y: lerp(cy, c.y, 0.42) };
+  };
+  const gx = lerp(inner(from).x, inner(to).x, ease(local * hop, 0, hop * 0.7));
+  const gy = lerp(inner(from).y, inner(to).y, ease(local * hop, 0, hop * 0.7));
   const glassOn = frame >= searchStart ? ease(frame, searchStart, 8) : 0;
   return (
     <SceneShell ctx={ctx}>
@@ -336,9 +341,11 @@ const Scattered: React.FC<{ ctx: SceneCtx; p: Extract<PainLabels, { kind: "scatt
         </div>
         {p.searching}
       </div>
-      <div style={{ position: "absolute", left: gx - 20, top: gy - 70, opacity: glassOn }}>
-        <Icon name="search" size={76} color={C.amber} stroke={4.5} />
-      </div>
+      {p.photo ? null : (
+        <div style={{ position: "absolute", left: gx - 20, top: gy - 70, opacity: glassOn }}>
+          <Icon name="search" size={76} color={C.amber} stroke={4.5} />
+        </div>
+      )}
     </SceneShell>
   );
 };

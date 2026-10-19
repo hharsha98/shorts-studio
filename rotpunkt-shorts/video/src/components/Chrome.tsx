@@ -64,8 +64,6 @@ export const TopBar: React.FC<{ top: Labels["top"] }> = ({ top }) => {
         {top.badge}
       </div>
       <div style={{ marginLeft: 20, fontSize: 32, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>{top.topic}</div>
-      <div style={{ flex: 1 }} />
-      <div style={{ fontSize: 26, fontWeight: 600, color: C.sub, whiteSpace: "nowrap", letterSpacing: 0.5 }}>{top.right}</div>
     </div>
   );
 };

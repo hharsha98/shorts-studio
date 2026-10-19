@@ -18,7 +18,7 @@ export type Labels = {
   /** Source credit shown small on every product photo. */
   credit: string;
   top: { badge: string; topic: string; right: string };
-  hook: { icon: string; lines: Run[][]; sub: string; photo?: string };
+  hook: { icon: string; lines: Run[][]; sub: string; photo?: string; status?: string };
   evidence: { title: string; cards: { role: string; quote: string; gist?: string }[]; note: string };
   pain: PainLabels;
   idea: { icon: string; kicker: string; title: string; sub: string; photo?: string };
@@ -39,7 +39,7 @@ export type Labels = {
     footnote: string;
   };
   pilot: { title: string; sub: string; items: string[] };
-  closing: { name: string; role: string; link: string; series: string; note: string; voiceNote: string };
+  closing: { name: string; role: string; link: string; series: string; note: string; voiceNote: string; forLine?: string; logo?: string };
 };
 
 export type ShortProps = {

@@ -2,4 +2,5 @@ work/
 video/node_modules/
 video/public/fonts/*.ttf
 video/public/products/
+video/public/brand/
 video/out/

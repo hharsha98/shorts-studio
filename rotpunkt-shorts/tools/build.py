@@ -33,11 +33,13 @@ SR = 24000
 FPS = 30
 EN_VOICE = "af_heart"  # Kokoro-82M, the pipeline's English narrator
 DE_VOICE = "de-DE-KatjaNeural"  # Microsoft neural voice via the Edge read-aloud service (edge-tts)
-DE_RATE = "+7%"  # Katja's default pace made the German cuts 63-67 s; 7 % faster keeps them under a minute and still sounds natural
-PAUSE_SAME_SCENE = 0.28
-PAUSE_NEW_SCENE = 0.50
-LEAD_IN = 0.15
-END_HOLD = 2.5
+DE_RATE = "+0%"  # Katja's own pace: natural, not sped up. Read-holds below keep each card on screen long enough to read.
+PAUSE_SAME_SCENE = 0.32
+PAUSE_NEW_SCENE = 0.55
+# Extra silence after a scene's last line, so the finished card can be read before the next one starts.
+HOLD_AFTER = {"evidence": 1.15, "pain": 0.85, "arch": 1.05, "metrics": 1.0, "proof": 1.0, "idea": 0.45}
+LEAD_IN = 0.2
+END_HOLD = 4.6  # the closing card carries the logo and the credit line, so it stays up long enough to read
 SCENE_LEAD = 0.12
 SHORTS = ("short1", "short2", "short3")
 LANGS = ("en", "de")
@@ -52,7 +54,12 @@ PRODUCT_IMAGES = {
     "s2-pain.webp": "/fileadmin/_processed_/1/0/csm_06-smala-sc-velvet-green_gallery__1400x875_bc6a077a07.webp",
     "s3-hook.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK09_Hauptschuss__1200.jpg",
     "s3-idea.webp": "/fileadmin/_processed_/1/4/csm_Rotpunkt_HM01_Hauptschuss_Final__1200_7ec0652391.webp",
+    "s1-idea.webp": "/fileadmin/_processed_/6/e/csm_MK_02_Memory_RI_Beach_Grey_Zerox_SY_VER_Scandinavian_Oak2__header__1200_460dc71601.webp",
+    "s2-idea.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK10_Hauptschuss__1200.jpg",
+    "s2-front.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK10_Detail2_Glasfronten_Fronten__1200.jpg",
 }
+LOGO_URL = "https://www.rotpunktkuechen.de/_assets/3b6d3762df46d796681ba251631c1b03/Media/rotpunkt-kuechen-logo.svg"
+LOGO_FILE = "brand/rotpunkt-logo.svg"
 
 
 def fetch_images() -> None:
@@ -66,6 +73,11 @@ def fetch_images() -> None:
             continue
         print(f"  fetching {name} from {SITE}{path}")
         run(["curl", "-sSfL", "--retry", "3", "-A", "Mozilla/5.0", "-o", str(out), SITE + path])
+    logo = VIDEO / "public" / LOGO_FILE
+    logo.parent.mkdir(parents=True, exist_ok=True)
+    if not logo.exists() or logo.stat().st_size < 1000:
+        print(f"  fetching logo from {LOGO_URL}")
+        run(["curl", "-sSfL", "--retry", "3", "-A", "Mozilla/5.0", "-o", str(logo), LOGO_URL])
 
 
 # ---------------------------------------------------------------------------------------------------- small helpers
@@ -228,7 +240,7 @@ def voice_short(short: str, lang: str, force: bool = False) -> dict:
     lines = script[lang]["lines"]
     say = [ln.get("say", ln["text"]) for ln in lines]
     engine = f"kokoro:{EN_VOICE}" if lang == "en" else f"edge:{DE_VOICE}@{DE_RATE}"
-    timing = [PAUSE_SAME_SCENE, PAUSE_NEW_SCENE, LEAD_IN, END_HOLD]
+    timing = [PAUSE_SAME_SCENE, PAUSE_NEW_SCENE, LEAD_IN, HOLD_AFTER]  # END_HOLD is added after the audio, so it never forces a re-voice
     key = hashlib.sha256(
         json.dumps({"engine": engine, "say": say, "text": [ln["text"] for ln in lines], "scenes": [ln["scene"] for ln in lines], "timing": timing}, ensure_ascii=False).encode()
     ).hexdigest()[:16]
@@ -237,7 +249,8 @@ def voice_short(short: str, lang: str, force: bool = False) -> dict:
     if not force and timeline_path.exists():
         cached = json.loads(timeline_path.read_text())
         if cached.get("key") == key and (d / "narration.wav").exists():
-            print(f"{short}/{lang}: narration cached ({cached['audioSeconds']:.1f} s)")
+            cached["totalSeconds"] = round(cached["audioSeconds"] + END_HOLD, 3)
+            print(f"{short}/{lang}: narration cached ({cached['audioSeconds']:.1f} s, video {cached['totalSeconds']:.1f} s)")
             return cached
     print(f"{short}/{lang}: voicing {len(lines)} lines with {engine}")
     tmp = d / "voice"
@@ -268,7 +281,7 @@ def voice_short(short: str, lang: str, force: bool = False) -> dict:
         pieces.append(audio)
         t += dur
         if i + 1 < len(lines):
-            gap = PAUSE_NEW_SCENE if lines[i + 1]["scene"] != ln["scene"] else PAUSE_SAME_SCENE
+            gap = PAUSE_SAME_SCENE if lines[i + 1]["scene"] == ln["scene"] else PAUSE_NEW_SCENE + HOLD_AFTER.get(ln["scene"], 0.0)
             pieces.append(np.zeros(int(gap * SR), np.float32))
             t += gap
     narration = np.concatenate(pieces)
@@ -544,8 +557,8 @@ def build_one(short: str, lang: str, force_voice: bool = False, deliver: bool = 
     render(short, lang, props_silent, d / "video-silent.mp4")
     mix(short, lang, timeline, music, d / "mix.wav")
     n = script["index"]
-    final = d / f"rotpunkt_short_{n}_{lang}.mp4"
-    silent = d / f"rotpunkt_short_{n}_{lang}_silent.mp4"
+    final = d / f"rotpunkt_short_{n}_{lang}_v2.mp4"
+    silent = d / f"rotpunkt_short_{n}_{lang}_v2_silent.mp4"
     mux(d / "video.mp4", d / "mix.wav", final)
     faststart(d / "video-silent.mp4", silent)
     contact_sheet(final, d / "sheet.png")

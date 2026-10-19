@@ -194,6 +194,33 @@ const PhotoOverlay: React.FC<{ kind: string; frame: number; status: string }> = 
       </>
     );
   }
+  if (kind === "front") {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: PHOTO.x + 28,
+          top: PHOTO.y + PHOTO.h - 150,
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "16px 28px",
+          borderRadius: 24,
+          background: "rgba(12,18,28,0.92)",
+          border: `3px solid ${C.coral}`,
+          boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
+          transform: `translateY(${bob}px)`,
+        }}
+      >
+        <svg width={48} height={48} viewBox="0 0 48 48">
+          <path d="M24 6 L43 40 H5 Z" fill={C.coral} stroke={C.coral} strokeLinejoin="round" />
+          <path d="M24 18 V28" stroke={C.ink} strokeWidth={4} strokeLinecap="round" />
+          <circle cx={24} cy={34} r={2.2} fill={C.ink} />
+        </svg>
+        <div style={{ fontSize: 40, fontWeight: 800, color: C.text }}>{status}</div>
+      </div>
+    );
+  }
   // order: a dealer order sheet with one flagged line, and a magnifier finding the problem in the kitchen
   return (
     <>
