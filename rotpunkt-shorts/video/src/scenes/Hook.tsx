@@ -121,7 +121,7 @@ const KnowledgeHero: React.FC<{ frame: number }> = ({ frame }) => {
 
 const PHOTO = { x: 90, y: 745, w: 900, h: 590 };
 
-/** Small overlays on the product photo of the cover: what the Short is about, drawn over a real kitchen. */
+/** Small overlays on the company photo: a checklist, a question, or a status chip. The words come from the config. */
 const PhotoOverlay: React.FC<{ kind: string; frame: number; status: string }> = ({ kind, frame, status }) => {
   const bob = Math.sin(frame / 16) * 6;
   if (kind === "machine") {
@@ -194,7 +194,7 @@ const PhotoOverlay: React.FC<{ kind: string; frame: number; status: string }> = 
       </>
     );
   }
-  if (kind === "front") {
+  if (kind === "alert" || kind === "front") {
     return (
       <div
         style={{
@@ -221,7 +221,7 @@ const PhotoOverlay: React.FC<{ kind: string; frame: number; status: string }> = 
       </div>
     );
   }
-  // order: a dealer order sheet with one flagged line, and a magnifier finding the problem in the kitchen
+  // checklist: one flagged line, and a magnifier on the photo
   return (
     <>
       <div style={{ position: "absolute", inset: 0, transform: "translate(-330px, 135px) scale(0.6)", transformOrigin: "585px 1057px" }}>

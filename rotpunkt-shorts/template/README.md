@@ -1,10 +1,9 @@
 # Company Shorts template
 
-One YAML file per company. The same scenes as the Rotpunkt v2 videos (karaoke captions, natural pace,
-product photos, logo closing card, the Siemens proof card as the only real proof) are filled from that file. A new company
-does not need a code change.
+One YAML file per company. The scenes (problem, root cause, solution, flow, result, proof card,
+optional pilot, closing card) are filled from that file. A new company does not need a code change.
 
-Run these from `rotpunkt-shorts/` with the voice environment (`bash tools/setup.sh` once).
+Run these from the project directory with the voice environment (`bash tools/setup.sh` once).
 
 ## 1. Draft a config from a job advert
 
@@ -20,14 +19,13 @@ Otherwise the story is left as TODOs for you to fill. Do not mention the job pos
 
 ## 2. Fill the YAML
 
-See the schema below, and `companies/rotpunkt.yaml` for a finished example (the order-check Short).
+See the schema below, and `companies/_example.yaml` for a finished neutral example.
 
 ## 3. Render
 
 ```bash
 ~/.venvs/kokoro/bin/python make_company_short.py \
-  --company-config companies/rotpunkt.yaml --lang de \
-  --artifact /opt/cursor/artifacts/template_test_rotpunkt_de.mp4
+  --company-config companies/_example.yaml --lang de
 ```
 
 `--lang en` uses Kokoro `af_heart`. `--lang de` uses Microsoft Katja at her normal pace.
@@ -37,7 +35,7 @@ images are cached by URL, and the whole video is skipped when its props have not
 
 ## What every video contains
 
-- Hook, the problem (a cost chart), one idea, an architecture diagram, illustrative before/after bars,
+- Problem, root cause (a cost chart), solution, flow, illustrative before/after result,
   the Siemens proof card, an optional pilot, and the closing card.
 - Closing card: the company logo, "An idea for <Company>" / "Eine Idee für <Company>",
   "Concept by Hanumanthu Harsha Vardhan", and a line that it is a concept, not an official project.
@@ -62,28 +60,28 @@ company:
     pain: https://acme.example/line.jpg
 
 problems:               # 1 or 2; each becomes its own 60–70 s video
-  - slug: order-checks
-    title: {en: Order checks, de: Auftragsprüfung}
-    hook:
-      icon: order       # order, front, knowledge or machine
+  - slug: document-checks
+    title: {en: Document checks, de: Dokumentenprüfung}
+    hook:                 # the problem
+      icon: order       # order (checklist), alert, knowledge or machine
       image: hook       # key from company.images
       sub: {en: "...", de: "..."}
-      en: [["Catch ", {text: "order errors", accent: true}], ["before production"]]
-      de: [["Bestellfehler finden"], ["bevor sie teuer werden"]]
-    pain:
+      en: [["Catch ", {text: "missing fields", accent: true}], ["before they ship"]]
+      de: [["Lücken finden"], ["bevor sie teuer werden"]]
+    pain:                 # the root cause
       image: pain
       title: {en: "...", de: "..."}
       chips: {en: [A, B, C], de: [A, B, C]}          # exactly 3
       columns: {en: [Desk, Line, Customer], de: [Schreibtisch, Linie, Kunde]}
-    idea:
+    idea:                 # the solution
       icon: agent
       title: {en: "...", de: "..."}
       sub: {en: "...", de: "..."}
-    steps:                # 3 to 5 nodes. id is what narration cues refer to (arch.<id>)
+    steps:                # the flow. 3 to 5 nodes. id is what narration cues refer to (arch.<id>)
       - {id: inputs, icon: inbox, title: {en: Incoming, de: Eingang}, sub: {en: "...", de: "..."}}
       - {id: agent, icon: agent, link: both, title: {en: AI agent, de: KI-Agent}, sub: {en: "...", de: "..."}}
       - {id: out, icon: factory, title: {en: Result, de: Ergebnis}, sub: {en: "...", de: "..."}}
-    before_after:         # 1 or 2 rows, always labelled as examples
+    before_after:         # the result. 1 or 2 rows, always labelled as examples
       - {label: {en: Minutes, de: Minuten}, before: 20, after: 5, unit: {en: min, de: "Min."}}
     pilot:                # optional, exactly the three checklist lines if present
       en: ["One team", "Read-only", "Measured with them"]

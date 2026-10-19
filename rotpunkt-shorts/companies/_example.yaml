@@ -1,0 +1,117 @@
+# Neutral example. Copy this file to companies/<slug>.yaml and replace every placeholder.
+# The proof card, the safety badges and the closing card are added by the template.
+# Do not mention a job advert. Before/after numbers are examples, stamped on screen.
+version: 1
+company:
+  slug: example
+  name: Example
+  domain: example.invalid
+  logo_url: https://example.invalid/logo.svg
+  logo_plate: light
+  images:
+    problem: https://example.invalid/problem.jpg
+    cause: https://example.invalid/cause.jpg
+    solution: https://example.invalid/solution.jpg
+
+problems:
+  - slug: document-checks
+    title: {en: Document checks, de: Dokumentenprüfung}
+    # problem
+    hook:
+      icon: order
+      image: problem
+      sub:
+        en: Catch a missing field before the record is saved
+        de: Ein fehlendes Feld finden, bevor der Vorgang gespeichert wird
+      en:
+        - [{text: "Catch "}, {text: "missing fields", accent: true}]
+        - ["before they ship"]
+      de:
+        - [{text: "Lücken", accent: true}, {text: " finden,"}]
+        - ["bevor sie teuer werden"]
+    # root cause: a late find costs more. The chart is a general principle, not this company's data.
+    pain:
+      image: cause
+      title:
+        en: The later a gap is found, the more it costs
+        de: Je später eine Lücke auffällt, desto teurer wird sie
+      chips:
+        en: [Fields, Rules, Sources]
+        de: [Felder, Regeln, Quellen]
+      columns:
+        en: [At the desk, In the process, At the customer]
+        de: [Am Schreibtisch, Im Prozess, Beim Kunden]
+      note:
+        en: "Rule of ten: a general quality principle, not company data"
+        de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"
+    # solution
+    idea:
+      icon: agent
+      image: solution
+      kicker: {en: One idea, de: Eine Idee}
+      title: {en: A document check assistant, de: Assistent für die Dokumentenprüfung}
+      sub:
+        en: AI agent + your rules + human approval
+        de: KI-Agent + Ihre Regeln + Freigabe durch Menschen
+    # flow
+    steps:
+      - {id: inputs, icon: inbox, link: arrow,
+         title: {en: Incoming document, de: Eingehendes Dokument},
+         sub: {en: "PDF · email", de: "PDF · E-Mail"}}
+      - {id: agent, icon: agent, link: both,
+         title: {en: AI agent, de: "KI-Agent (LLM)"},
+         sub: {en: reads the fields, de: erfasst die Felder}}
+      - {id: rules, icon: db, link: arrow,
+         title: {en: Your rules, de: Ihre Regeln},
+         sub: {en: the checklist, de: die Prüfliste}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {en: A person decides, de: Der Mensch entscheidet},
+         sub: {en: each gap with its source, de: jede Lücke mit Quelle}}
+      - {id: out, icon: check,
+         title: {en: Saved record, de: Gespeicherter Vorgang},
+         sub: {en: only approved documents, de: nur freigegebene Dokumente}}
+    # result
+    before_after:
+      - label: {en: Minutes per document, de: Minuten pro Dokument}
+        before: 20
+        after: 5
+        unit: {en: min, de: "Min."}
+    pilot:
+      en: ["One team", "Read-only, beside the team", "Measured with the department"]
+      de: ["Ein Team", "Nur lesend, parallel zum Team", "Erfolg gemeinsam mit dem Fachbereich messen"]
+    narration:
+      en:
+        - {scene: hook, text: "A missing field is cheap at the desk, and expensive later."}
+        - {scene: pain, text: "Fields, rules, sources: one gap means a return.",
+           cues: {pain.chips: Fields, pain.0: gap, pain.1: means, pain.2: return}}
+        - {scene: idea, text: "One idea: a document check assistant."}
+        - {scene: arch, text: "It reads each document, as a PDF or from email.",
+           cues: {arch.inputs: reads}}
+        - {scene: arch, text: "An AI agent checks the fields against your rules.",
+           cues: {arch.agent: agent, arch.rules: rules}}
+        - {scene: arch, text: "Each gap comes with its source, and a person decides.",
+           cues: {arch.checks: gap}}
+        - {scene: arch, text: "Only approved documents are saved, with local models and data protection in mind.",
+           cues: {arch.out: approved, arch.badges: local}}
+        - {scene: metrics, text: "Illustrative pilot targets: twenty minutes down to five.",
+           cues: {metrics.0: minutes}}
+        - {scene: pilot, text: "A pilot could start with one team.",
+           cues: {pilot.0: pilot, pilot.1: start, pilot.2: team}}
+      de:
+        - {scene: hook, text: "Ein fehlendes Feld kostet am Schreibtisch wenig und später viel."}
+        - {scene: pain, text: "Felder, Regeln, Quellen: Eine Lücke heißt Rücklauf.",
+           cues: {pain.chips: Felder, pain.0: Lücke, pain.1: heißt, pain.2: Rücklauf}}
+        - {scene: idea, text: "Eine Idee: ein Assistent für die Dokumentenprüfung."}
+        - {scene: arch, text: "Er liest jedes Dokument, als PDF oder aus der E-Mail.",
+           cues: {arch.inputs: liest}}
+        - {scene: arch, text: "Ein KI-Agent prüft die Felder gegen Ihre Regeln.",
+           say: "Ein K-I-Agent prüft die Felder gegen Ihre Regeln.",
+           cues: {arch.agent: KI-Agent, arch.rules: Regeln}}
+        - {scene: arch, text: "Jede Lücke wird mit Quelle markiert, die Entscheidung trifft der Mensch.",
+           cues: {arch.checks: Lücke}}
+        - {scene: arch, text: "Nur freigegebene Dokumente werden gespeichert, mit lokalen Modellen und der DSGVO im Blick.",
+           cues: {arch.out: freigegebene, arch.badges: lokalen}}
+        - {scene: metrics, text: "Beispielhafte Pilotziele: von zwanzig auf fünf Minuten.",
+           cues: {metrics.0: Pilotziele}}
+        - {scene: pilot, text: "Ein Pilot könnte mit einem Team starten.",
+           cues: {pilot.0: Pilot, pilot.1: könnte, pilot.2: Team}}

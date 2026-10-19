@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-time setup for rotpunkt-shorts on Linux: fonts, a Python venv for speech and checks, the Remotion packages and its browser.
+# One-time setup: fonts, a Python venv for speech and checks, the Remotion packages and its browser.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 VENV="${KOKORO_VENV:-$HOME/.venvs/kokoro}"

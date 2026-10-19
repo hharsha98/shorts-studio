@@ -27,9 +27,9 @@ const Chip: React.FC<{ text: string; p: number; color?: string }> = ({ text, p, 
   </div>
 );
 
-// ---------------------------------------------------------------- rule of ten (order errors)
+// ---------------------------------------------------------------- rule of ten (a late find costs more)
 
-/** Variants, dimensions and dependencies pinned onto the real kitchen photo (coordinates inside the 960x430 card). */
+/** Three callouts pinned onto the company photo (coordinates inside the 960x430 card). */
 const Callouts: React.FC<{ frame: number; fps: number; at: number; chips: string[] }> = ({ frame, fps, at, chips }) => {
   const q = [0, 1, 2].map((i) => pop(frame, at + i * 6, fps, 170, 15));
   const line = ease(frame, at + 6, 12);

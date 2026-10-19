@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Render a company Short from a YAML config. No scene code changes for a new company.
 
-  ~/.venvs/kokoro/bin/python make_company_short.py --company-config companies/rotpunkt.yaml --lang de
+  ~/.venvs/kokoro/bin/python make_company_short.py --company-config companies/_example.yaml --lang de
 
-From rotpunkt-shorts/. One config can hold one or two problems; each problem becomes its own
+From the project directory. One config can hold one or two problems; each problem becomes its own
 60–70 s vertical video. Proof, safety badges and the closing card are added by the template.
 """
 

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Build the interview Shorts: narration -> timeline and Remotion props -> render -> audio mix -> checks -> artifacts.
+"""Voice, render and mix for a legacy script pack. New companies use make_company_short.py.
 
 Run with the Python that has kokoro, edge-tts and faster-whisper installed (see README.md), for example:
-  ~/.venvs/kokoro/bin/python tools/build.py all
-  ~/.venvs/kokoro/bin/python tools/build.py voice short2 --lang de
-  ~/.venvs/kokoro/bin/python tools/build.py check short1 --lang en
+  ~/.venvs/kokoro/bin/python tools/build.py render short1 --lang de --pack companies/<slug>
+  ~/.venvs/kokoro/bin/python tools/build.py voice short2 --lang de --pack companies/<slug>
 """
 
 from __future__ import annotations
@@ -24,10 +23,11 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS = ROOT / "scripts"
 WORK = ROOT / "work"
 VIDEO = ROOT / "video"
 ARTIFACTS = Path("/opt/cursor/artifacts")
+# Set by main() from --pack. Company videos normally go through make_company_short.py.
+PACK: Path | None = None
 
 SR = 24000
 FPS = 30
@@ -41,43 +41,37 @@ HOLD_AFTER = {"evidence": 1.15, "pain": 0.85, "arch": 1.05, "metrics": 1.0, "pro
 LEAD_IN = 0.2
 END_HOLD = 4.6  # the closing card carries the logo and the credit line, so it stays up long enough to read
 SCENE_LEAD = 0.12
-SHORTS = ("short1", "short2", "short3")
 LANGS = ("en", "de")
 
-# Product photos from Rotpunkt Küchen's public website (rotpunkt.de redirects there), shown small-credited inside the scenes.
-# They are the company's images: downloaded at build time into a git-ignored folder, never committed or published.
-SITE = "https://www.rotpunktkuechen.de"
-PRODUCT_IMAGES = {
-    "s1-hook.webp": "/fileadmin/_processed_/8/4/csm_01-zerox-sy-ver-loft-brown-oak_gallery__1400x875_31bc567624.webp",
-    "s1-pain.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK07_Hauptschuss__1200.jpg",
-    "s2-hook.webp": "/fileadmin/_processed_/5/5/csm_MK_11_Zerox_SY_VER_Loft_Dark_Oak__header__1200_94c6bedc92.webp",
-    "s2-pain.webp": "/fileadmin/_processed_/1/0/csm_06-smala-sc-velvet-green_gallery__1400x875_bc6a077a07.webp",
-    "s3-hook.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK09_Hauptschuss__1200.jpg",
-    "s3-idea.webp": "/fileadmin/_processed_/1/4/csm_Rotpunkt_HM01_Hauptschuss_Final__1200_7ec0652391.webp",
-    "s1-idea.webp": "/fileadmin/_processed_/6/e/csm_MK_02_Memory_RI_Beach_Grey_Zerox_SY_VER_Scandinavian_Oak2__header__1200_460dc71601.webp",
-    "s2-idea.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK10_Hauptschuss__1200.jpg",
-    "s2-front.jpg": "/fileadmin/40_Inspiration/Minisammlung-Startseite/Rotpunkt_MK10_Detail2_Glasfronten_Fronten__1200.jpg",
-}
-LOGO_URL = "https://www.rotpunktkuechen.de/_assets/3b6d3762df46d796681ba251631c1b03/Media/rotpunkt-kuechen-logo.svg"
-LOGO_FILE = "brand/rotpunkt-logo.svg"
+
+def _pack() -> Path:
+    if PACK is None:
+        raise SystemExit("pass --pack companies/<slug> for a folder that contains the legacy scripts")
+    return PACK
 
 
 def fetch_images() -> None:
-    """Download the product photos once into video/public/products/. A missing image stops the build with the URL that failed
-    (the scenes would otherwise render an empty frame); see STORYBOARD.md for the generic fallback."""
+    """Download the photos listed in the company pack's research/images.json. Nothing here names a company."""
+    meta_path = _pack() / "research" / "images.json"
+    if not meta_path.exists():
+        print(f"  no {meta_path}, skipping photo download")
+        return
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
     target = VIDEO / "public" / "products"
     target.mkdir(parents=True, exist_ok=True)
-    for name, path in PRODUCT_IMAGES.items():
-        out = target / name
+    for item in meta.get("images", []):
+        out = target / item["file"]
         if out.exists() and out.stat().st_size > 10_000:
             continue
-        print(f"  fetching {name} from {SITE}{path}")
-        run(["curl", "-sSfL", "--retry", "3", "-A", "Mozilla/5.0", "-o", str(out), SITE + path])
-    logo = VIDEO / "public" / LOGO_FILE
-    logo.parent.mkdir(parents=True, exist_ok=True)
-    if not logo.exists() or logo.stat().st_size < 1000:
-        print(f"  fetching logo from {LOGO_URL}")
-        run(["curl", "-sSfL", "--retry", "3", "-A", "Mozilla/5.0", "-o", str(logo), LOGO_URL])
+        print(f"  fetching {item['file']}")
+        run(["curl", "-sSfL", "--retry", "3", "-A", "Mozilla/5.0", "-o", str(out), item["url"]])
+    logo = meta.get("logo")
+    if logo:
+        dest = VIDEO / "public" / logo["file"]
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if not dest.exists() or dest.stat().st_size < 1000:
+            print("  fetching logo")
+            run(["curl", "-sSfL", "--retry", "3", "-A", "Mozilla/5.0", "-o", str(dest), logo["url"]])
 
 
 # ---------------------------------------------------------------------------------------------------- small helpers
@@ -91,7 +85,12 @@ def run(cmd: list[str], cwd: Path | None = None) -> str:
 
 
 def load_script(short: str) -> dict:
-    return json.loads((SCRIPTS / f"{short}.json").read_text(encoding="utf-8"))
+    path = _pack() / f"{short}.json"
+    if not path.exists():
+        path = _pack() / "scripts" / f"{short}.json"
+    if not path.exists():
+        raise SystemExit(f"no script {short}.json in {_pack()}")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def out_dir(short: str, lang: str) -> Path:
@@ -607,9 +606,9 @@ def build_one(short: str, lang: str, force_voice: bool = False, deliver: bool = 
     render(short, lang, props, d / "video.mp4")
     render(short, lang, props_silent, d / "video-silent.mp4")
     mix(short, lang, timeline, music, d / "mix.wav")
-    n = script["index"]
-    final = d / f"rotpunkt_short_{n}_{lang}_v2.mp4"
-    silent = d / f"rotpunkt_short_{n}_{lang}_v2_silent.mp4"
+    stem = script.get("artifact") or script.get("id") or short
+    final = d / f"{stem}_{lang}_v2.mp4"
+    silent = d / f"{stem}_{lang}_v2_silent.mp4"
     mux(d / "video.mp4", d / "mix.wav", final)
     faststart(d / "video-silent.mp4", silent)
     contact_sheet(final, d / "sheet.png")
@@ -625,12 +624,22 @@ def build_one(short: str, lang: str, force_voice: bool = False, deliver: bool = 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["voice", "props", "render", "check", "all"])
-    ap.add_argument("short", nargs="?", default=None, help="short1, short2 or short3 (default: all three)")
+    ap.add_argument("short", nargs="?", default=None, help="script id inside --pack (default: every *.json there)")
+    ap.add_argument("--pack", type=Path, default=None, help="folder of legacy scripts, for example companies/<slug>")
     ap.add_argument("--lang", default=None, help="en or de (default: both)")
     ap.add_argument("--force-voice", action="store_true", help="re-voice even if the narration is cached")
     ap.add_argument("--no-deliver", action="store_true", help="do not copy the finished files to /opt/cursor/artifacts")
     args = ap.parse_args(argv)
-    shorts = [args.short] if args.short else list(SHORTS)
+    global PACK
+    if args.pack is None:
+        raise SystemExit("pass --pack companies/<slug> (a folder with the legacy scripts). New companies use make_company_short.py.")
+    PACK = args.pack if args.pack.is_absolute() else ROOT / args.pack
+    if args.short:
+        shorts = [args.short]
+    else:
+        shorts = sorted(p.stem for p in PACK.glob("*.json"))
+        if not shorts:
+            raise SystemExit(f"no scripts in {PACK}")
     langs = [args.lang] if args.lang else list(LANGS)
     for short in shorts:
         for lang in langs:

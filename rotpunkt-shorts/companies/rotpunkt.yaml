@@ -1,5 +1,6 @@
-# Regression config: the Rotpunkt order-check Short (v2), without the job-posting scene.
-# Proof (the Siemens system), the safety badges and the closing card are added by the template.
+# Regression config for one company. The interview scripts, the storyboard and the photo list
+# live next to this file in companies/rotpunkt/. The scenes, the proof card and the closing card
+# come from the template.
 version: 1
 company:
   slug: rotpunkt

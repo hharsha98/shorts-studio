@@ -4,7 +4,7 @@ import { C } from "../theme";
 
 /**
  * A product photo from the company's public website in a rounded card, with a slow zoom and the small source credit in its
- * corner ("Images: rotpunkt.de"). Only photos: never the company logo, so nothing looks like an official company video.
+ * corner ("Images: <domain>"). Only photos: never the company logo, so nothing looks like an official company video.
  */
 export const Photo: React.FC<{
   src: string;

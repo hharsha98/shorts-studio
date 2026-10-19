@@ -6,8 +6,8 @@ import { sampleProps } from "./sample";
 
 /**
  * Render one Short with, for example:
- *   npx remotion render src/index.ts InterviewShort out.mp4 --props=../work/short1/en/props.json
- * The props (scene windows, cues and captions timed by the narration) come from tools/build.py.
+ *   npx remotion render src/index.ts InterviewShort out.mp4 --props=../work/companies/<slug>/<problem>/de/props.json
+ * The props (scene windows, cues and captions timed by the narration) come from make_company_short.py.
  */
 export const RemotionRoot: React.FC = () => (
   <Composition

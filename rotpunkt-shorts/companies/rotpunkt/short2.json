@@ -2,6 +2,7 @@
   "id": "short2",
   "index": 2,
   "slug": "front-complaint",
+  "artifact": "rotpunkt_short_2",
   "en": {
     "lines": [
       { "scene": "hook", "text": "A kitchen front comes back, and the customer is waiting." },

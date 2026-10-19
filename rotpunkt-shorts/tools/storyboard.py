@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Fill the generated parts of STORYBOARD.md from scripts/*.json and work/<short>/<lang>/timeline.json.
+"""Fill the generated parts of a company storyboard from its scripts and work/<short>/<lang>/timeline.json.
 
-The markdown keeps hand-written sections; only the blocks between <!-- AUTO:<short>:<part> --> and <!-- /AUTO --> are replaced:
-  <part> = scenes (scene timings EN/DE with the on-screen content), en / de (narration with timecodes).
-Run it after tools/build.py has voiced the scripts:  python3 tools/storyboard.py
+  python3 tools/storyboard.py --pack companies/<slug>
+
+The markdown keeps hand-written sections; only the blocks between <!-- AUTO:<short>:<part> --> and <!-- /AUTO --> are replaced.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DOC = ROOT / "STORYBOARD.md"
 
 SCENE_NAMES = {
     "hook": "Hook (cover, frame 0)",
@@ -83,8 +83,8 @@ def scene_windows(timeline: dict) -> list[tuple[str, float, float]]:
     return [tuple(x) for x in out]
 
 
-def scenes_block(short: str) -> str:
-    script = json.loads((ROOT / "scripts" / f"{short}.json").read_text())
+def scenes_block(pack: Path, short: str) -> str:
+    script = json.loads((pack / f"{short}.json").read_text())
     tl = {lang: json.loads((ROOT / "work" / short / lang / "timeline.json").read_text()) for lang in ("en", "de")}
     win = {lang: {k: (s, e) for k, s, e in scene_windows(tl[lang])} for lang in ("en", "de")}
     rows = ["| # | Scene | EN | DE | On screen (EN labels; DE uses the German labels) |", "|---|---|---|---|---|"]
@@ -108,16 +108,21 @@ def script_block(short: str, lang: str) -> str:
 
 
 def main() -> int:
-    text = DOC.read_text(encoding="utf-8")
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--pack", type=Path, required=True, help="company folder that contains the storyboard and the scripts")
+    args = ap.parse_args()
+    pack = args.pack if args.pack.is_absolute() else ROOT / args.pack
+    doc = pack / "STORYBOARD.md"
+    text = doc.read_text(encoding="utf-8")
 
     def fill(m: re.Match) -> str:
         short, part = m.group(1), m.group(2)
-        body = scenes_block(short) if part == "scenes" else script_block(short, part)
+        body = scenes_block(pack, short) if part == "scenes" else script_block(short, part)
         return f"<!-- AUTO:{short}:{part} -->\n{body}\n<!-- /AUTO -->"
 
     new = re.sub(r"<!-- AUTO:(short\d):(scenes|en|de) -->.*?<!-- /AUTO -->", fill, text, flags=re.S)
-    DOC.write_text(new, encoding="utf-8")
-    print(f"updated {DOC}")
+    doc.write_text(new, encoding="utf-8")
+    print(f"updated {doc}")
     return 0
 
 

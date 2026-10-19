@@ -1,55 +1,37 @@
-# rotpunkt-shorts
+# Company Shorts
 
-Three animated vertical Shorts (1080x1920, EN + DE) for the AI Solution Engineer interview at Rotpunkt Küchen on 19 Oct 2026.
-Each Short takes one problem that the company's current job postings point to and sketches an AI solution built from the candidate's
-real work. The storyboard, sources, interviewer notes and both narration scripts are in [`STORYBOARD.md`](STORYBOARD.md).
+One YAML file renders a vertical Short (1080x1920). The scenes are the same for every company:
+the problem, the root cause, the solution, the flow, the result, a proof card, an optional pilot, and the closing card.
+Company name, logo, photos and every on-screen line come from the config. Nothing in the scene code names a company.
 
-The same scenes also render any company from one YAML file, with no code changes.
-The three commands and the config schema are in [`template/README.md`](template/README.md).
+Run the commands below from this directory.
+
+```bash
+~/.venvs/kokoro/bin/python make_company_short.py --company-config companies/_example.yaml --lang de
+```
+
+`companies/_example.yaml` is a neutral skeleton. A finished company file is `companies/<slug>.yaml`.
+The schema, the voice notes and the honesty rules are in [`template/README.md`](template/README.md).
+
+The proof card is a real result from the CV: a multi-agent system with LangGraph, built at Siemens in Amberg.
+It does not use an internal project name. Before/after numbers for the company are stamped as examples.
 
 ## Layout
 
 ```text
-scripts/short{1,2,3}.json   narration lines (EN + DE) with cue words, plus every on-screen label
-research/postings.json      snapshot of all postings used (titles, URLs, dates, quotes) and press sources
-tools/build.py              voice -> timeline/props -> Remotion render -> music + mix -> checks -> /opt/cursor/artifacts
-tools/storyboard.py         fills the timed tables and scripts in STORYBOARD.md from the final timelines
-tools/setup.sh              one-time setup (fonts, Python venv with kokoro/edge-tts/faster-whisper, npm packages, Remotion browser)
-video/                      Remotion 4.0.534 project (template from github.com/hharsha98/media-studio, own scenes in src/)
-work/                       generated audio, props, renders, frame sheets (git-ignored)
+companies/<slug>.yaml     one company: text, logo URL, image URLs, one or two problems
+companies/_example.yaml   neutral schema example
+template/                 compiler, fixed proof card, asset cache
+make_company_short.py     compile, voice, render, mix
+video/                    Remotion scenes (industry-neutral)
+tools/build.py            speech, render and mix used by the template; legacy packs need --pack
+work/                     generated audio and renders (git-ignored)
 ```
-
-## Build
-
-```bash
-bash tools/setup.sh                                   # once
-~/.venvs/kokoro/bin/python tools/build.py all         # all 3 Shorts x 2 languages, about 15 min on 4 CPUs
-~/.venvs/kokoro/bin/python tools/build.py render short2 --lang de   # one video
-~/.venvs/kokoro/bin/python tools/build.py check short1 --lang en    # Whisper check of the narration against the script
-python3 tools/storyboard.py                           # refresh the timed parts of STORYBOARD.md
-```
-
-`build.py all` writes `rotpunkt_short_N_{en,de}.mp4` (voice, quiet music, burned-in captions) and `rotpunkt_short_N_{en,de}_silent.mp4`
-(no audio track) to `work/shortN/<lang>/` and copies them to `/opt/cursor/artifacts/`.
 
 ## Voices
 
-- English: Kokoro-82M `af_heart` (Apache-2.0), the pipeline's English narrator, run locally with the `kokoro` PyTorch package
-  (the repo's `voice-en/` server needs Apple MLX). The model downloads once from Hugging Face (`hexgrad/Kokoro-82M`).
-- German: Microsoft `de-DE-KatjaNeural` through the Edge read-aloud service (`edge-tts`, free, no key, needs internet), 7 % faster than
-  default. Fine for a private presentation; for publishing use Azure Speech (same voice, paid) or the pipeline's Thorsten voice.
-- Words a voice reads wrongly get a spoken form in the script (`"say"`), for example `E-D-I` / `E-R-P` for the German voice; the captions
-  keep the written form.
+- English: Kokoro-82M `af_heart`, local.
+- German: Microsoft `de-DE-KatjaNeural` through `edge-tts`. A line that the voice misreads gets a `say` field;
+  the captions keep the written words.
 
-## Product photos and captions
-
-`build.py` downloads six product photos from Rotpunkt Küchen's public website (rotpunkt.de redirects to rotpunktkuechen.de) into
-`video/public/products/` (git-ignored: they are the company's images, for this private interview presentation only). Each photo carries
-the small credit "Images: rotpunkt.de" ("Bilder: rotpunkt.de" in German); the logo is never used. Sources: `research/images.json`.
-
-Captions are word-by-word karaoke: an amber pill slides onto each word on the voice's own word timings (`video/src/components/Captions.tsx`).
-
-## Music and fonts
-
-The background pad is generated by `build.py` (own composition, no licence needed) and mixed about 18 dB under the voice.
-Font: Be Vietnam Pro (SIL Open Font License, `video/public/fonts/OFL.txt`), downloaded by `setup.sh`.
+Captions are word-by-word karaoke. Photos are credited "Images: <domain>". The logo is only on the closing card.
