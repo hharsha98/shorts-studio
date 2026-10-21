@@ -74,7 +74,9 @@ def render_problem(config: dict, problem: dict, index: int, lang: str, artifact:
     t0 = time.perf_counter()
     timeline = build.voice_lines(name, lang, compiled["lines"], dest, force=force)
     voice_s = time.perf_counter() - t0
-    props_path = build.props_for(name, lang, compiled["labels"], timeline, dest, voice=True)
+    props_path = build.props_for(
+        name, lang, compiled["labels"], timeline, dest, voice=True, brand=compiled.get("brand"),
+    )
     digest = hashlib.sha256(props_path.read_bytes()).hexdigest()[:16]
     final = dest / f"{slug}_{problem_slug}_{lang}.mp4"
     stamp_path = dest / "render.json"

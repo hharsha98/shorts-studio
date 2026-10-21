@@ -57,6 +57,10 @@ company:
   domain: example.invalid  # used in the photo credit
   logo_url: https://example.invalid/logo.svg   # or local:companies/logos/example.svg
   logo_plate: light     # optional white chip, for a dark wordmark on the dark closing card
+  brand:                  # optional. Accent replaces the amber highlights
+    accent: "#FFB000"
+    bgTop: "#0A111C"
+    bgBottom: "#101C2D"
   images:               # named URLs, referenced by the problem
     hook: https://example.invalid/hero.jpg
     pain: https://example.invalid/line.jpg
@@ -70,6 +74,12 @@ problems:               # 1 or 2; each becomes its own 60–70 s video
       sub: {en: "...", de: "..."}
       en: [["Catch ", {text: "missing fields", accent: true}], ["before they ship"]]
       de: [["Lücken finden"], ["bevor sie teuer werden"]]
+    evidence:             # optional. 2–3 cards; skip the block to hide the scene
+      title: {en: "Three places it breaks", de: "Drei Stellen, an denen es reißt"}
+      cards:
+        - {role: {en: Workshop, de: Workshop}, quote: {en: "...", de: "..."}}
+        - {role: {en: Prototype, de: Prototyp}, quote: {en: "...", de: "..."}}
+        - {role: {en: Production, de: Betrieb}, quote: {en: "...", de: "..."}}
     pain:                 # the root cause
       image: pain
       title: {en: "...", de: "..."}

@@ -395,7 +395,7 @@ def chunk_captions(words: list[dict], max_chars: int = 36, max_words: int = 7, m
     return [{"start": c[0]["start"], "end": c[-1]["end"], "words": c} for c in merged]
 
 
-def props_for(name: str, lang: str, labels: dict, timeline: dict, dest: Path, voice: bool = True) -> Path:
+def props_for(name: str, lang: str, labels: dict, timeline: dict, dest: Path, voice: bool = True, brand: dict | None = None) -> Path:
     """Remotion props for one language. `labels` is the on-screen copy; timings come from the narration."""
     lines = timeline["lines"]
     total = timeline["totalSeconds"]
@@ -425,6 +425,8 @@ def props_for(name: str, lang: str, labels: dict, timeline: dict, dest: Path, vo
         "cues": cues,
         "captions": chunk_captions(words),
     }
+    if brand:
+        props["brand"] = brand
     path = dest / ("props.json" if voice else "props-silent.json")
     path.write_text(json.dumps(props, ensure_ascii=False, indent=1))
     return path
