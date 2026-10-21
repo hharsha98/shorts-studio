@@ -267,8 +267,19 @@ def voice_lines(name: str, lang: str, lines: list, dest: Path, force: bool = Fal
     say = [ln.get("say", ln["text"]) for ln in lines]
     engine = f"kokoro:{EN_VOICE}" if lang == "en" else f"edge:{DE_VOICE}@{DE_RATE}"
     timing = [PAUSE_SAME_SCENE, PAUSE_NEW_SCENE, LEAD_IN, HOLD_AFTER]  # END_HOLD is added after the audio, so it never forces a re-voice
+    # Cue maps drive on-screen highlights. Changing them without spoken text used to reuse a stale timeline.
     key = hashlib.sha256(
-        json.dumps({"engine": engine, "say": say, "text": [ln["text"] for ln in lines], "scenes": [ln["scene"] for ln in lines], "timing": timing}, ensure_ascii=False).encode()
+        json.dumps(
+            {
+                "engine": engine,
+                "say": say,
+                "text": [ln["text"] for ln in lines],
+                "scenes": [ln["scene"] for ln in lines],
+                "cues": [ln.get("cues") or {} for ln in lines],
+                "timing": timing,
+            },
+            ensure_ascii=False,
+        ).encode()
     ).hexdigest()[:16]
     d = dest
     timeline_path = d / "timeline.json"
