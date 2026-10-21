@@ -43,6 +43,8 @@ export type Labels = {
     name: string;
     role: string;
     link: string;
+    /** Optional extra short links under the name (website, LinkedIn, GitHub, Hugging Face). */
+    links?: string[];
     series: string;
     note: string;
     voiceNote: string;

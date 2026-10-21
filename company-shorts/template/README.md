@@ -38,12 +38,14 @@ images are cached by URL, and the whole video is skipped when its props have not
 - Problem, root cause (a cost chart), solution, flow, illustrative before/after result,
   the proof card, an optional pilot, and the closing card.
 - Closing card: the company logo, "An idea for <Company>" / "Eine Idee für <Company>",
-  "Concept by Hanumanthu Harsha Vardhan", and a line that it is a concept, not an official project.
+  "Concept by Hanumanthu Harsha Vardhan", four short links (website, LinkedIn, GitHub,
+  Hugging Face), and a line that it is a concept, not an official project.
 - Photos credited "Images: <domain>" / "Bilder: <domain>". A photo that cannot be fetched is dropped
   and the scene uses the drawn graphic instead. The log says so.
-- Before/after numbers are stamped ILLUSTRATIVE / BEISPIELWERTE. The proof-card numbers are fixed in
-  `template/copy.py` and cannot be edited from the config.
-- No "AI idea sketch" label, and the compiler rejects the words "job posting" and "Stellenanzeige".
+- Before/after numbers are stamped ILLUSTRATIVE / BEISPIELWERTE. The proof card is fixed in
+  `template/copy.py`: Siemens AG, Amberg; a multi-agent system with advanced RAG on industrial
+  machines (73–88% faster root-cause analysis, 16 machines in production). A config cannot
+  change those figures. The compiler also rejects internal project names, salaries, and CEFR levels.
 
 ## Config schema
 

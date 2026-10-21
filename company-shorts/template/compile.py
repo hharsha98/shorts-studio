@@ -13,7 +13,7 @@ import yaml
 
 from template.copy import (
     ARCH_TITLE, AUTHOR, BADGES, CLOSING_LINE, CONCEPT, CREDIT, FORBIDDEN, FOR_LINE, GITHUB,
-    METRICS_CHROME, NOT_OFFICIAL, PILOT_CHROME, PROOF, VOICE_NOTE,
+    LINKS, METRICS_CHROME, NOT_OFFICIAL, PILOT_CHROME, PROOF, VOICE_NOTE,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -177,7 +177,8 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             "role": CONCEPT[lang],
             "forLine": FOR_LINE[lang].format(name=name),
             "logo": logo,
-            "link": GITHUB,
+            "link": LINKS[0],
+            "links": LINKS,
             "series": title,
             "note": NOT_OFFICIAL[lang].format(name=name),
             "voiceNote": VOICE_NOTE[lang],
@@ -187,6 +188,7 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
     if pilot_items:
         labels["pilot"] = {**PILOT_CHROME[lang], "items": pilot_items}
     blob = " ".join(ln["text"] for ln in narration) + " " + hook_sub + " " + title
+    blob += " " + " ".join(str(v) for v in PROOF[lang].values())
     _reject_forbidden(blob, f"{slug}/{lang}")
     return {"lines": narration, "labels": labels}
 
