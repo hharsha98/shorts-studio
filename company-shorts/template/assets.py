@@ -27,12 +27,18 @@ def fetch(url: str, kind: str = "image") -> Path | None:
     `local:companies/logos/mark.svg` copies a file that lives in this project (used when the
     public site only inlines the logo and there is no stable image URL).
     """
-    if url.startswith("local:"):
-        src = (ROOT / url.split(":", 1)[1]).resolve()
-        root = ROOT.resolve()
-        if root != src and root not in src.parents:
-            print(f"  local asset is outside the project, skipped: {url}", file=sys.stderr)
+    if url.startswith("file:"):
+        src = Path(url[5:]).expanduser().resolve()
+        if not src.exists() or src.stat().st_size < 100:
+            print(f"  local asset missing: {url}", file=sys.stderr)
             return None
+        return src
+    if url.startswith("local:"):
+        src = Path(url.split(":", 1)[1]).expanduser()
+        if not src.is_absolute():
+            src = (ROOT / src).resolve()
+        else:
+            src = src.resolve()
         if not src.exists() or src.stat().st_size < 100:
             print(f"  local asset missing: {url}", file=sys.stderr)
             return None

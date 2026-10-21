@@ -1,44 +1,69 @@
 """Fixed on-screen copy that every company Short shares. A config cannot change these proof numbers.
 
-The system is described only as a multi-agent system with LangGraph. Do not name an employer or an internal project on the card or in the narration.
+The proof card names the plant that is already on the CV (Siemens AG, Amberg). Do not name an
+internal project. Do not write MARA, SIPLACE, SMT, a salary, or a German CEFR level.
 """
 
 PROOF = {
     "en": {
-        "kicker": "Built before",
+        "kicker": "Siemens AG, Amberg",
         "badge": "REAL RESULT",
-        "title": "A multi-agent system with LangGraph",
-        "sub": "Already running in production",
+        "title": "Built a multi-agent system with advanced RAG",
+        "sub": "For industrial machines at a Siemens plant",
         "facts": [
-            {"value": "12", "label": "LLM agents working together"},
-            {"value": "< 200 ms", "label": "retrieval over manuals and logs"},
-            {"value": "On-prem", "label": "LLMs, for data protection"},
-            {"value": "~78 %", "label": "of suggestions accepted at first review"},
+            {"value": "73–88%", "label": "faster root-cause analysis"},
+            {"value": "8–15 min", "label": "per fault, down from 30–120 min"},
+            {"value": "16", "label": "machines in production"},
+            {"value": "LangGraph", "label": "FastAPI · Pydantic AI · Langfuse"},
         ],
         "source": "Source: candidate's CV. A real result there, not a figure for this company.",
-        "line": "A multi-agent system with LangGraph that I built already runs in production.",
-        "say": "A multi-agent system with Lang Graph that I built already runs in production.",
+        "line": (
+            "Built a multi-agent system with advanced RAG for industrial machines at a Siemens plant, "
+            "LangGraph, FastAPI, Pydantic AI, Langfuse tracing, cutting root cause analysis by 73 to 88 percent, "
+            "from 30 to 120 minutes down to 8 to 15 minutes per fault, on 16 machines in production."
+        ),
+        "say": (
+            "Built a multi-agent system with advanced R-A-G for industrial machines at a Siemens plant, "
+            "Lang-Graph, Fast A-P-I, Pydantic A-I, Lang-fuse tracing, cutting root cause analysis by "
+            "73 to 88 percent, from 30 to 120 minutes down to 8 to 15 minutes per fault, on 16 machines in production."
+        ),
         "cue": "LangGraph",
     },
     "de": {
-        "kicker": "Schon einmal gebaut",
+        "kicker": "Siemens AG, Amberg",
         "badge": "ECHTES ERGEBNIS",
-        "title": "Multi-Agenten-System mit LangGraph",
-        "sub": "Bereits im Produktiveinsatz",
+        "title": "Multi-Agenten-System mit Advanced RAG gebaut",
+        "sub": "Für Industriemaschinen in einem Siemens-Werk",
         "facts": [
-            {"value": "12", "label": "KI-Agenten auf LLM-Basis"},
-            {"value": "< 200 ms", "label": "Suche in Handbüchern und Logs"},
-            {"value": "On-Premise", "label": "LLMs für den Datenschutz"},
-            {"value": "~78 %", "label": "der Vorschläge im ersten Review angenommen"},
+            {"value": "73–88 %", "label": "schnellere Ursachenanalyse"},
+            {"value": "8–15 Min.", "label": "pro Störung, statt 30–120 Min."},
+            {"value": "16", "label": "Maschinen im Produktivbetrieb"},
+            {"value": "LangGraph", "label": "FastAPI · Pydantic AI · Langfuse"},
         ],
         "source": "Quelle: Lebenslauf des Bewerbers. Ein echtes Ergebnis dort, keine Zahl dieses Unternehmens.",
-        "line": "Ein Multi-Agenten-System mit LangGraph, das ich gebaut habe, läuft bereits produktiv.",
-        "say": "Ein Multi-Agenten-System mit Lang-Graph, das ich gebaut habe, läuft bereits produktiv.",
+        "line": (
+            "Gebaut: ein Multi-Agenten-System mit Advanced RAG für Industriemaschinen in einem Siemens-Werk, "
+            "LangGraph, FastAPI, Pydantic AI, Langfuse-Tracing, das die Ursachenanalyse um 73 bis 88 Prozent "
+            "verkürzt, von 30 bis 120 auf 8 bis 15 Minuten pro Störung, an 16 Maschinen im Produktivbetrieb."
+        ),
+        "say": (
+            "Gebaut: ein Multi-Agenten-System mit Advanced R-A-G für Industriemaschinen in einem Siemens-Werk, "
+            "Lang-Graph, Fast-A-P-I, Pydantic A-I, Lang-fuse-Tracing, das die Ursachenanalyse um 73 bis 88 Prozent "
+            "verkürzt, von 30 bis 120 auf 8 bis 15 Minuten pro Störung, an 16 Maschinen im Produktivbetrieb."
+        ),
         "cue": "LangGraph",
     },
 }
 
 CLOSING_LINE = {"en": "Happy to explore it with you.", "de": "Mehr dazu gern im Gespräch."}
+
+# Short public links on the closing card. Keep them short so four lines still fit.
+LINKS = [
+    "agentic-systems-studio.com",
+    "linkedin.com/in/hanumanthu1",
+    "github.com/hharsha98",
+    "huggingface.co/hharsha",
+]
 
 BADGES = {
     "en": [
@@ -78,9 +103,12 @@ NOT_OFFICIAL = {
 }
 CREDIT = {"en": "Images: {domain}", "de": "Bilder: {domain}"}
 
-# Narration and on-screen copy must not say the idea came from a job advert.
+# Narration and on-screen copy must not say the idea came from a job advert,
+# name an internal project, quote a salary, or state a German CEFR level.
 FORBIDDEN = (
     "job posting", "job postings", "your posting", "your postings",
     "stellenanzeige", "stellenanzeigen", "eure ausschreibung", "ihrer ausschreibung",
     "ai idea sketch", "ki-ideenskizze",
+    "mara", "siplace", "smt-maschine", "smt maschine", "smt-maschinen", "smt machines",
+    "gehalt", "salary", "sprachniveau", "deutschkenntnisse", "cefr",
 )

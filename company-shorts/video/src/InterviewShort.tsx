@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import type { CalculateMetadataFunction } from "remotion";
-import { C, FONT_STACK, FPS } from "./theme";
+import { applyBrand, C, FONT_STACK, FPS } from "./theme";
 import { useFontsReady } from "./fonts";
 import { Background, ProgressBar, TopBar } from "./components/Chrome";
 import { Captions } from "./components/Captions";
@@ -56,6 +56,7 @@ const Scene: React.FC<{ win: SceneWindow; props: ShortProps; frame: number; fps:
 
 /** One interview Short: scenes timed by the narration, captions on top, a thin progress bar at the bottom. */
 export const InterviewShort: React.FC<ShortProps> = (props) => {
+  applyBrand(props.brand);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const ready = useFontsReady();
