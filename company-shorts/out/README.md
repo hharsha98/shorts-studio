@@ -37,3 +37,38 @@ Company files stay on this branch and off `main`.
 - Banned-word scan of YAML + on-screen labels + narration: no MARA, SIPLACE, SMT, salary, Gehalt, German level, or job-posting wording.
 - Proof header is `Siemens AG, Amberg`.
 - No application was sent.
+
+## nds Netzwerksysteme — workshop to live
+
+| | |
+|---|---|
+| File | `nds-workshop-to-live-en.mp4` |
+| Mac path | `/Users/harsha/shorts-studio/company-shorts/out/nds-workshop-to-live-en.mp4` |
+| Duration | 58.53 s |
+| Video | H.264 1080×1920 30 fps |
+| Audio | AAC stereo, mean −19.9 dB |
+| Language | English (`--lang en`) |
+| YouTube | Not uploaded. No working authenticated YouTube upload path on this Mac. |
+
+### Scene list
+
+| t (s) | Scene | On screen / spoken |
+|---|---|---|
+| 0.2–3.4 | Hook | From the workshop into live AI. Official nds-systemhaus.de still. |
+| 4.0–9.0 | Evidence | Advise / automate / live cards. |
+| 9.0–13.8 | Pain | Rule-of-ten cost chart on the nds building still. |
+| 13.8–19.9 | Idea | A customer-facing AI partner. |
+| 19.9–31.7 | Flow | Customer workshop → automation → documents → plain language + person → production. |
+| 31.7–36.7 | Metrics | Illustrative 12 → 4 weeks to first live use. |
+| 36.7–49.4 | Proof | Siemens AG, Amberg. Real CV result. |
+| 49.4–52.5 | Pilot | One customer team, read-only first, measured with them. |
+| 52.5–58.5 | Closing | Official nds it systemhaus logo on a light plate. Concept by Hanumanthu Harsha Vardhan. |
+
+### Checks
+
+- Logo: official `logo.png` from nds-systemhaus.de on the white plate.
+- Brand colours: accent `#0098D4` and magenta from the site/logo; dark `#0A1620` / `#071018`.
+- Photos: homepage hero, building, and team stills from nds-systemhaus.de.
+- Banned-word scan of YAML + on-screen labels + narration: no MARA, SIPLACE, SMT, salary, Gehalt, German level, or job-posting wording.
+- Proof header is `Siemens AG, Amberg`.
+- No application was sent.

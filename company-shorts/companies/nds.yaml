@@ -1,0 +1,146 @@
+# Concept for nds Netzwerksysteme. Not an official nds project. Before/after numbers are illustrative.
+# Logo, colours and photos come from https://www.nds-systemhaus.de/. Do not mention a job advert.
+# Proof card, safety badges and the closing card are added by the template.
+version: 1
+company:
+  slug: nds
+  name: nds Netzwerksysteme
+  domain: nds-systemhaus.de
+  logo_url: https://www.nds-systemhaus.de/assets/templates/web/img/logo.png
+  logo_plate: light
+  brand:
+    accent: "#0098D4"
+    bgTop: "#0A1620"
+    bgBottom: "#071018"
+  images:
+    hook: https://www.nds-systemhaus.de/assets/image-cache/header-startseite.e8a57598.jpg
+    pain: https://www.nds-systemhaus.de/assets/uploads/crops/standard.bc87cba0.haus_startseite_0626.png
+    idea: https://www.nds-systemhaus.de/assets/uploads/crops/standard.fd357382.vertriebsteam_2022_4299.jpg
+
+problems:
+  - slug: workshop-to-live
+    title: {en: Workshop to live, de: Vom Workshop in den Live-Betrieb}
+    hook:
+      icon: knowledge
+      image: hook
+      sub:
+        en: Advise the customer. Automate the work. Stay until it is live.
+        de: Den Kunden beraten. Die Arbeit automatisieren. Bleiben, bis es live ist.
+      en:
+        - [{text: "From the "}, {text: "workshop", accent: true}]
+        - ["into live AI"]
+      de:
+        - [{text: "Vom "}, {text: "Workshop", accent: true}]
+        - ["in live KI"]
+    evidence:
+      title:
+        en: Three places a customer project stalls
+        de: Drei Stellen, an denen ein Kundenprojekt stockt
+      note:
+        en: A concept, not an official nds Netzwerksysteme project.
+        de: Ein Konzept, kein offizielles Projekt von nds Netzwerksysteme.
+      cards:
+        - role: {en: Advise, de: Beraten}
+          quote:
+            en: Sit with the customer and explain the value in plain language
+            de: Beim Kunden sitzen und den Nutzen in klarer Sprache erklären
+          gist: {en: People and value, de: Menschen und Nutzen}
+        - role: {en: Automate, de: Automatisieren}
+          quote:
+            en: Check the process, then automate what is worth it
+            de: Den Prozess prüfen, dann automatisieren, was sich lohnt
+          gist: {en: Process first, de: Zuerst der Prozess}
+        - role: {en: Live, de: Live}
+          quote:
+            en: Take the project from the first workshop to production
+            de: Das Projekt vom ersten Workshop in den Produktivbetrieb bringen
+          gist: {en: Zero to live, de: Von null bis live}
+    pain:
+      image: pain
+      title:
+        en: The later a customer project stalls, the more it costs
+        de: Je später ein Kundenprojekt stockt, desto teurer wird es
+      chips:
+        en: [Workshop, Prototype, Live]
+        de: [Workshop, Prototyp, Live]
+      columns:
+        en: [At the customer, In the build, In live ops]
+        de: [Beim Kunden, Im Bau, Im Betrieb]
+      note:
+        en: "Rule of ten: a general quality principle, not company data"
+        de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"
+    idea:
+      icon: agent
+      image: idea
+      kicker: {en: One idea, de: Eine Idee}
+      title:
+        en: A customer-facing AI partner
+        de: Ein KI-Partner beim Kunden
+      sub:
+        en: Workshop + automation + a person who decides
+        de: Workshop + Automatisierung + ein Mensch, der entscheidet
+    steps:
+      - {id: workshop, icon: inbox, link: arrow,
+         title: {en: Customer workshop, de: Kunden-Workshop},
+         sub: {en: "process · value", de: "Prozess · Nutzen"}}
+      - {id: agent, icon: agent, link: both,
+         title: {en: Agentic automation, de: Agentische Automatisierung},
+         sub: {en: LLM · tools, de: LLM · Werkzeuge}}
+      - {id: rules, icon: db, link: arrow,
+         title: {en: Their documents, de: Ihre Unterlagen},
+         sub: {en: RAG · knowledge, de: RAG · Wissen}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {en: Plain language + person, de: Klare Sprache + Mensch},
+         sub: {en: "explain · approval", de: "erklären · Freigabe"}}
+      - {id: live, icon: factory,
+         title: {en: In production, de: Im Produktivbetrieb},
+         sub: {en: First live use, de: Erster Live-Einsatz}}
+    before_after:
+      - label: {en: Weeks to first live use, de: Wochen bis zum ersten Live-Einsatz}
+        before: 12
+        after: 4
+        unit: {en: wk, de: Wo.}
+    pilot:
+      en: ["One customer team", "Read-only first", "Measured with them"]
+      de: ["Ein Kundenteam", "Zuerst nur lesend", "Gemeinsam messen"]
+    narration:
+      en:
+        - {scene: hook, text: "A customer project dies if it never leaves the workshop."}
+        - {scene: evidence, text: "Advise, automate, live: the work sits between those steps."}
+        - {scene: pain, text: "Workshop, prototype, live: a late stall costs the most.",
+           cues: {pain.chips: Workshop, pain.0: late, pain.1: stall, pain.2: costs}}
+        - {scene: idea, text: "One idea: a customer-facing AI partner I advise, build, and run with the team."}
+        - {scene: arch, text: "I sit with the customer and gather the real process.",
+           cues: {arch.workshop: sit}}
+        - {scene: arch, text: "Then I automate what is worth it, with RAG on their documents.",
+           cues: {arch.agent: automate, arch.rules: documents}}
+        - {scene: arch, text: "It goes live in plain language, with a person who decides.",
+           cues: {arch.checks: live, arch.live: language, arch.badges: person}}
+        - {scene: metrics, text: "Illustrative targets: first live use from twelve weeks to four.",
+           cues: {metrics.0: weeks}}
+        - {scene: proof, text: "At Siemens in Amberg I built a multi-agent system with advanced RAG that cut root-cause analysis by 73 to 88 percent on 16 machines in production.",
+           say: "At Siemens in Amberg I built a multi-agent system with advanced R-A-G that cut root-cause analysis by 73 to 88 percent on 16 machines in production.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "A first pilot could start with one customer team.",
+           cues: {pilot.0: first, pilot.1: start, pilot.2: team}}
+        - {scene: closing, text: "Happy to explore it with you."}
+      de:
+        - {scene: hook, text: "Ein Kundenprojekt stirbt, wenn es den Workshop nie verlässt."}
+        - {scene: evidence, text: "Beraten, automatisieren, live: dazwischen bleibt die Arbeit liegen."}
+        - {scene: pain, text: "Workshop, Prototyp, Live: ein spätes Stocken kostet am meisten.",
+           cues: {pain.chips: Workshop, pain.0: spätes, pain.1: Stocken, pain.2: kostet}}
+        - {scene: idea, text: "Eine Idee: ein KI-Partner beim Kunden, den ich berate, baue und mit dem Team betreibe."}
+        - {scene: arch, text: "Ich sitze beim Kunden und nehme den echten Prozess auf.",
+           cues: {arch.workshop: sitze}}
+        - {scene: arch, text: "Dann automatisiere ich, was sich lohnt, mit RAG auf ihren Unterlagen.",
+           cues: {arch.agent: automatisiere, arch.rules: Unterlagen}}
+        - {scene: arch, text: "Es geht live in klarer Sprache, mit einem Menschen, der entscheidet.",
+           cues: {arch.checks: live, arch.live: Sprache, arch.badges: Mensch}}
+        - {scene: metrics, text: "Beispielhafte Ziele: erster Live-Einsatz von zwölf auf vier Wochen.",
+           cues: {metrics.0: Wochen}}
+        - {scene: proof, text: "Bei Siemens in Amberg habe ich ein Multi-Agenten-System mit Advanced RAG gebaut, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen im Produktivbetrieb.",
+           say: "Bei Siemens in Amberg habe ich ein Multi-Agenten-System mit Advanced R-A-G gebaut, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen im Produktivbetrieb.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "Ein erster Pilot könnte mit einem Kundenteam starten.",
+           cues: {pilot.0: erster, pilot.1: starten, pilot.2: Kundenteam}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}
