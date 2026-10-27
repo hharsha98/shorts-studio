@@ -6,6 +6,7 @@ are filled in here. Nothing in video/src has to change.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -13,14 +14,15 @@ import yaml
 
 from template.copy import (
     ARCH_TITLE, AUTHOR, BADGES, CLOSING_LINE, CONCEPT, CREDIT, FORBIDDEN, FOR_LINE, GITHUB,
-    METRICS_CHROME, NOT_OFFICIAL, PILOT_CHROME, PROOF, VOICE_NOTE,
+    LINKS, METRICS_CHROME, NOT_OFFICIAL, PILOT_CHROME, PROOF, VOICE_NOTE,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-SCENE_ORDER = ["hook", "pain", "idea", "arch", "metrics", "proof", "pilot", "closing"]
+SCENE_ORDER = ["hook", "evidence", "pain", "idea", "arch", "metrics", "proof", "pilot", "closing"]
+HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 STEP_ICONS = ["inbox", "agent", "db", "shield", "factory"]
 
 
@@ -177,7 +179,8 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             "role": CONCEPT[lang],
             "forLine": FOR_LINE[lang].format(name=name),
             "logo": logo,
-            "link": GITHUB,
+            "link": LINKS[0],
+            "links": LINKS,
             "series": title,
             "note": NOT_OFFICIAL[lang].format(name=name),
             "voiceNote": VOICE_NOTE[lang],
@@ -186,9 +189,18 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
     }
     if pilot_items:
         labels["pilot"] = {**PILOT_CHROME[lang], "items": pilot_items}
+    evidence = _evidence(problem, lang, slug)
+    labels["evidence"] = evidence or {"title": "", "cards": [], "note": ""}
+    if any(ln["scene"] == "evidence" for ln in narration) and not evidence:
+        raise ConfigError(f"{slug}.evidence: narration has an evidence line, so add 2 or 3 cards")
     blob = " ".join(ln["text"] for ln in narration) + " " + hook_sub + " " + title
+    blob += " " + " ".join(str(v) for v in PROOF[lang].values())
+    if evidence:
+        blob += " " + evidence["title"] + " " + " ".join(
+            c["role"] + " " + c["quote"] + " " + c.get("gist", "") for c in evidence["cards"]
+        )
     _reject_forbidden(blob, f"{slug}/{lang}")
-    return {"lines": narration, "labels": labels}
+    return {"lines": narration, "labels": labels, "brand": _brand(company)}
 
 
 def _photo(photos: dict, key) -> dict:
@@ -239,6 +251,45 @@ def _narration(problem: dict, lang: str, slug: str, pilot_items: list[str]) -> l
     rank = {name: i for i, name in enumerate(SCENE_ORDER)}
     lines.sort(key=lambda ln: rank[ln["scene"]])
     return lines
+
+
+def _evidence(problem: dict, lang: str, slug: str) -> dict | None:
+    """Optional quote cards, same layout as the Rotpunkt evidence scene. Leave the block out to skip it."""
+    raw = problem.get("evidence")
+    if not raw:
+        return None
+    cards_raw = raw.get("cards") if isinstance(raw, dict) else None
+    if not isinstance(cards_raw, list) or not 2 <= len(cards_raw) <= 3:
+        raise ConfigError(f"{slug}.evidence.cards: need 2 or 3 cards")
+    cards = []
+    for i, card in enumerate(cards_raw):
+        if not isinstance(card, dict):
+            raise ConfigError(f"{slug}.evidence.cards[{i}]: need role and quote")
+        item = {
+            "role": text(card.get("role"), lang, f"{slug}.evidence.cards[{i}].role"),
+            "quote": text(card.get("quote"), lang, f"{slug}.evidence.cards[{i}].quote"),
+        }
+        if card.get("gist"):
+            item["gist"] = text(card.get("gist"), lang, f"{slug}.evidence.cards[{i}].gist")
+        cards.append(item)
+    title = text(raw.get("title"), lang, f"{slug}.evidence.title")
+    note = text(raw.get("note"), lang, f"{slug}.evidence.note") if raw.get("note") else ""
+    return {"title": title, "cards": cards, "note": note}
+
+
+def _brand(company: dict) -> dict | None:
+    raw = company.get("brand") or {}
+    if not raw:
+        return None
+    out = {}
+    for key in ("accent", "bgTop", "bgBottom"):
+        val = raw.get(key)
+        if val is None or val == "":
+            continue
+        if not isinstance(val, str) or not HEX.match(val):
+            raise ConfigError(f"company.brand.{key}: need a #RRGGBB colour")
+        out[key] = val
+    return out or None
 
 
 def photo_map(config: dict) -> dict[str, str]:
