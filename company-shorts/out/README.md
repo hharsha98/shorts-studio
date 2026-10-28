@@ -31,5 +31,17 @@ Hexgrad Kokoro-82M has no German voice; DE uses the company-shorts pipeline voic
 
 Contact sheets: `bos-contact-sheet-en.jpg`, `bos-contact-sheet-de.jpg`.
 
+## Lucanet (English)
+
+Same pipeline and scene order as BOS. Config: `companies/lucanet.yaml`.
+Official site [lucanet.com](https://www.lucanet.com/). Job source (not mentioned in the film):
+AI Solutions Engineer (internal AI agents for Finance, Sales, People, IT and Legal).
+
+| File | Duration | Voice | Size |
+|---|---|---|---|
+| `lucanet-rotpunkt-style-en.mp4` | 64.67 s | Kokoro `af_heart` | 1080×1920 H.264 / AAC · 14.91 MiB |
+
+Contact sheet: `lucanet-contact-sheet-en.jpg`.
+
 Do not merge to public `main` if real company names should stay off the public tree.
 Do not send or upload these films.

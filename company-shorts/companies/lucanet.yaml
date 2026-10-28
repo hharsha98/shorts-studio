@@ -1,0 +1,153 @@
+# Concept for Lucanet. Not an official Lucanet project. Before/after numbers are illustrative.
+# Logo, colours and photos come from https://www.lucanet.com/. Do not mention a job advert.
+# Proof card, safety badges and the closing card are added by the template.
+version: 1
+company:
+  slug: lucanet
+  name: Lucanet
+  domain: lucanet.com
+  logo_url: https://www.lucanet.com/content/experience-fragments/corporateweb/global/en/site/header/master/_jcr_content/root/image.coreimg.svg/1779298313496/logo-lucanet.svg
+  logo_plate: light
+  role: {en: AI Solutions Engineer, de: AI Solutions Engineer}
+  brand:
+    accent: "#9728FF"
+    bgTop: "#071420"
+    bgBottom: "#040C14"
+  images:
+    hook: https://www.lucanet.com/content/experience-fragments/corporateweb/global/en/site/fragments/tabs/tabs-benefits/tabs-homepage-platform-highlights/_jcr_content/root/tabs_copy/item_1732614236451/image.coreimg.png/1783092582492/data-architecture-610x541-2x.png
+    pain: https://www.lucanet.com/content/experience-fragments/corporateweb/global/en/site/fragments/tabs/tabs-resources/Careers/_jcr_content/root/container/teaser_copy.coreimg.jpeg/1769165087264/blog-header-se-group-interview.jpeg
+    idea: https://www.lucanet.com/content/experience-fragments/corporateweb/global/en/site/fragments/hero/hero-illustration/Hero-Illustration-Artificial-Intelligence/_jcr_content/root/teaser.coreimg.png/1788269572608/hero-image-artificial-intelligence-lume.png
+    close: https://www.lucanet.com/content/experience-fragments/corporateweb/global/en/site/fragments/hero/hero-illustration/hero-illustration-consolidation-and-financial-planning/_jcr_content/root/teaser.coreimg.png/1779375697264/hero-image-consolidation-and-financial-planning.png
+    disclose: https://www.lucanet.com/content/experience-fragments/corporateweb/global/en/site/fragments/hero/hero-illustration/Hero-illustration-disclosure-management/_jcr_content/root/teaser.coreimg.png/1768914019236/hero-image-disclosure-management.png
+
+problems:
+  - slug: erp-to-live
+    title: {en: ERPs to live AI, de: Von den ERPs in live KI}
+    hook:
+      icon: knowledge
+      image: hook
+      sub:
+        en: Clean the data. Close the books. Automate disclosure.
+        de: Die Daten säubern. Den Abschluss bauen. Die Offenlegung automatisieren.
+      en:
+        - [{text: "From "}, {text: "ERPs", accent: true}]
+        - ["into live AI"]
+      de:
+        - [{text: "Von den "}, {text: "ERPs", accent: true}]
+        - ["in live KI"]
+    evidence:
+      title:
+        en: Three places the work sits
+        de: Drei Stellen, an denen die Arbeit liegt
+      note:
+        en: A concept, not an official Lucanet project.
+        de: Ein Konzept, kein offizielles Projekt von Lucanet.
+      cards:
+        - role: {en: Data, de: Daten}
+          quote:
+            en: Clean and join ERP data across entities
+            de: ERP-Daten über Gesellschaften säubern und zusammenführen
+          gist: {en: SQL · Linux, de: SQL · Linux}
+        - role: {en: Close, de: Abschluss}
+          quote:
+            en: Consolidation, planning and disclosure still stall late
+            de: Konsolidierung, Planung und Offenlegung stocken spät
+          gist: {en: Reports · filings, de: Reports · Meldungen}
+        - role: {en: Agents, de: Agenten}
+          quote:
+            en: Multi-agent RAG with evals, then production
+            de: Multi-Agenten-RAG mit Evals, dann Produktivbetrieb
+          gist: {en: LangGraph · MCP, de: LangGraph · MCP}
+    pain:
+      image: pain
+      title:
+        en: The later a close, plan or disclosure stalls, the more it costs
+        de: Je später Abschluss, Planung oder Offenlegung stocken, desto teurer wird es
+      chips:
+        en: [Close, Plan, Disclose]
+        de: [Abschluss, Planung, Offenlegung]
+      columns:
+        en: [At the desk, In the close, In the filing]
+        de: [Am Schreibtisch, Im Abschluss, In der Meldung]
+      note:
+        en: "Rule of ten: a general quality principle, not company data"
+        de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"
+    idea:
+      icon: agent
+      image: idea
+      kicker: {en: One idea, de: Eine Idee}
+      title:
+        en: A finance AI partner
+        de: Ein KI-Partner für Finance
+      sub:
+        en: ERP data + agents + a person who decides
+        de: ERP-Daten + Agenten + ein Mensch, der entscheidet
+    steps:
+      - {id: finance, icon: inbox, link: arrow,
+         title: {en: Sit with finance, de: Bei Finance sitzen},
+         sub: {en: "process · data", de: "Prozess · Daten"}}
+      - {id: data, icon: db, link: both,
+         title: {en: Clean ERP data, de: ERP-Daten säubern},
+         sub: {en: SQL · Text-to-SQL, de: SQL · Text-to-SQL}}
+      - {id: agent, icon: agent, link: both,
+         title: {en: Multi-agent RAG, de: Multi-Agenten-RAG},
+         sub: {en: LangGraph · FastAPI, de: LangGraph · FastAPI}}
+      - {id: skills, icon: search, link: arrow,
+         title: {en: MCP and skills, de: MCP und Skills},
+         sub: {en: "evals · traces", de: "Evals · Traces"}}
+      - {id: live, icon: factory,
+         title: {en: In production, de: Im Produktivbetrieb},
+         sub: {en: CI/CD · AWS · GCP, de: CI/CD · AWS · GCP}}
+    before_after:
+      - label: {en: Weeks to first live use, de: Wochen bis zum ersten Live-Einsatz}
+        before: 12
+        after: 4
+        unit: {en: wk, de: Wo.}
+    pilot:
+      en: ["One finance team", "Read-only first", "Measured with them"]
+      de: ["Ein Finance-Team", "Zuerst nur lesend", "Gemeinsam messen"]
+    narration:
+      en:
+        - {scene: hook, text: "A close is cheap at the desk, and expensive if the ERP data never joins."}
+        - {scene: evidence, text: "ERP data, reports, agents: the work sits between those steps."}
+        - {scene: pain, text: "Close, plan, disclose: a late stall costs the most.",
+           cues: {pain.chips: Close, pain.0: late, pain.1: stall, pain.2: costs}}
+        - {scene: idea, text: "One idea: a finance AI partner."}
+        - {scene: arch, text: "I sit with finance and clean the ERP data, as I did at IndiaMART.",
+           say: "I sit with finance and clean the E-R-P data, as I did at India Mart.",
+           cues: {arch.finance: sit, arch.data: clean}}
+        - {scene: arch, text: "Then I build multi-agent RAG, LangGraph, FastAPI, and MCP skills.",
+           say: "Then I build multi-agent R-A-G, Lang-Graph, Fast A-P-I, and M-C-P skills.",
+           cues: {arch.agent: build, arch.skills: MCP}}
+        - {scene: arch, text: "It goes live with Docker, and a person who decides.",
+           cues: {arch.live: live, arch.badges: person}}
+        - {scene: metrics, text: "Illustrative targets: first live use from twelve weeks to four.",
+           cues: {metrics.0: weeks}}
+        - {scene: proof, text: "At Siemens AG in Amberg I built a multi-agent system with advanced RAG for industrial machines, LangGraph, FastAPI, Pydantic AI, Langfuse, cutting root-cause analysis by 73 to 88 percent on 16 machines.",
+           say: "At Siemens A-G in Amberg I built a multi-agent system with advanced R-A-G for industrial machines, Lang-Graph, Fast A-P-I, Pydantic A-I, Lang-fuse, cutting root-cause analysis by 73 to 88 percent on 16 machines.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "A first pilot could start with one finance team.",
+           cues: {pilot.0: first, pilot.1: start, pilot.2: team}}
+        - {scene: closing, text: "Happy to explore it with you."}
+      de:
+        - {scene: hook, text: "Ein Abschluss kostet am Schreibtisch wenig und viel, wenn die ERP-Daten nie zusammenkommen."}
+        - {scene: evidence, text: "ERP-Daten, Reports, Agenten: dazwischen bleibt die Arbeit."}
+        - {scene: pain, text: "Abschluss, Planung, Offenlegung: spätes Stocken kostet am meisten.",
+           cues: {pain.chips: Abschluss, pain.0: spätes, pain.1: Stocken, pain.2: kostet}}
+        - {scene: idea, text: "Eine Idee: ein KI-Partner für Finance."}
+        - {scene: arch, text: "Ich sitze bei Finance und säubere die ERP-Daten, wie bei IndiaMART.",
+           say: "Ich sitze bei Finance und säubere die E-R-P-Daten, wie bei India Mart.",
+           cues: {arch.finance: sitze, arch.data: säubere}}
+        - {scene: arch, text: "Dann baue ich Multi-Agenten-RAG, LangGraph, FastAPI und MCP Skills.",
+           say: "Dann baue ich Multi-Agenten-R-A-G, Lang-Graph, Fast-A-P-I und M-C-P Skills.",
+           cues: {arch.agent: baue, arch.skills: MCP}}
+        - {scene: arch, text: "Es geht live mit Docker, und einem Menschen, der entscheidet.",
+           cues: {arch.live: live, arch.badges: Menschen}}
+        - {scene: metrics, text: "Beispielhafte Ziele: erster Live-Einsatz von zwölf auf vier Wochen.",
+           cues: {metrics.0: Wochen}}
+        - {scene: proof, text: "Bei der Siemens AG in Amberg habe ich ein Multi-Agenten-System mit Advanced RAG für Industriemaschinen gebaut, LangGraph, FastAPI, Pydantic AI, Langfuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
+           say: "Bei der Siemens A-G in Amberg habe ich ein Multi-Agenten-System mit Advanced R-A-G für Industriemaschinen gebaut, Lang-Graph, Fast-A-P-I, Pydantic A-I, Lang-fuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "Ein erster Pilot könnte mit einem Finance-Team starten.",
+           cues: {pilot.0: erster, pilot.1: starten, pilot.2: Finance-Team}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

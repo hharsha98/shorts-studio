@@ -57,6 +57,7 @@ company:
   domain: example.invalid  # used in the photo credit
   logo_url: https://example.invalid/logo.svg   # or local:companies/logos/example.svg
   logo_plate: light     # optional white chip, for a dark wordmark on the dark closing card
+  role: AI Solutions Engineer  # optional. Replaces "Concept by" on the closing card
   brand:                  # optional. Accent replaces the amber highlights
     accent: "#FFB000"
     bgTop: "#0A111C"
