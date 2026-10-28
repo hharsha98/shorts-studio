@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import unittest
+from pathlib import Path
 
-from template.compile import SCENE_ORDER
+from template.compile import SCENE_ORDER, compile_problem, load_config
 from template.copy import FORBIDDEN, LINKS, PROOF
+
+ROOT = Path(__file__).resolve().parent.parent
 
 
 class CopyTests(unittest.TestCase):
@@ -38,6 +41,22 @@ class CopyTests(unittest.TestCase):
             SCENE_ORDER,
             ["hook", "evidence", "pain", "idea", "arch", "metrics", "proof", "pilot", "closing"],
         )
+
+    def test_example_keeps_concept_by_role(self) -> None:
+        cfg = load_config(ROOT / "companies" / "_example.yaml")
+        out = compile_problem(cfg, cfg["problems"][0], 0, "en", {}, "")
+        self.assertEqual(out["labels"]["closing"]["role"], "Concept by")
+
+    def test_lucanet_en_sets_role_and_avoids_banned_words(self) -> None:
+        cfg = load_config(ROOT / "companies" / "lucanet.yaml")
+        out = compile_problem(cfg, cfg["problems"][0], 0, "en", {}, "")
+        self.assertEqual(out["labels"]["closing"]["role"], "AI Solutions Engineer")
+        self.assertEqual(out["labels"]["closing"]["name"], "Hanumanthu Harsha Vardhan")
+        self.assertEqual(out["brand"]["accent"], "#9728FF")
+        blob = " ".join(ln["text"] for ln in out["lines"]).lower()
+        blob += " " + json.dumps(out["labels"], ensure_ascii=False).lower()
+        for banned in ("mara", "siplace", "smt", "azure", "job posting", "stellenanzeige"):
+            self.assertNotIn(banned, blob, banned)
 
 
 if __name__ == "__main__":

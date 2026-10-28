@@ -187,6 +187,8 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             **({"logoPlate": "light"} if str(company.get("logo_plate") or "") == "light" else {}),
         },
     }
+    if company.get("role"):
+        labels["closing"]["role"] = text(company["role"], lang, "company.role")
     if pilot_items:
         labels["pilot"] = {**PILOT_CHROME[lang], "items": pilot_items}
     evidence = _evidence(problem, lang, slug)
