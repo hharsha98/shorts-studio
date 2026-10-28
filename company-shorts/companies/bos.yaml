@@ -110,12 +110,12 @@ problems:
         - {scene: pain, text: "Data, reports, automation: a late stall costs the most.",
            cues: {pain.chips: Data, pain.0: late, pain.1: stall, pain.2: costs}}
         - {scene: idea, text: "One idea: an operations AI partner."}
-        - {scene: arch, text: "I sit with operations and clean the real data, with Python, SQL and Pandas.",
+        - {scene: arch, text: "I sit with operations and clean the data, with Python, SQL and Pandas.",
            cues: {arch.workshop: sit, arch.data: clean}}
         - {scene: arch, text: "Then I build Power BI-style dashboards, and RAG agents on that knowledge.",
            say: "Then I build Power B-I-style dashboards, and R-A-G agents on that knowledge.",
            cues: {arch.reports: dashboards, arch.agent: agents}}
-        - {scene: arch, text: "It goes live with process automation, and a person who decides.",
+        - {scene: arch, text: "It goes live with automation, and a person who decides.",
            cues: {arch.live: live, arch.badges: person}}
         - {scene: metrics, text: "Illustrative targets: first live use from twelve weeks to four.",
            cues: {metrics.0: weeks}}
@@ -127,22 +127,22 @@ problems:
         - {scene: closing, text: "Happy to explore it with you."}
       de:
         - {scene: hook, text: "Ein Datenprojekt kostet am Schreibtisch wenig und viel, wenn es nie live geht."}
-        - {scene: evidence, text: "Daten, Reports, Automatisierung: dazwischen bleibt die Arbeit liegen."}
-        - {scene: pain, text: "Daten, Reports, Automatisierung: ein spätes Stocken kostet am meisten.",
+        - {scene: evidence, text: "Daten, Reports, Automatisierung: dazwischen bleibt die Arbeit."}
+        - {scene: pain, text: "Daten, Reports, Automatisierung: spätes Stocken kostet am meisten.",
            cues: {pain.chips: Daten, pain.0: spätes, pain.1: Stocken, pain.2: kostet}}
         - {scene: idea, text: "Eine Idee: ein KI-Partner im Betrieb."}
-        - {scene: arch, text: "Ich sitze im Betrieb und säubere die echten Daten, mit Python, SQL und Pandas.",
-           say: "Ich sitze im Betrieb und säubere die echten Daten, mit Python, S-Q-L und Pandas.",
+        - {scene: arch, text: "Ich sitze im Betrieb und säubere die Daten, mit Python, SQL und Pandas.",
+           say: "Ich sitze im Betrieb und säubere die Daten, mit Python, S-Q-L und Pandas.",
            cues: {arch.workshop: sitze, arch.data: säubere}}
-        - {scene: arch, text: "Dann baue ich Dashboards im Power-BI-Stil und RAG-Agenten auf diesem Wissen.",
-           say: "Dann baue ich Dashboards im Power-B-I-Stil und R-A-G-Agenten auf diesem Wissen.",
+        - {scene: arch, text: "Dann baue ich Dashboards im Power-BI-Stil und Agenten mit RAG.",
+           say: "Dann baue ich Dashboards im Power-B-I-Stil und Agenten mit R-A-G.",
            cues: {arch.reports: Dashboards, arch.agent: Agenten}}
-        - {scene: arch, text: "Es geht live mit Prozessautomatisierung und einem Menschen, der entscheidet.",
+        - {scene: arch, text: "Es geht live mit Automatisierung und einem Menschen, der entscheidet.",
            cues: {arch.live: live, arch.badges: Menschen}}
-        - {scene: metrics, text: "Beispielhafte Ziele: erster Live-Einsatz von zwölf auf vier Wochen.",
+        - {scene: metrics, text: "Beispielhafte Ziele: von zwölf auf vier Wochen.",
            cues: {metrics.0: Wochen}}
-        - {scene: proof, text: "Bei der Siemens AG in Amberg habe ich ein Multi-Agenten-System mit Advanced RAG für Industriemaschinen gebaut, LangGraph, FastAPI, Pydantic AI, Langfuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
-           say: "Bei der Siemens A-G in Amberg habe ich ein Multi-Agenten-System mit Advanced R-A-G für Industriemaschinen gebaut, Lang-Graph, Fast-A-P-I, Pydantic A-I, Lang-fuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
+        - {scene: proof, text: "Bei der Siemens AG in Amberg: ein Multi-Agenten-System mit Advanced RAG für Industriemaschinen, LangGraph, FastAPI, Pydantic AI, Langfuse, 73 bis 88 Prozent schnellere Ursachenanalyse an 16 Maschinen.",
+           say: "Bei der Siemens A-G in Amberg: ein Multi-Agenten-System mit Advanced R-A-G für Industriemaschinen, Lang-Graph, Fast-A-P-I, Pydantic A-I, Lang-fuse, 73 bis 88 Prozent schnellere Ursachenanalyse an 16 Maschinen.",
            cues: {proof: Siemens}}
         - {scene: pilot, text: "Ein erster Pilot könnte mit einem Betriebsteam starten.",
            cues: {pilot.0: erster, pilot.1: starten, pilot.2: Betriebsteam}}
