@@ -1,0 +1,146 @@
+# Concept for BITS GmbH. Not an official BITS project. Before/after numbers are illustrative.
+# Logo, colours and photos come from https://www.mybits.de/. Do not mention a job advert.
+# Proof card, safety badges and the closing card are added by the template.
+version: 1
+company:
+  slug: bits
+  name: BITS
+  domain: mybits.de
+  logo_url: https://www.mybits.de/wp-content/uploads/2026/08/bits-logo.png
+  logo_plate: light
+  brand:
+    accent: "#009FE3"
+    bgTop: "#0D1520"
+    bgBottom: "#061018"
+  images:
+    hook: https://www.mybits.de/wp-content/uploads/2026/07/Smart-Manufcaturing-Industrial-AI-scaled.jpeg
+    pain: https://www.mybits.de/wp-content/uploads/2026/07/KI-IT-Strategie-standbild.jpg
+    idea: https://www.mybits.de/wp-content/uploads/2026/07/Enablement-Academy-standbild.jpg
+
+problems:
+  - slug: workshop-to-production
+    title: {en: Workshop to production, de: Vom Workshop in den Betrieb}
+    hook:
+      icon: machine
+      image: hook
+      sub:
+        en: Gather the use case. Build the agent. Run it in operations.
+        de: Den Use-Case aufnehmen. Den Agenten bauen. Im Betrieb laufen lassen.
+      en:
+        - [{text: "From the "}, {text: "workshop", accent: true}]
+        - ["into production"]
+      de:
+        - [{text: "Vom "}, {text: "Workshop", accent: true}]
+        - ["in den Produktivbetrieb"]
+    evidence:
+      title:
+        en: Three places a use case stalls
+        de: Drei Stellen, an denen ein Use-Case stockt
+      note:
+        en: A concept, not an official BITS project.
+        de: Ein Konzept, kein offizielles Projekt von BITS.
+      cards:
+        - role: {en: Workshop, de: Workshop}
+          quote:
+            en: Sit with the customer and gather the real requirements
+            de: Beim Kunden sitzen und die echten Anforderungen aufnehmen
+          gist: {en: Process and data, de: Prozess und Daten}
+        - role: {en: Build, de: Bau}
+          quote:
+            en: Agentic AI and RAG on their knowledge
+            de: Agentische KI und RAG auf ihrem Wissen
+          gist: {en: LangGraph · tools, de: LangGraph · Werkzeuge}
+        - role: {en: Operations, de: Betrieb}
+          quote:
+            en: Data protection, monitoring, a person decides
+            de: Datenschutz, Überwachung, der Mensch entscheidet
+          gist: {en: Guardrails, de: Guardrails}
+    pain:
+      image: pain
+      title:
+        en: The later a use case stalls, the more it costs
+        de: Je später ein Use-Case stockt, desto teurer wird er
+      chips:
+        en: [Workshop, Prototype, Production]
+        de: [Workshop, Prototyp, Betrieb]
+      columns:
+        en: [At the customer, In the build, In live ops]
+        de: [Beim Kunden, Im Bau, Im Betrieb]
+      note:
+        en: "Rule of ten: a general quality principle, not company data"
+        de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"
+    idea:
+      icon: agent
+      image: idea
+      kicker: {en: One idea, de: Eine Idee}
+      title:
+        en: A forward-deployed agent
+        de: Ein Agent beim Kunden
+      sub:
+        en: Requirements + RAG + secure operations
+        de: Anforderungen + RAG + sicherer Betrieb
+    steps:
+      - {id: workshop, icon: inbox, link: arrow,
+         title: {en: Customer workshop, de: Kunden-Workshop},
+         sub: {en: "process · data", de: "Prozess · Daten"}}
+      - {id: agent, icon: agent, link: both,
+         title: {en: Agentic RAG, de: Agentisches RAG},
+         sub: {en: LangGraph · tools, de: LangGraph · Werkzeuge}}
+      - {id: rules, icon: db, link: arrow,
+         title: {en: Their systems, de: Ihre Systeme},
+         sub: {en: APIs · knowledge, de: APIs · Wissen}}
+      - {id: checks, icon: shield, link: arrow,
+         title: {en: Guardrails + person, de: Guardrails + Mensch},
+         sub: {en: "monitoring · GDPR", de: "Überwachung · DSGVO"}}
+      - {id: live, icon: factory,
+         title: {en: In production, de: Im Produktivbetrieb},
+         sub: {en: FastAPI · traces, de: FastAPI · Traces}}
+    before_after:
+      - label: {en: Weeks to first live use, de: Wochen bis zum ersten Live-Einsatz}
+        before: 12
+        after: 4
+        unit: {en: wk, de: Wo.}
+    pilot:
+      en: ["One customer team", "Read-only first", "Measured with them"]
+      de: ["Ein Kundenteam", "Zuerst nur lesend", "Gemeinsam messen"]
+    narration:
+      en:
+        - {scene: hook, text: "A use case is cheap in the workshop, and expensive if it never goes live."}
+        - {scene: evidence, text: "Workshop, build, operations: the work sits between those steps."}
+        - {scene: pain, text: "Workshop, prototype, production: a late stall costs the most.",
+           cues: {pain.chips: Workshop, pain.0: late, pain.1: stall, pain.2: costs}}
+        - {scene: idea, text: "One idea: a forward-deployed agent."}
+        - {scene: arch, text: "I sit with the customer and gather the requirements.",
+           cues: {arch.workshop: sit}}
+        - {scene: arch, text: "Then I build an agentic RAG system on their knowledge.",
+           cues: {arch.agent: build, arch.rules: knowledge}}
+        - {scene: arch, text: "It goes live with data protection, monitoring, and a person who decides.",
+           cues: {arch.checks: live, arch.live: protection, arch.badges: monitoring}}
+        - {scene: metrics, text: "Illustrative targets: first live use from twelve weeks to four.",
+           cues: {metrics.0: weeks}}
+        - {scene: proof, text: "At Siemens AG in Amberg I built a multi-agent system with advanced RAG for industrial machines, LangGraph, FastAPI, Pydantic AI, Langfuse, cutting root-cause analysis by 73 to 88 percent on 16 machines.",
+           say: "At Siemens A-G in Amberg I built a multi-agent system with advanced R-A-G for industrial machines, Lang-Graph, Fast A-P-I, Pydantic A-I, Lang-fuse, cutting root-cause analysis by 73 to 88 percent on 16 machines.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "A first pilot could start with one customer team.",
+           cues: {pilot.0: first, pilot.1: start, pilot.2: team}}
+        - {scene: closing, text: "Happy to explore it with you."}
+      de:
+        - {scene: hook, text: "Ein Use-Case kostet im Workshop wenig und viel, wenn er nie live geht."}
+        - {scene: evidence, text: "Workshop, Bau, Betrieb: dazwischen bleibt die Arbeit liegen."}
+        - {scene: pain, text: "Workshop, Prototyp, Betrieb: ein spätes Stocken kostet am meisten.",
+           cues: {pain.chips: Workshop, pain.0: spätes, pain.1: Stocken, pain.2: kostet}}
+        - {scene: idea, text: "Eine Idee: ein Agent beim Kunden."}
+        - {scene: arch, text: "Ich sitze beim Kunden und nehme die Anforderungen auf.",
+           cues: {arch.workshop: sitze}}
+        - {scene: arch, text: "Dann baue ich ein agentisches RAG-System auf ihrem Wissen.",
+           cues: {arch.agent: baue, arch.rules: Wissen}}
+        - {scene: arch, text: "Es geht live mit Datenschutz, Überwachung und einem Menschen, der entscheidet.",
+           cues: {arch.checks: live, arch.live: Datenschutz, arch.badges: Überwachung}}
+        - {scene: metrics, text: "Beispielhafte Ziele: erster Live-Einsatz von zwölf auf vier Wochen.",
+           cues: {metrics.0: Wochen}}
+        - {scene: proof, text: "Bei der Siemens AG in Amberg habe ich ein Multi-Agenten-System mit Advanced RAG für Industriemaschinen gebaut, LangGraph, FastAPI, Pydantic AI, Langfuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
+           say: "Bei der Siemens A-G in Amberg habe ich ein Multi-Agenten-System mit Advanced R-A-G für Industriemaschinen gebaut, Lang-Graph, Fast-A-P-I, Pydantic A-I, Lang-fuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "Ein erster Pilot könnte mit einem Kundenteam starten.",
+           cues: {pilot.0: erster, pilot.1: starten, pilot.2: Kundenteam}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

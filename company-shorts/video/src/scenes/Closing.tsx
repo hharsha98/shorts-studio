@@ -7,39 +7,41 @@ import { Icon } from "../icons";
 import { Lines, SceneShell } from "../components/Scene";
 import type { Labels, SceneCtx } from "../types";
 
-const PAD = 52;
+const PAD = 40;
 const INNER = CONTENT_W - PAD * 2;
 
 export const ClosingScene: React.FC<{ ctx: SceneCtx; closing: Labels["closing"]; voice: boolean }> = ({ ctx, closing, voice }) => {
   const { frame, fps, start } = ctx;
   const note = voice ? `${closing.note} · ${closing.voiceNote}` : closing.note;
+  const links = closing.links && closing.links.length ? closing.links : [closing.link];
   const f = useMemo(() => {
-    const oneLine = fitText(closing.name, { max: 64, min: 44, maxW: INNER, maxLines: 1, weight: 800 });
+    const oneLine = fitText(closing.name, { max: 56, min: 36, maxW: INNER, maxLines: 1, weight: 800 });
     return {
-      series: fitText(closing.series, { max: 26, min: 20, maxW: INNER, maxLines: 1, weight: 600 }),
-      forLine: fitText(closing.forLine ?? "", { max: 48, min: 32, maxW: INNER, maxLines: 2, weight: 800 }),
-      name: oneLine.lines.length === 1 ? oneLine : fitText(closing.name, { max: 64, min: 40, maxW: INNER, maxLines: 2, weight: 800 }),
-      role: fitText(closing.role, { max: 36, min: 26, maxW: INNER, maxLines: 1, weight: 600 }),
-      link: fitText(closing.link, { max: 40, min: 28, maxW: INNER - 70, maxLines: 1, weight: 600 }),
-      note: fitText(note, { max: 26, min: 20, maxW: INNER, maxLines: 3, weight: 500 }),
+      series: fitText(closing.series, { max: 24, min: 18, maxW: INNER, maxLines: 1, weight: 600 }),
+      forLine: fitText(closing.forLine ?? "", { max: 42, min: 28, maxW: INNER, maxLines: 2, weight: 800 }),
+      name: oneLine.lines.length === 1 ? oneLine : fitText(closing.name, { max: 56, min: 34, maxW: INNER, maxLines: 2, weight: 800 }),
+      role: fitText(closing.role, { max: 30, min: 22, maxW: INNER, maxLines: 1, weight: 600 }),
+      links: links.map((href) => fitText(href, { max: 28, min: 20, maxW: INNER - 52, maxLines: 1, weight: 600 })),
+      note: fitText(note, { max: 22, min: 17, maxW: INNER, maxLines: 3, weight: 500 }),
     };
-  }, [closing, note]);
+  }, [closing, note, links]);
   const plate = closing.logoPlate === "light";
-  const logoH = closing.logo ? (plate ? 148 : 168) : 0;
+  const logoH = closing.logo ? (plate ? 110 : 120) : 0;
+  const linksH = f.links.reduce((s, item) => s + item.size * 1.25 + 10, 0);
   const cardH =
     PAD * 2 +
     f.series.size * 1.15 +
-    22 +
-    logoH +
-    (closing.forLine ? 18 + f.forLine.lines.length * f.forLine.size * 1.12 : 0) +
     16 +
+    logoH +
+    (closing.forLine ? 12 + f.forLine.lines.length * f.forLine.size * 1.12 : 0) +
+    12 +
     f.role.size * 1.15 +
-    8 +
+    6 +
     f.name.lines.length * f.name.size * 1.08 +
-    28 + 3 + 24 +
-    f.link.size * 1.15 +
-    26 +
-    f.note.lines.length * f.note.size * 1.35;
+    20 + 3 + 16 +
+    linksH +
+    18 +
+    f.note.lines.length * f.note.size * 1.3;
   const top = Math.round((Y.sceneTop + Y.sceneBottom) / 2 - cardH / 2);
   const cardP = pop(frame, start, fps, 130, 18);
   const nameP = pop(frame, start + 6, fps, 150, 16);
@@ -57,7 +59,7 @@ export const ClosingScene: React.FC<{ ctx: SceneCtx; closing: Labels["closing"];
           width: CONTENT_W,
           boxSizing: "border-box",
           padding: PAD,
-          borderRadius: 40,
+          borderRadius: 36,
           background: "rgba(16,26,42,0.94)",
           border: `2.5px solid ${tint(C.amber, 0.55)}`,
           boxShadow: `0 0 ${50 + 30 * glow}px ${tint(C.amber, 0.16)}, 0 30px 70px rgba(0,0,0,0.45)`,
@@ -67,14 +69,14 @@ export const ClosingScene: React.FC<{ ctx: SceneCtx; closing: Labels["closing"];
         }}
       >
         <Lines fit={f.series} weight={600} color={C.sub} align="center" style={{ letterSpacing: 1 }} />
-        <div style={{ height: 22 }} />
+        <div style={{ height: 16 }} />
         {closing.logo ? (
           <div style={{ display: "flex", justifyContent: "center", opacity: clamp01(cardP * 1.4) }}>
             <div
               style={{
                 background: plate ? "#FFFFFF" : "transparent",
-                borderRadius: plate ? 18 : 0,
-                padding: plate ? "12px 20px" : 0,
+                borderRadius: plate ? 16 : 0,
+                padding: plate ? "10px 16px" : 0,
                 maxWidth: "100%",
                 boxSizing: "border-box",
                 display: "flex",
@@ -84,33 +86,37 @@ export const ClosingScene: React.FC<{ ctx: SceneCtx; closing: Labels["closing"];
             >
               <Img
                 src={staticFile(closing.logo)}
-                style={{ height: plate ? 104 : logoH, width: "auto", maxWidth: INNER - (plate ? 40 : 0), objectFit: "contain" }}
+                style={{ height: plate ? 80 : logoH, width: "auto", maxWidth: INNER - (plate ? 32 : 0), objectFit: "contain" }}
               />
             </div>
           </div>
         ) : null}
         {closing.forLine ? (
-          <div style={{ marginTop: 18, opacity: roleP }}>
+          <div style={{ marginTop: 12, opacity: roleP }}>
             <Lines fit={f.forLine} weight={800} color={C.amber} align="center" lineHeight={1.12} />
           </div>
         ) : null}
-        <div style={{ marginTop: 18, opacity: roleP }}>
+        <div style={{ marginTop: 12, opacity: roleP }}>
           <Lines fit={f.role} weight={600} color={C.sub} align="center" />
         </div>
-        <div style={{ height: 10 }} />
+        <div style={{ height: 8 }} />
         <div style={{ opacity: clamp01(nameP * 1.5), transform: `translateY(${(1 - nameP) * 18}px)` }}>
           <Lines fit={f.name} weight={800} align="center" lineHeight={1.08} />
         </div>
-        <div style={{ height: 28 }} />
+        <div style={{ height: 18 }} />
         <div style={{ height: 3, borderRadius: 2, background: C.line, width: INNER * linkP }} />
-        <div style={{ height: 36 }} />
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 18, opacity: linkP }}>
-          <Icon name="link" size={46} color={C.blue} stroke={3.6} />
-          <Lines fit={f.link} weight={600} color={C.text} />
+        <div style={{ height: 16 }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: linkP }}>
+          {f.links.map((item, i) => (
+            <div key={links[i]} style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
+              <Icon name="link" size={28} color={C.blue} stroke={3.2} />
+              <Lines fit={item} weight={600} color={C.text} />
+            </div>
+          ))}
         </div>
-        <div style={{ height: 34 }} />
+        <div style={{ height: 18 }} />
         <div style={{ opacity: noteP }}>
-          <Lines fit={f.note} weight={500} color={C.faint} align="center" lineHeight={1.35} />
+          <Lines fit={f.note} weight={500} color={C.faint} align="center" lineHeight={1.3} />
         </div>
       </div>
     </SceneShell>

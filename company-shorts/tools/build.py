@@ -267,8 +267,19 @@ def voice_lines(name: str, lang: str, lines: list, dest: Path, force: bool = Fal
     say = [ln.get("say", ln["text"]) for ln in lines]
     engine = f"kokoro:{EN_VOICE}" if lang == "en" else f"edge:{DE_VOICE}@{DE_RATE}"
     timing = [PAUSE_SAME_SCENE, PAUSE_NEW_SCENE, LEAD_IN, HOLD_AFTER]  # END_HOLD is added after the audio, so it never forces a re-voice
+    # Cue maps drive on-screen highlights. Changing them without spoken text used to reuse a stale timeline.
     key = hashlib.sha256(
-        json.dumps({"engine": engine, "say": say, "text": [ln["text"] for ln in lines], "scenes": [ln["scene"] for ln in lines], "timing": timing}, ensure_ascii=False).encode()
+        json.dumps(
+            {
+                "engine": engine,
+                "say": say,
+                "text": [ln["text"] for ln in lines],
+                "scenes": [ln["scene"] for ln in lines],
+                "cues": [ln.get("cues") or {} for ln in lines],
+                "timing": timing,
+            },
+            ensure_ascii=False,
+        ).encode()
     ).hexdigest()[:16]
     d = dest
     timeline_path = d / "timeline.json"
@@ -384,7 +395,7 @@ def chunk_captions(words: list[dict], max_chars: int = 36, max_words: int = 7, m
     return [{"start": c[0]["start"], "end": c[-1]["end"], "words": c} for c in merged]
 
 
-def props_for(name: str, lang: str, labels: dict, timeline: dict, dest: Path, voice: bool = True) -> Path:
+def props_for(name: str, lang: str, labels: dict, timeline: dict, dest: Path, voice: bool = True, brand: dict | None = None) -> Path:
     """Remotion props for one language. `labels` is the on-screen copy; timings come from the narration."""
     lines = timeline["lines"]
     total = timeline["totalSeconds"]
@@ -414,6 +425,8 @@ def props_for(name: str, lang: str, labels: dict, timeline: dict, dest: Path, vo
         "cues": cues,
         "captions": chunk_captions(words),
     }
+    if brand:
+        props["brand"] = brand
     path = dest / ("props.json" if voice else "props-silent.json")
     path.write_text(json.dumps(props, ensure_ascii=False, indent=1))
     return path

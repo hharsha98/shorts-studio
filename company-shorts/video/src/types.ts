@@ -43,6 +43,8 @@ export type Labels = {
     name: string;
     role: string;
     link: string;
+    /** Optional extra short links under the name (website, LinkedIn, GitHub, Hugging Face). */
+    links?: string[];
     series: string;
     note: string;
     voiceNote: string;
@@ -61,6 +63,8 @@ export type ShortProps = {
   scenes: SceneWindow[];
   cues: Record<string, number>;
   captions: CaptionChunk[];
+  /** Optional company colours. Accent replaces the amber highlights; backgrounds stay dark. */
+  brand?: { accent?: string; bgTop?: string; bgBottom?: string };
 };
 
 /** What every scene component receives: the global frame, its own window in frames, and cue lookup in frames. */
