@@ -97,7 +97,7 @@ problems:
          sub: {en: "evals · traces", de: "Evals · Traces"}}
       - {id: live, icon: factory,
          title: {en: In production, de: Im Produktivbetrieb},
-         sub: {en: Docker · AWS · GCP, de: Docker · AWS · GCP}}
+         sub: {en: CI/CD · AWS · GCP, de: CI/CD · AWS · GCP}}
     before_after:
       - label: {en: Weeks to first live use, de: Wochen bis zum ersten Live-Einsatz}
         before: 12
@@ -113,14 +113,13 @@ problems:
         - {scene: pain, text: "Close, plan, disclose: a late stall costs the most.",
            cues: {pain.chips: Close, pain.0: late, pain.1: stall, pain.2: costs}}
         - {scene: idea, text: "One idea: a finance AI partner."}
-        - {scene: arch, text: "I sit with finance and clean the ERP data, with SQL, as I did at IndiaMART.",
-           say: "I sit with finance and clean the E-R-P data, with S-Q-L, as I did at India Mart.",
+        - {scene: arch, text: "I sit with finance and clean the ERP data, as I did at IndiaMART.",
+           say: "I sit with finance and clean the E-R-P data, as I did at India Mart.",
            cues: {arch.finance: sit, arch.data: clean}}
         - {scene: arch, text: "Then I build multi-agent RAG, LangGraph, FastAPI, and MCP skills.",
            say: "Then I build multi-agent R-A-G, Lang-Graph, Fast A-P-I, and M-C-P skills.",
            cues: {arch.agent: build, arch.skills: MCP}}
-        - {scene: arch, text: "It goes live with Docker and CI/CD on AWS, and a person who decides.",
-           say: "It goes live with Docker and C-I-C-D on A-W-S, and a person who decides.",
+        - {scene: arch, text: "It goes live with Docker, and a person who decides.",
            cues: {arch.live: live, arch.badges: person}}
         - {scene: metrics, text: "Illustrative targets: first live use from twelve weeks to four.",
            cues: {metrics.0: weeks}}
@@ -136,14 +135,13 @@ problems:
         - {scene: pain, text: "Abschluss, Planung, Offenlegung: spätes Stocken kostet am meisten.",
            cues: {pain.chips: Abschluss, pain.0: spätes, pain.1: Stocken, pain.2: kostet}}
         - {scene: idea, text: "Eine Idee: ein KI-Partner für Finance."}
-        - {scene: arch, text: "Ich sitze bei Finance und säubere die ERP-Daten, mit SQL, wie bei IndiaMART.",
-           say: "Ich sitze bei Finance und säubere die E-R-P-Daten, mit S-Q-L, wie bei India Mart.",
+        - {scene: arch, text: "Ich sitze bei Finance und säubere die ERP-Daten, wie bei IndiaMART.",
+           say: "Ich sitze bei Finance und säubere die E-R-P-Daten, wie bei India Mart.",
            cues: {arch.finance: sitze, arch.data: säubere}}
         - {scene: arch, text: "Dann baue ich Multi-Agenten-RAG, LangGraph, FastAPI und MCP Skills.",
            say: "Dann baue ich Multi-Agenten-R-A-G, Lang-Graph, Fast-A-P-I und M-C-P Skills.",
            cues: {arch.agent: baue, arch.skills: MCP}}
-        - {scene: arch, text: "Es geht live mit Docker und CI/CD auf AWS, und einem Menschen, der entscheidet.",
-           say: "Es geht live mit Docker und C-I-C-D auf A-W-S, und einem Menschen, der entscheidet.",
+        - {scene: arch, text: "Es geht live mit Docker, und einem Menschen, der entscheidet.",
            cues: {arch.live: live, arch.badges: Menschen}}
         - {scene: metrics, text: "Beispielhafte Ziele: erster Live-Einsatz von zwölf auf vier Wochen.",
            cues: {metrics.0: Wochen}}
