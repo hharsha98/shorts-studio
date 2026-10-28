@@ -1,0 +1,149 @@
+# Concept for BOS. Not an official BOS project. Before/after numbers are illustrative.
+# Logo, colours and photos come from https://www.bos.de/. Do not mention a job advert.
+# Proof card, safety badges and the closing card are added by the template.
+version: 1
+company:
+  slug: bos
+  name: BOS
+  domain: bos.de
+  logo_url: https://www.bos.de/app/uploads/2026/03/BOS-Logo-2026-water-blue-RGB.png
+  logo_plate: light
+  brand:
+    accent: "#09A7B0"
+    bgTop: "#0A1A1C"
+    bgBottom: "#061214"
+  images:
+    hook: https://www.bos.de/app/uploads/2025/05/MG_0669-Slider.jpg
+    pain: https://www.bos.de/app/uploads/2025/03/Ueber_BOS.jpg
+    idea: https://www.bos.de/app/uploads/2025/03/BOS_Headquarter_edit_web-8.jpg
+
+problems:
+  - slug: ops-to-live
+    title: {en: Operations to live AI, de: Vom Betrieb in live KI}
+    hook:
+      icon: machine
+      image: hook
+      sub:
+        en: Clean the data. Build the report. Automate the work.
+        de: Die Daten säubern. Den Report bauen. Die Arbeit automatisieren.
+      en:
+        - [{text: "From "}, {text: "operations", accent: true}]
+        - ["into live AI"]
+      de:
+        - [{text: "Vom "}, {text: "Betrieb", accent: true}]
+        - ["in live KI"]
+    evidence:
+      title:
+        en: Three places the work sits
+        de: Drei Stellen, an denen die Arbeit liegt
+      note:
+        en: A concept, not an official BOS project.
+        de: Ein Konzept, kein offizielles Projekt von BOS.
+      cards:
+        - role: {en: Data, de: Daten}
+          quote:
+            en: Clean and join the operational data
+            de: Die Betriebsdaten säubern und zusammenführen
+          gist: {en: Python · SQL · Pandas, de: Python · SQL · Pandas}
+        - role: {en: Reports, de: Reports}
+          quote:
+            en: Build dashboards the team can actually read
+            de: Dashboards bauen, die das Team wirklich liest
+          gist: {en: Power BI-style, de: Power-BI-Stil}
+        - role: {en: Automate, de: Automatisieren}
+          quote:
+            en: Agents plus process automation on the manual work
+            de: Agenten plus Prozessautomatisierung für die manuelle Arbeit
+          gist: {en: RAG · LLM agents, de: RAG · LLM-Agenten}
+    pain:
+      image: pain
+      title:
+        en: The later a data or AI use case stalls, the more it costs
+        de: Je später ein Daten- oder KI-Use-Case stockt, desto teurer wird er
+      chips:
+        en: [Data, Reports, Automation]
+        de: [Daten, Reports, Automatisierung]
+      columns:
+        en: [At the desk, In the process, On the line]
+        de: [Am Schreibtisch, Im Prozess, An der Linie]
+      note:
+        en: "Rule of ten: a general quality principle, not company data"
+        de: "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten"
+    idea:
+      icon: agent
+      image: idea
+      kicker: {en: One idea, de: Eine Idee}
+      title:
+        en: An operations AI partner
+        de: Ein KI-Partner im Betrieb
+      sub:
+        en: Data + dashboards + agents
+        de: Daten + Dashboards + Agenten
+    steps:
+      - {id: workshop, icon: inbox, link: arrow,
+         title: {en: Sit with operations, de: Beim Betrieb sitzen},
+         sub: {en: "process · data", de: "Prozess · Daten"}}
+      - {id: data, icon: db, link: both,
+         title: {en: Clean and analyze, de: Daten säubern},
+         sub: {en: Python · SQL · Pandas, de: Python · SQL · Pandas}}
+      - {id: reports, icon: search, link: arrow,
+         title: {en: Dashboards, de: Dashboards},
+         sub: {en: Power BI-style, de: Power-BI-Stil}}
+      - {id: agent, icon: agent, link: arrow,
+         title: {en: Agents + automation, de: Agenten + Automatisierung},
+         sub: {en: RAG · tools, de: RAG · Werkzeuge}}
+      - {id: live, icon: factory,
+         title: {en: In production, de: Im Produktivbetrieb},
+         sub: {en: A person decides, de: Der Mensch entscheidet}}
+    before_after:
+      - label: {en: Weeks to first live use, de: Wochen bis zum ersten Live-Einsatz}
+        before: 12
+        after: 4
+        unit: {en: wk, de: Wo.}
+    pilot:
+      en: ["One operations team", "Read-only first", "Measured with them"]
+      de: ["Ein Betriebsteam", "Zuerst nur lesend", "Gemeinsam messen"]
+    narration:
+      en:
+        - {scene: hook, text: "A data project is cheap at the desk, and expensive if it never goes live."}
+        - {scene: evidence, text: "Data, reports, automation: the work sits between those steps."}
+        - {scene: pain, text: "Data, reports, automation: a late stall costs the most.",
+           cues: {pain.chips: Data, pain.0: late, pain.1: stall, pain.2: costs}}
+        - {scene: idea, text: "One idea: an operations AI partner."}
+        - {scene: arch, text: "I sit with operations and clean the real data, with Python, SQL and Pandas.",
+           cues: {arch.workshop: sit, arch.data: clean}}
+        - {scene: arch, text: "Then I build Power BI-style dashboards, and RAG agents on that knowledge.",
+           say: "Then I build Power B-I-style dashboards, and R-A-G agents on that knowledge.",
+           cues: {arch.reports: dashboards, arch.agent: agents}}
+        - {scene: arch, text: "It goes live with process automation, and a person who decides.",
+           cues: {arch.live: live, arch.badges: person}}
+        - {scene: metrics, text: "Illustrative targets: first live use from twelve weeks to four.",
+           cues: {metrics.0: weeks}}
+        - {scene: proof, text: "At Siemens AG in Amberg I built a multi-agent system with advanced RAG for industrial machines, LangGraph, FastAPI, Pydantic AI, Langfuse, cutting root-cause analysis by 73 to 88 percent on 16 machines.",
+           say: "At Siemens A-G in Amberg I built a multi-agent system with advanced R-A-G for industrial machines, Lang-Graph, Fast A-P-I, Pydantic A-I, Lang-fuse, cutting root-cause analysis by 73 to 88 percent on 16 machines.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "A first pilot could start with one operations team.",
+           cues: {pilot.0: first, pilot.1: start, pilot.2: team}}
+        - {scene: closing, text: "Happy to explore it with you."}
+      de:
+        - {scene: hook, text: "Ein Datenprojekt kostet am Schreibtisch wenig und viel, wenn es nie live geht."}
+        - {scene: evidence, text: "Daten, Reports, Automatisierung: dazwischen bleibt die Arbeit liegen."}
+        - {scene: pain, text: "Daten, Reports, Automatisierung: ein spätes Stocken kostet am meisten.",
+           cues: {pain.chips: Daten, pain.0: spätes, pain.1: Stocken, pain.2: kostet}}
+        - {scene: idea, text: "Eine Idee: ein KI-Partner im Betrieb."}
+        - {scene: arch, text: "Ich sitze im Betrieb und säubere die echten Daten, mit Python, SQL und Pandas.",
+           say: "Ich sitze im Betrieb und säubere die echten Daten, mit Python, S-Q-L und Pandas.",
+           cues: {arch.workshop: sitze, arch.data: säubere}}
+        - {scene: arch, text: "Dann baue ich Dashboards im Power-BI-Stil und RAG-Agenten auf diesem Wissen.",
+           say: "Dann baue ich Dashboards im Power-B-I-Stil und R-A-G-Agenten auf diesem Wissen.",
+           cues: {arch.reports: Dashboards, arch.agent: Agenten}}
+        - {scene: arch, text: "Es geht live mit Prozessautomatisierung und einem Menschen, der entscheidet.",
+           cues: {arch.live: live, arch.badges: Menschen}}
+        - {scene: metrics, text: "Beispielhafte Ziele: erster Live-Einsatz von zwölf auf vier Wochen.",
+           cues: {metrics.0: Wochen}}
+        - {scene: proof, text: "Bei der Siemens AG in Amberg habe ich ein Multi-Agenten-System mit Advanced RAG für Industriemaschinen gebaut, LangGraph, FastAPI, Pydantic AI, Langfuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
+           say: "Bei der Siemens A-G in Amberg habe ich ein Multi-Agenten-System mit Advanced R-A-G für Industriemaschinen gebaut, Lang-Graph, Fast-A-P-I, Pydantic A-I, Lang-fuse, das die Ursachenanalyse um 73 bis 88 Prozent verkürzt, an 16 Maschinen.",
+           cues: {proof: Siemens}}
+        - {scene: pilot, text: "Ein erster Pilot könnte mit einem Betriebsteam starten.",
+           cues: {pilot.0: erster, pilot.1: starten, pilot.2: Betriebsteam}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}
