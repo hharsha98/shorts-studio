@@ -20,9 +20,9 @@ export const ProofScene: React.FC<{ ctx: SceneCtx; proof: Labels["proof"] }> = (
     const badgeW = textWidth(proof.badge, 24, 800) + 48 + proof.badge.length * 2;
     return {
       badgeW,
-      kicker: fitText(proof.kicker, { max: 34, min: 26, maxW: INNER - badgeW - 20, maxLines: 1, weight: 700 }),
-      title: fitText(proof.title, { max: 58, min: 40, maxW: INNER, maxLines: 2, weight: 800 }),
-      sub: fitText(proof.sub, { max: 32, min: 25, maxW: INNER, maxLines: 2, weight: 500 }),
+      kicker: fitText(proof.kicker, { max: 34, min: 24, maxW: INNER - badgeW - 20, maxLines: 1, weight: 700 }),
+      title: fitText(proof.title, { max: 54, min: 34, maxW: INNER, maxLines: 3, weight: 800 }),
+      sub: fitText(proof.sub, { max: 30, min: 22, maxW: INNER, maxLines: 2, weight: 500 }),
       source: fitText(proof.source, { max: 24, min: 19, maxW: INNER, maxLines: 2, weight: 500 }),
     };
   }, [proof]);

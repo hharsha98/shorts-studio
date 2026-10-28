@@ -23,6 +23,17 @@ export const C = {
   ink: "#0B1018",
 };
 
+const DEFAULT_C = { ...C };
+
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+
+/** Optional per-company colours from YAML (`brand.accent`, `brand.bgTop`, `brand.bgBottom`). */
+export const applyBrand = (brand?: { accent?: string; bgTop?: string; bgBottom?: string }): void => {
+  C.amber = brand?.accent && HEX.test(brand.accent) ? brand.accent : DEFAULT_C.amber;
+  C.bgTop = brand?.bgTop && HEX.test(brand.bgTop) ? brand.bgTop : DEFAULT_C.bgTop;
+  C.bgBottom = brand?.bgBottom && HEX.test(brand.bgBottom) ? brand.bgBottom : DEFAULT_C.bgBottom;
+};
+
 /** "#RRGGBB" with an alpha, as an rgba() string. */
 export const tint = (hex: string, alpha: number): string => {
   const n = parseInt(hex.slice(1), 16);

@@ -1,7 +1,8 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
-import { C, MARGIN, W, Y, tint } from "../theme";
-import { textWidth } from "../text";
+import { C, CONTENT_W, MARGIN, W, Y, tint } from "../theme";
+import { fitText, textWidth } from "../text";
+import { Lines } from "./Scene";
 import type { Labels } from "../types";
 
 /** Deep blue background with a faint drawing-board grid and two slow glows. Pure function of the frame. */
@@ -44,6 +45,7 @@ export const Background: React.FC = () => {
 
 export const TopBar: React.FC<{ top: Labels["top"] }> = ({ top }) => {
   const badgeW = textWidth(top.badge, 30, 800) + 40;
+  const topic = fitText(top.topic, { max: 32, min: 20, maxW: CONTENT_W - badgeW - 24, maxLines: 1, weight: 700 });
   return (
     <div style={{ position: "absolute", left: MARGIN, right: MARGIN, top: Y.topBar, height: 60, display: "flex", alignItems: "center" }}>
       <div
@@ -63,7 +65,9 @@ export const TopBar: React.FC<{ top: Labels["top"] }> = ({ top }) => {
       >
         {top.badge}
       </div>
-      <div style={{ marginLeft: 20, fontSize: 32, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>{top.topic}</div>
+      <div style={{ marginLeft: 20, flex: 1, minWidth: 0 }}>
+        <Lines fit={topic} weight={700} color={C.text} />
+      </div>
     </div>
   );
 };
