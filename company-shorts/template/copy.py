@@ -101,6 +101,11 @@ NOT_OFFICIAL = {
     "en": "A concept, not an official {name} project · illustrative numbers",
     "de": "Ein Konzept, kein offizielles Projekt von {name} · Beispielwerte",
 }
+# Used when the Short has no before/after chart, so the closing card must not claim illustrative numbers.
+NOT_OFFICIAL_FACT = {
+    "en": "A concept, not an official {name} project",
+    "de": "Ein Konzept, kein offizielles Projekt von {name}",
+}
 CREDIT = {"en": "Images: {domain}", "de": "Bilder: {domain}"}
 
 # Narration and on-screen copy must not say the idea came from a job advert,
@@ -111,4 +116,5 @@ FORBIDDEN = (
     "ai idea sketch", "ki-ideenskizze",
     "mara", "siplace", "smt-maschine", "smt maschine", "smt-maschinen", "smt machines",
     "gehalt", "salary", "sprachniveau", "deutschkenntnisse", "cefr",
+    "azure",
 )

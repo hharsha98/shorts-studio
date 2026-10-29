@@ -43,5 +43,19 @@ AI Solutions Engineer (internal AI agents for Finance, Sales, People, IT and Leg
 
 Contact sheet: `lucanet-contact-sheet-en.jpg`.
 
+## LAK GROUP (German)
+
+Same Remotion InterviewShort pipeline. Config: `companies/lak.yaml`.
+Official site [lak.group](https://lak.group/en/). LAK Consulting & Advisory GmbH, Veitsbronn:
+recruitment / executive search for industrial-technology clients. Candidate-fit Short
+(AI Engineer – Industrielle KI). No illustrative before/after chart; only CV facts on
+the Siemens proof card. Voice: Microsoft Katja (`de-DE-KatjaNeural`).
+
+| File | Duration | Voice | Size |
+|---|---|---|---|
+| `lak-rotpunkt-style-de.mp4` | 63.03 s | Microsoft Katja (`de-DE-KatjaNeural`) | 1080×1920 H.264 / AAC · 9.85 MiB |
+
+Contact sheet: `lak-contact-sheet-de.jpg`.
+
 Do not merge to public `main` if real company names should stay off the public tree.
 Do not send or upload these films.

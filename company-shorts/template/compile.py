@@ -14,7 +14,7 @@ import yaml
 
 from template.copy import (
     ARCH_TITLE, AUTHOR, BADGES, CLOSING_LINE, CONCEPT, CREDIT, FORBIDDEN, FOR_LINE, GITHUB,
-    LINKS, METRICS_CHROME, NOT_OFFICIAL, PILOT_CHROME, PROOF, VOICE_NOTE,
+    LINKS, METRICS_CHROME, NOT_OFFICIAL, NOT_OFFICIAL_FACT, PILOT_CHROME, PROOF, VOICE_NOTE,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -98,16 +98,6 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
     if not hook_sub and isinstance(hook, dict) and isinstance(hook.get("sub"), (str, dict)):
         hook_sub = text(hook["sub"], lang, f"{slug}.hook.sub")
 
-    pain = problem.get("pain") or {}
-    pain_title = text(pain.get("title"), lang, f"{slug}.pain.title")
-    chips = _str_list(pain.get("chips"), lang, f"{slug}.pain.chips")
-    columns = _str_list(pain.get("columns"), lang, f"{slug}.pain.columns")
-    if len(chips) != 3 or len(columns) != 3:
-        raise ConfigError(f"{slug}.pain: chips and columns need exactly 3 entries each ({lang})")
-    pain_note = text(pain.get("note"), lang, f"{slug}.pain.note") if pain.get("note") else (
-        "Rule of ten: a general quality principle, not company data" if lang == "en"
-        else "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten")
-
     idea = problem.get("idea") or {}
     idea_title = text(idea.get("title"), lang, f"{slug}.idea.title")
     idea_sub = text(idea.get("sub"), lang, f"{slug}.idea.sub") if idea.get("sub") else ""
@@ -130,8 +120,8 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             nodes[-1].pop("link")
 
     items = problem.get("before_after") or []
-    if not 1 <= len(items) <= 2:
-        raise ConfigError(f"{slug}.before_after: need 1 or 2 rows")
+    if items and not 1 <= len(items) <= 2:
+        raise ConfigError(f"{slug}.before_after: omit the block, or give 1 or 2 rows")
     metric_items = []
     for i, item in enumerate(items):
         metric_items.append({
@@ -143,7 +133,8 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
 
     pilot_items = _str_list(problem["pilot"], lang, f"{slug}.pilot") if problem.get("pilot") else []
 
-    narration = _narration(problem, lang, slug, pilot_items)
+    narration = _narration(problem, lang, slug, pilot_items, has_metrics=bool(metric_items))
+    closing_note = (NOT_OFFICIAL if metric_items else NOT_OFFICIAL_FACT)[lang].format(name=name)
     labels = {
         "credit": CREDIT[lang].format(domain=domain),
         "top": {"badge": badge, "topic": title, "right": ""},
@@ -154,15 +145,7 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             **(_photo(photos, hook.get("image") if isinstance(hook, dict) else None)),
             **({"status": text(hook.get("status"), lang, f"{slug}.hook.status")} if isinstance(hook, dict) and hook.get("status") else {}),
         },
-        "pain": {
-            "kind": "ruleOfTen",
-            "title": pain_title,
-            "chips": chips,
-            "columns": columns,
-            "multipliers": ["×1", "×10", "×100"],
-            "note": pain_note,
-            **(_photo(photos, pain.get("image"))),
-        },
+        "pain": _pain(problem, lang, slug, photos),
         "idea": {
             "icon": idea.get("icon") or "agent",
             "kicker": kicker,
@@ -172,7 +155,9 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
         },
         "arch": {"title": text(problem.get("arch_title"), lang, f"{slug}.arch_title") if problem.get("arch_title") else ARCH_TITLE[lang],
                  "nodes": nodes, "badges": BADGES[lang]},
-        "metrics": {**METRICS_CHROME[lang], "items": metric_items},
+        "metrics": {**METRICS_CHROME[lang], "items": metric_items} if metric_items else {
+            "title": "", "stamp": "", "legend": ["", ""], "items": [], "footnote": "",
+        },
         "proof": {k: v for k, v in PROOF[lang].items() if k not in ("line", "cue")},
         "closing": {
             "name": AUTHOR,
@@ -182,7 +167,7 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
             "link": LINKS[0],
             "links": LINKS,
             "series": title,
-            "note": NOT_OFFICIAL[lang].format(name=name),
+            "note": closing_note,
             "voiceNote": VOICE_NOTE[lang],
             **({"logoPlate": "light"} if str(company.get("logo_plate") or "") == "light" else {}),
         },
@@ -197,6 +182,7 @@ def compile_problem(config: dict, problem: dict, index: int, lang: str, photos: 
         raise ConfigError(f"{slug}.evidence: narration has an evidence line, so add 2 or 3 cards")
     blob = " ".join(ln["text"] for ln in narration) + " " + hook_sub + " " + title
     blob += " " + " ".join(str(v) for v in PROOF[lang].values())
+    blob += " " + idea_title + " " + " ".join(str(v) for v in labels["pain"].values())
     if evidence:
         blob += " " + evidence["title"] + " " + " ".join(
             c["role"] + " " + c["quote"] + " " + c.get("gist", "") for c in evidence["cards"]
@@ -220,7 +206,57 @@ def _str_list(value, lang: str, where: str) -> list[str]:
     return [x.strip() for x in value]
 
 
-def _narration(problem: dict, lang: str, slug: str, pilot_items: list[str]) -> list[dict]:
+def _pain(problem: dict, lang: str, slug: str, photos: dict[str, str]) -> dict:
+    """Root-cause scene. ruleOfTen is the default; scattered/bottleneck skip the invented ×1/×10/×100 bars."""
+    pain = problem.get("pain") or {}
+    title = text(pain.get("title"), lang, f"{slug}.pain.title")
+    kind = str(pain.get("kind") or "ruleOfTen")
+    photo = _photo(photos, pain.get("image"))
+    if kind == "scattered":
+        tiles = _str_list(pain.get("tiles"), lang, f"{slug}.pain.tiles")
+        if len(tiles) != 4:
+            raise ConfigError(f"{slug}.pain.tiles: need exactly 4 entries ({lang})")
+        return {
+            "kind": "scattered",
+            "title": title,
+            "center": text(pain.get("center"), lang, f"{slug}.pain.center"),
+            "tiles": tiles,
+            "searching": text(pain.get("searching"), lang, f"{slug}.pain.searching"),
+            **photo,
+        }
+    if kind == "bottleneck":
+        chips = _str_list(pain.get("chips"), lang, f"{slug}.pain.chips")
+        if len(chips) != 3:
+            raise ConfigError(f"{slug}.pain.chips: need exactly 3 entries ({lang})")
+        return {
+            "kind": "bottleneck",
+            "title": title,
+            "chips": chips,
+            "experts": text(pain.get("experts"), lang, f"{slug}.pain.experts"),
+            "newcomers": text(pain.get("newcomers"), lang, f"{slug}.pain.newcomers"),
+            "flow": text(pain.get("flow"), lang, f"{slug}.pain.flow"),
+        }
+    if kind != "ruleOfTen":
+        raise ConfigError(f"{slug}.pain.kind: unknown {kind!r} (use ruleOfTen, scattered or bottleneck)")
+    chips = _str_list(pain.get("chips"), lang, f"{slug}.pain.chips")
+    columns = _str_list(pain.get("columns"), lang, f"{slug}.pain.columns")
+    if len(chips) != 3 or len(columns) != 3:
+        raise ConfigError(f"{slug}.pain: chips and columns need exactly 3 entries each ({lang})")
+    note = text(pain.get("note"), lang, f"{slug}.pain.note") if pain.get("note") else (
+        "Rule of ten: a general quality principle, not company data" if lang == "en"
+        else "Zehnerregel: allgemeines Qualitätsprinzip, keine Unternehmensdaten")
+    return {
+        "kind": "ruleOfTen",
+        "title": title,
+        "chips": chips,
+        "columns": columns,
+        "multipliers": ["×1", "×10", "×100"],
+        "note": note,
+        **photo,
+    }
+
+
+def _narration(problem: dict, lang: str, slug: str, pilot_items: list[str], has_metrics: bool = True) -> list[dict]:
     raw = (problem.get("narration") or {}).get(lang)
     if not isinstance(raw, list) or len(raw) < 4:
         raise ConfigError(f"{slug}.narration.{lang}: need the spoken lines (at least hook, pain, idea, architecture)")
@@ -237,9 +273,14 @@ def _narration(problem: dict, lang: str, slug: str, pilot_items: list[str]) -> l
             item["cues"] = {str(k): str(v) for k, v in ln["cues"].items()}
         lines.append(item)
     have = {ln["scene"] for ln in lines}
-    for needed in ("hook", "pain", "idea", "arch", "metrics"):
-        if needed not in have:
-            raise ConfigError(f"{slug}.narration.{lang}: missing a '{needed}' line")
+    needed = ["hook", "pain", "idea", "arch"]
+    if has_metrics:
+        needed.append("metrics")
+    for name in needed:
+        if name not in have:
+            raise ConfigError(f"{slug}.narration.{lang}: missing a '{name}' line")
+    if "metrics" in have and not has_metrics:
+        raise ConfigError(f"{slug}.narration.{lang}: drop the metrics line when before_after is omitted")
     if pilot_items and "pilot" not in have:
         raise ConfigError(f"{slug}.narration.{lang}: pilot items are set, so add a 'pilot' line")
     if "proof" not in have:

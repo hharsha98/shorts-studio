@@ -35,8 +35,10 @@ images are cached by URL, and the whole video is skipped when its props have not
 
 ## What every video contains
 
-- Problem, root cause (a cost chart), solution, flow, illustrative before/after result,
-  the proof card, an optional pilot, and the closing card.
+- Problem, root cause, solution, flow, an optional illustrative before/after result,
+  the proof card, an optional pilot, and the closing card. Omit `before_after` to skip
+  the metrics scene (no invented numbers). `pain.kind` may be `scattered` or `bottleneck`
+  instead of the default rule-of-ten chart.
 - Closing card: the company logo, "An idea for <Company>" / "Eine Idee für <Company>",
   "Concept by Hanumanthu Harsha Vardhan", four short links (website, LinkedIn, GitHub,
   Hugging Face), and a line that it is a concept, not an official project.

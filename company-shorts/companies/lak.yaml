@@ -1,0 +1,140 @@
+# Candidate-fit Short for LAK GROUP. Not an official LAK project.
+# Logo, colours and photos come from https://lak.group/. Do not mention a job advert.
+# No illustrative before/after chart: only CV facts on the proof card.
+# Proof card, safety badges and the closing card are added by the template.
+version: 1
+company:
+  slug: lak
+  name: LAK GROUP
+  domain: lak.group
+  logo_url: https://lak.group/android-chrome-512x512.png
+  logo_plate: light
+  brand:
+    accent: "#B9A36A"
+    bgTop: "#11122F"
+    bgBottom: "#191B44"
+  images:
+    hook: https://lak.group/assets/images/hero/industrial-automation-digitalisation-hero.webp
+    pain: https://lak.group/assets/images/hero/machinery-manufacturing-technologies-hero.webp
+    idea: https://lak.group/assets/images/insights/recruiting-industrial-ai-and-predictive-maintenance-specialists-hero.webp
+
+problems:
+  - slug: industrielle-ki
+    title: {en: AI Engineer – Industrial AI, de: AI Engineer – Industrielle KI}
+    hook:
+      icon: machine
+      image: hook
+      status: {en: Fault, de: Störung}
+      sub:
+        en: Unplanned downtime. Slow root-cause analysis. Knowledge stuck in manuals.
+        de: Ungeplante Stillstände. Langsame Ursachenanalyse. Wissen in Handbüchern.
+      en:
+        - [{text: "Unplanned "}, {text: "downtime", accent: true}]
+        - ["without a clear cause"]
+      de:
+        - [{text: "Ungeplanter "}, {text: "Stillstand", accent: true}]
+        - ["ohne klare Ursache"]
+    evidence:
+      title:
+        en: What slows their industrial clients
+        de: Was ihre Industriekunden bremst
+      note:
+        en: A concept, not an official LAK GROUP project.
+        de: Ein Konzept, kein offizielles Projekt von LAK GROUP.
+      cards:
+        - role: {en: Downtime, de: Stillstand}
+          quote:
+            en: Unplanned stoppages. Root-cause analysis takes too long.
+            de: Ungeplante Ausfälle. Die Ursachenanalyse dauert zu lange.
+          gist: {en: The line is waiting, de: Die Linie wartet}
+        - role: {en: Knowledge, de: Wissen}
+          quote:
+            en: Locked in manuals and in a few experts' heads.
+            de: Steckt in Handbüchern und in den Köpfen weniger Experten.
+          gist: {en: Manuals · experts, de: Handbücher · Experten}
+        - role: {en: Digitalisation, de: Digitalisierung}
+          quote:
+            en: Machine and ERP data stay scattered. Projects stall in the pilot.
+            de: Maschinen- und ERP-Daten bleiben verstreut. Projekte bleiben im Pilotbetrieb.
+          gist: {en: "Pilot, not production", de: "Pilot, nicht Fertigung"}
+    pain:
+      kind: scattered
+      image: pain
+      title:
+        en: The answer sits in four places
+        de: Die Antwort liegt an vier Stellen
+      center: {en: Fault, de: Störung}
+      tiles:
+        en: [Manuals, Experts, Machines, ERP]
+        de: [Handbücher, Experten, Maschinen, ERP]
+      searching:
+        en: Searching takes time. The line waits.
+        de: Die Suche dauert. Die Linie wartet.
+    idea:
+      icon: agent
+      image: idea
+      kicker: {en: The fit, de: Passgenau}
+      title:
+        en: AI into real production
+        de: KI in die echte Fertigung
+      sub:
+        en: Multi-agent RAG, already running in production
+        de: Multi-Agenten-RAG, schon im Produktivbetrieb
+    arch_title: {en: How I work, de: So arbeite ich}
+    steps:
+      - {id: shopfloor, icon: usercheck, link: arrow,
+         title: {en: With plant engineers, de: Mit Werksingenieuren},
+         sub: {en: "Scrum · Linux", de: "Scrum · Linux"}}
+      - {id: rag, icon: agent, link: both,
+         title: {en: Multi-agent RAG, de: Multi-Agenten-RAG},
+         sub: {en: LangGraph · FastAPI, de: LangGraph · FastAPI}}
+      - {id: data, icon: db, link: both,
+         title: {en: ERP and Text-to-SQL, de: ERP und Text-to-SQL},
+         sub: {en: as at IndiaMART, de: wie bei IndiaMART}}
+      - {id: tools, icon: search, link: arrow,
+         title: {en: MCP and skills, de: MCP und Skills},
+         sub: {en: custom agent skills, de: eigene Agent-Skills}}
+      - {id: live, icon: factory,
+         title: {en: In production, de: Im Produktivbetrieb},
+         sub: {en: Docker · CI/CD · AWS · GCP, de: Docker · CI/CD · AWS · GCP}}
+    narration:
+      en:
+        - {scene: hook, text: "Unplanned downtime. Slow root-cause analysis. Knowledge stuck in manuals and heads."}
+        - {scene: evidence, text: "Downtime, knowledge, digitalisation: three places their industrial clients get stuck.",
+           cues: {evidence.0: Downtime, evidence.1: knowledge, evidence.2: digitalisation}}
+        - {scene: pain, text: "Manuals, experts, machines, ERP: the answer is scattered.",
+           cues: {pain.0: Manuals, pain.1: experts, pain.2: machines, pain.3: ERP}}
+        - {scene: idea, text: "LAK looks for people who bring AI into real production."}
+        - {scene: arch, text: "I sit with plant engineers in Scrum. Multi-agent RAG with LangGraph, FastAPI, Pydantic AI and Langfuse.",
+           say: "I sit with plant engineers in Scrum. Multi-agent R-A-G with Lang-Graph, Fast A-P-I, Pydantic A-I and Lang-fuse.",
+           cues: {arch.shopfloor: sit, arch.rag: LangGraph}}
+        - {scene: arch, text: "Text-to-SQL and ERP data, as I did at IndiaMART. MCP servers and custom agent skills.",
+           say: "Text-to-S-Q-L and E-R-P data, as I did at India Mart. M-C-P servers and custom agent skills.",
+           cues: {arch.data: Text-to-SQL, arch.tools: MCP}}
+        - {scene: arch, text: "Live in Docker on Linux, with CI/CD, AWS and GCP. A person decides.",
+           say: "Live in Docker on Linux, with C-I-C-D, A-W-S and G-C-P. A person decides.",
+           cues: {arch.live: Docker, arch.badges: person}}
+        - {scene: proof, text: "At Siemens AG in Amberg: 73 to 88 percent faster root-cause analysis on 16 machines, from 30 to 120 minutes down to 8 to 15.",
+           say: "At Siemens A-G in Amberg: 73 to 88 percent faster root-cause analysis on 16 machines, from 30 to 120 minutes down to 8 to 15.",
+           cues: {proof: Siemens}}
+        - {scene: closing, text: "Happy to explore it with you."}
+      de:
+        - {scene: hook, text: "Ungeplante Stillstände. Langsame Ursachenanalyse. Wissen in Handbüchern und Köpfen."}
+        - {scene: evidence, text: "Stillstand, Wissen, Digitalisierung: drei Stellen, an denen es hakt.",
+           cues: {evidence.0: Stillstand, evidence.1: Wissen, evidence.2: Digitalisierung}}
+        - {scene: pain, text: "Handbücher, Experten, Maschinen, ERP: die Antwort ist verteilt.",
+           say: "Handbücher, Experten, Maschinen, E-R-P: die Antwort ist verteilt.",
+           cues: {pain.0: Handbücher, pain.1: Experten, pain.2: Maschinen, pain.3: ERP}}
+        - {scene: idea, text: "LAK sucht Kandidaten, die KI in die echte Fertigung bringen."}
+        - {scene: arch, text: "Ich sitze mit den Ingenieuren im Scrum. Multi-Agenten-RAG mit LangGraph, FastAPI, Pydantic AI und Langfuse.",
+           say: "Ich sitze mit den Ingenieuren im Scrum. Multi-Agenten-R-A-G mit Lang-Graph, Fast-A-P-I, Pydantic A-I und Lang-fuse.",
+           cues: {arch.shopfloor: sitze, arch.rag: LangGraph}}
+        - {scene: arch, text: "Text-to-SQL und ERP-Daten wie bei IndiaMART. MCP-Server und eigene Agent-Skills.",
+           say: "Text-to-S-Q-L und E-R-P-Daten wie bei India Mart. M-C-P-Server und eigene Agent-Skills.",
+           cues: {arch.data: Text-to-SQL, arch.tools: MCP}}
+        - {scene: arch, text: "Live in Docker auf Linux. Ein Mensch entscheidet.",
+           cues: {arch.live: Docker, arch.badges: Mensch}}
+        - {scene: proof, text: "Bei der Siemens AG in Amberg: 73 bis 88 Prozent schnellere Ursachenanalyse an 16 Maschinen.",
+           say: "Bei der Siemens A-G in Amberg: 73 bis 88 Prozent schnellere Ursachenanalyse an 16 Maschinen.",
+           cues: {proof: Siemens}}
+        - {scene: closing, text: "Mehr dazu gern im Gespräch."}

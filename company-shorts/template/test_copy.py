@@ -35,6 +35,29 @@ class CopyTests(unittest.TestCase):
         self.assertIn("mara", low)
         self.assertIn("siplace", low)
         self.assertIn("gehalt", low)
+        self.assertIn("azure", low)
+
+    def test_lak_de_is_facts_only_and_skips_illustrative_metrics(self) -> None:
+        cfg = load_config(ROOT / "companies" / "lak.yaml")
+        out = compile_problem(cfg, cfg["problems"][0], 0, "de", {}, "")
+        scenes = [ln["scene"] for ln in out["lines"]]
+        self.assertNotIn("metrics", scenes)
+        self.assertNotIn("pilot", scenes)
+        self.assertEqual(out["labels"]["pain"]["kind"], "scattered")
+        self.assertEqual(out["labels"]["closing"]["role"], "Konzept von")
+        self.assertEqual(out["labels"]["closing"]["name"], "Hanumanthu Harsha Vardhan")
+        self.assertEqual(out["labels"]["top"]["topic"], "AI Engineer – Industrielle KI")
+        self.assertEqual(out["labels"]["evidence"]["cards"][2]["gist"], "Pilot, nicht Fertigung")
+        self.assertEqual(out["brand"]["accent"], "#B9A36A")
+        self.assertNotIn("Beispielwerte", out["labels"]["closing"]["note"])
+        self.assertEqual(out["labels"]["closing"]["links"], LINKS)
+        blob = " ".join(ln["text"] for ln in out["lines"]).lower()
+        blob += " " + json.dumps(out["labels"], ensure_ascii=False).lower()
+        for banned in ("mara", "siplace", "smt", "azure", "job posting", "stellenanzeige",
+                       "beispielwerte", "illustrative", "gehalt", "cefr"):
+            self.assertNotIn(banned, blob, banned)
+        self.assertIn("siemens", blob)
+        self.assertIn("indiamart", blob)
 
     def test_scene_order_keeps_the_rotpunkt_evidence_slot(self) -> None:
         self.assertEqual(

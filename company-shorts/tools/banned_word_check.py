@@ -33,6 +33,7 @@ EXTRA = (
     r"\bcefr\b",
     "german level",
     "german cefr",
+    "azure",
     "12-agent",
     "12 agents",
     "12 llm agents",
